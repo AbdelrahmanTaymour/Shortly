@@ -168,3 +168,4 @@
 /Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.API/obj/Debug/net8.0/Shortly.API.pdb
 /Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.API/obj/Debug/net8.0/Shortly.API.genruntimeconfig.cache
 /Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.API/obj/Debug/net8.0/ref/Shortly.API.dll
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.API/obj/Debug/net8.0/Shortly.API.sourcelink.json

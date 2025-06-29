@@ -15,3 +15,4 @@
 /Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Infrastructure/obj/Debug/net8.0/Shortly.Infrastructure.pdb
 /Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Infrastructure/obj/Debug/net8.0/Shortly.Infrastructure.genruntimeconfig.cache
 /Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Infrastructure/obj/Debug/net8.0/ref/Shortly.Infrastructure.dll
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Infrastructure/obj/Debug/net8.0/Shortly.Infrastructure.sourcelink.json

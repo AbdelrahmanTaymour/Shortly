@@ -10,3 +10,4 @@
 /Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/refint/Shortly.Core.dll
 /Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/Shortly.Core.pdb
 /Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/ref/Shortly.Core.dll
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/Shortly.Core.sourcelink.json
