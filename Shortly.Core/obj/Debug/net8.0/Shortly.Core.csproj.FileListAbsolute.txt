@@ -1,0 +1,12 @@
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/bin/Debug/net8.0/Shortly.Core.deps.json
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/bin/Debug/net8.0/Shortly.Core.dll
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/bin/Debug/net8.0/Shortly.Core.pdb
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/Shortly.Core.csproj.AssemblyReference.cache
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/Shortly.Core.GeneratedMSBuildEditorConfig.editorconfig
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/Shortly.Core.AssemblyInfoInputs.cache
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/Shortly.Core.AssemblyInfo.cs
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/Shortly.Core.csproj.CoreCompileInputs.cache
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/Shortly.Core.dll
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/refint/Shortly.Core.dll
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/Shortly.Core.pdb
+/Users/abdelrahmantaymour/MyFiles/Projects/Shortly/Shortly.Core/obj/Debug/net8.0/ref/Shortly.Core.dll
