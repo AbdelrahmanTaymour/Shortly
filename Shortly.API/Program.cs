@@ -3,6 +3,7 @@ using FluentValidation.AspNetCore;
 using Shortly.Core;
 using Shortly.Core.DTOs;
 using Shortly.Core.Mappers;
+using Shortly.Core.ServiceContracts;
 using Shortly.Core.Validators;
 using Shortly.Infrastructure;
 
@@ -46,6 +47,20 @@ public class Program
         app.UseAuthorization();
         
         app.MapControllers();
+        
+        app.Map("/{shortCode}", async (string shortCode, IShortUrlsService service, HttpContext context) =>
+        {
+            var urlData = await service.GetByShortCodeAsync(shortCode);
+            if (urlData == null)
+            {
+                context.Response.StatusCode = 404;
+                await context.Response.WriteAsync("Short URL not found.");
+                return;
+            }
+
+            context.Response.Redirect(urlData.OriginalUrl!); // 302 Redirect
+        });
+
 
         app.Run();
     }
