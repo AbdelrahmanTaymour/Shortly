@@ -11,4 +11,8 @@ public class ShortUrl
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public int AccessCount { get; set; }
+    public Guid? UserId { get; set; }
+    public string? ApiKey { get; set; }
+    
+    public User? User { get; set; }
 }
