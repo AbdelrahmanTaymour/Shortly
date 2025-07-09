@@ -1,11 +1,18 @@
+using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.IdentityModel.Tokens;
 using Shortly.Core;
 using Shortly.Core.DTOs;
 using Shortly.Core.Mappers;
 using Shortly.Core.ServiceContracts;
 using Shortly.Core.Validators;
 using Shortly.Infrastructure;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Shortly.API.Middleware;
+
 
 namespace Shortly.API;
 
@@ -31,6 +38,21 @@ public class Program
         // FluentValidations
         builder.Services.AddFluentValidationAutoValidation();
 
+        // Authentication
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                    ValidAudience = builder.Configuration["Jwt:Audience"],
+                    IssuerSigningKey =
+                        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                });
+        
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -39,6 +61,8 @@ public class Program
             app.UseSwagger();
             app.UseSwaggerUI();
         }
+        
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         app.UseRouting();
         app.UseHttpsRedirection();

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.Core.DTOs;
 using Shortly.Core.ServiceContracts;
@@ -6,6 +7,7 @@ namespace Shortly.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ShortUrlController(IShortUrlsService shortUrlsService) : ControllerBase
 {
     private readonly IShortUrlsService _shortUrlsService = shortUrlsService;

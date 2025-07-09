@@ -1,3 +1,5 @@
+using System.Security.Authentication;
+
 namespace Shortly.API.Middleware;
 
 /// <summary>
@@ -51,6 +53,7 @@ public class ExceptionHandlingMiddleware
                 Message = ex.Message,
                 Type = ex.GetType().ToString()
             });
+
         }
     }
 }

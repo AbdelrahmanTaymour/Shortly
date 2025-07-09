@@ -27,6 +27,7 @@ public static class DependencyInjection
     {
         // Register Core-related services.
         services.AddScoped<IShortUrlsService, ShortUrlsService>();
+        services.AddScoped<IUsersService, UsersService>();
 
         services.AddValidatorsFromAssemblyContaining<ShortUrlRequestValidator>();
         

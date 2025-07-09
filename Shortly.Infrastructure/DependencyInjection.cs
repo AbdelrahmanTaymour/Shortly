@@ -33,6 +33,7 @@ public static class DependencyInjection
             options.UseSqlServer(configuration.GetConnectionString("ConnectionString")));
 
         services.AddScoped<IShortUrlRepository, ShortUrlRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
         
         return services;
     }
