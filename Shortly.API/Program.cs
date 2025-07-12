@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Shortly.API.Middleware;
+using Shortly.Core.Authentication;
 
 
 namespace Shortly.API;
@@ -52,6 +53,7 @@ public class Program
                     IssuerSigningKey =
                         new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                 });
+        builder.Services.AddSingleton<JwtHandler>();
         
         var app = builder.Build();
 

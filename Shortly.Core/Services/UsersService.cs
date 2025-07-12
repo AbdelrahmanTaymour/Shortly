@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Shortly.Core.Authentication;
 using Shortly.Core.DTOs;
 using Shortly.Core.Entities;
 using Shortly.Core.RepositoryContract;
@@ -11,10 +12,11 @@ using Shortly.Core.ServiceContracts;
 
 namespace Shortly.Core.Services;
 
-public class UsersService(IUserRepository userRepository, IConfiguration configuration): IUsersService
+public class UsersService(IUserRepository userRepository, IConfiguration configuration, JwtHandler jwtHandler): IUsersService
 {
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IConfiguration _configuration = configuration;
+    private readonly JwtHandler _jwtHandler = jwtHandler;
 
     public async Task<AuthenticationResponse?> Login(LoginRequest loginRequest)
     {
@@ -30,18 +32,9 @@ public class UsersService(IUserRepository userRepository, IConfiguration configu
         {
             throw new AuthenticationException("Invalid email or password.");
         }
+        var token = _jwtHandler.CreateToken(user);
         
-        // Generate JWT Token
-        var authClaims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Email, user.Email)
-        };
-        var token = GenerateToken(authClaims);
-        
-        return new AuthenticationResponse(user.Id, user.Name, user.Email, new JwtSecurityTokenHandler().WriteToken(token),
-            token.ValidTo, true);
+        return new AuthenticationResponse(user.Id, user.Name, user.Email, token, true);
     }
 
     public async Task<AuthenticationResponse?> Register(RegisterRequest registerRequest)
@@ -63,31 +56,7 @@ public class UsersService(IUserRepository userRepository, IConfiguration configu
         
         user = await _userRepository.AddUser(user);
         
-        // Generate JWT Token
-        var authClaims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Email, user.Email)
-        };
-        
-        var token = GenerateToken(authClaims);
-
-        return new AuthenticationResponse(user.Id, user.Name, user.Email, new JwtSecurityTokenHandler().WriteToken(token), 
-            token.ValidTo, true);
+        var token = _jwtHandler.CreateToken(user);
+        return new AuthenticationResponse(user.Id, user.Name, user.Email, token, true);
     }
-
-    private JwtSecurityToken GenerateToken(IEnumerable<Claim> authClaims)
-    {
-        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-
-         return new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            expires: DateTime.Now.AddHours(3), // Token expiration
-            claims: authClaims,
-            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
-        );
-    }
-    
 }
