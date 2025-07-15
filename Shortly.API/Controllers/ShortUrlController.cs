@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.Core.DTOs;
@@ -21,7 +22,10 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     [ProducesResponseType(typeof(List<ShortUrlResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
+        var stopwatch = Stopwatch.StartNew();
         var shortUrls = await _shortUrlsService.GetAllAsync();
+        stopwatch.Stop();
+        Console.WriteLine($"Time: {stopwatch.ElapsedMilliseconds}ms");
         return Ok(shortUrls);
     }
     

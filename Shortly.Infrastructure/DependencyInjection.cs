@@ -34,6 +34,7 @@ public static class DependencyInjection
 
         services.AddScoped<IShortUrlRepository, ShortUrlRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         
         return services;
     }

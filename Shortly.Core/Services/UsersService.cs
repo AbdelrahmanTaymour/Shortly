@@ -1,10 +1,11 @@
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Authentication;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using Shortly.Core.Authentication;
+//using Shortly.Core.Authentication;
 using Shortly.Core.DTOs;
 using Shortly.Core.Entities;
 using Shortly.Core.RepositoryContract;
@@ -12,14 +13,15 @@ using Shortly.Core.ServiceContracts;
 
 namespace Shortly.Core.Services;
 
-public class UsersService(IUserRepository userRepository, IConfiguration configuration, JwtHandler jwtHandler): IUsersService
+public class UsersService(IUserRepository userRepository, IConfiguration configuration, IJwtService jwtService): IUsersService
 {
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IConfiguration _configuration = configuration;
-    private readonly JwtHandler _jwtHandler = jwtHandler;
+    private readonly IJwtService _jwtService = jwtService;
 
     public async Task<AuthenticationResponse?> Login(LoginRequest loginRequest)
     {
+        var stopwatch = Stopwatch.StartNew();
         var user = await _userRepository.GetUserByEmail(loginRequest.Email);
     
         if (user == null)
@@ -32,9 +34,12 @@ public class UsersService(IUserRepository userRepository, IConfiguration configu
         {
             throw new AuthenticationException("Invalid email or password.");
         }
-        var token = _jwtHandler.CreateToken(user);
+        stopwatch.Stop();
+        Console.WriteLine($"Time: {stopwatch.ElapsedMilliseconds}ms");
+
+        var tokens = _jwtService.GenerateTokensAsync(user);
         
-        return new AuthenticationResponse(user.Id, user.Name, user.Email, token, true);
+        return new AuthenticationResponse(user.Id, user.Name, user.Email, tokens.Result, true);
     }
 
     public async Task<AuthenticationResponse?> Register(RegisterRequest registerRequest)
@@ -55,8 +60,8 @@ public class UsersService(IUserRepository userRepository, IConfiguration configu
         };
         
         user = await _userRepository.AddUser(user);
+        var tokens = _jwtService.GenerateTokensAsync(user);
         
-        var token = _jwtHandler.CreateToken(user);
-        return new AuthenticationResponse(user.Id, user.Name, user.Email, token, true);
+        return new AuthenticationResponse(user.Id, user.Name, user.Email, tokens.Result, true);
     }
 }

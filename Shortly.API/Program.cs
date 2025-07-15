@@ -12,7 +12,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Shortly.API.Middleware;
-using Shortly.Core.Authentication;
+using Shortly.Core.Services;
+
+//using Shortly.Core.Authentication;
 
 
 namespace Shortly.API;
@@ -40,7 +42,11 @@ public class Program
         builder.Services.AddFluentValidationAutoValidation();
 
         // Authentication
-        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
             .AddJwtBearer(options =>
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
@@ -51,9 +57,10 @@ public class Program
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidAudience = builder.Configuration["Jwt:Audience"],
                     IssuerSigningKey =
-                        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+                    ClockSkew = TimeSpan.Zero
                 });
-        builder.Services.AddSingleton<JwtHandler>();
+        //builder.Services.AddScoped<IJwtService, JwtService>();
         
         var app = builder.Build();
 
