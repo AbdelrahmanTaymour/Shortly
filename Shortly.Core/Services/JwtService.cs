@@ -20,7 +20,6 @@ public class JwtService: IJwtService
     private readonly IConfiguration _configuration;
     private readonly IConfigurationSection _jwtSection;
     private readonly TokenValidationParameters _tokenValidationParameters;
-
     public JwtService(
         IConfiguration configuration,
         IRefreshTokenRepository refreshTokenRepository,
@@ -40,12 +39,13 @@ public class JwtService: IJwtService
            // Revoke any existing active refresh tokens for this user
             await RevokeAllUserTokensAsync(user.Id);
             
-            // Generate access token
+            // Generate an access token
             var accessToken = GenerateAccessToken(user);
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"]));
 
             // Generate refresh token
-            var refreshToken = await GenerateRefreshTokenAsync(user.Id);
+            var refreshToken = await CreateRefreshTokenAsync(user.Id);
+            
 
             _logger.LogInformation("Tokens generated successfully for user {UserId}", user.Id);
             return new TokenResponse
@@ -63,19 +63,18 @@ public class JwtService: IJwtService
         }
     }
 
-    public async Task<TokenResponse> RefreshTokenAsync(string refreshToken)
+    public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken, bool extendExpiry)
     {
         try
         {
             // Validate refresh token
             var storedRefreshToken = await _refreshTokenRepository.GetRefreshTokenAsync(refreshToken);
-            
             if (storedRefreshToken == null || !storedRefreshToken.IsActive)
             {
                 _logger.LogWarning("Invalid refresh token attempted: {Token}", refreshToken);
                 throw new SecurityTokenException("Invalid refresh token");
             }
-
+            
             // Get user from token
             var user = await GetUserFromRefreshTokenAsync(storedRefreshToken);
             if (user == null)
@@ -84,22 +83,26 @@ public class JwtService: IJwtService
                 throw new SecurityTokenException("User not found");
             }
 
-            // Revoke the old refresh token
-            storedRefreshToken.IsRevoked = true;
-            await _refreshTokenRepository.UpdateRefreshTokenAsync(storedRefreshToken);
+            // Update refresh token
+            storedRefreshToken.Token = GenerateRefreshTokenString();
+            if(extendExpiry)
+            {
+                storedRefreshToken.ExpiresAt =
+                    DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"]));
+            }
+            await _refreshTokenRepository.SaveChangesAsync();
 
             // Generate new tokens
             var newAccessToken = GenerateAccessToken(user);
-            var newRefreshToken = await GenerateRefreshTokenAsync(user.Id);
 
             _logger.LogInformation("Tokens refreshed successfully for user {UserId}", user.Id);
 
             return new TokenResponse
             (
                 AccessToken: newAccessToken,
-                RefreshToken: newRefreshToken.Token,
+                RefreshToken: storedRefreshToken.Token,
                 AccessTokenExpiry: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"])),
-                RefreshTokenExpiry: newRefreshToken.ExpiresAt
+                RefreshTokenExpiry: storedRefreshToken.ExpiresAt
             );
         }
         catch (Exception ex)
@@ -109,26 +112,14 @@ public class JwtService: IJwtService
         }
     }
     
-    
-    public async Task<TokenValidationResulDto> ValidateTokenAsync(string token, bool validateLifetime = true)
+    public TokenValidationResulDto ValidateToken(string token, bool validateLifetime = true)
     {
         try
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
             var validationParameters = _tokenValidationParameters;
             validationParameters.ValidateLifetime = validateLifetime;
 
-            var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
-
-            var jwtToken = validatedToken as JwtSecurityToken;
-            if (jwtToken == null || !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-            {
-                return new TokenValidationResulDto
-                (
-                    IsValid: false,
-                    ErrorMessage: "Invalid token algorithm"
-                );
-            }
+            var principal = GetPrincipalFromExpiredToken(token, validateLifetime);
 
             return new TokenValidationResulDto
             (
@@ -212,11 +203,7 @@ public class JwtService: IJwtService
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Iat, 
-                new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(), 
-                ClaimValueTypes.Integer64)
         };
 
         // TODO: Add role claims
@@ -238,17 +225,23 @@ public class JwtService: IJwtService
             signingCredentials: signingCredentials
         );
     }
-    
-    private async Task<RefreshToken> GenerateRefreshTokenAsync(Guid userId)
+
+    private string GenerateRefreshTokenString()
     {
         var randomNumber = new byte[32];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
+    }
+    
+    private async Task<RefreshToken> CreateRefreshTokenAsync(Guid userId)
+    {
+        var refreshTokenString = GenerateRefreshTokenString();
         
         var refreshToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
-            Token = Convert.ToBase64String(randomNumber),
+            Token = refreshTokenString,
             ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"])),
             CreatedAt = DateTime.UtcNow,
             UserId = userId,
@@ -264,6 +257,24 @@ public class JwtService: IJwtService
         return savedToken;
     }
 
+    private ClaimsPrincipal GetPrincipalFromExpiredToken(string token, bool validateLifetime = true)
+    {
+        var tokenValidationParameters = _tokenValidationParameters;
+        tokenValidationParameters.ValidateLifetime = validateLifetime;
+        
+        var tokenHandler = new JwtSecurityTokenHandler();
+        SecurityToken securityToken;
+        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
+        var jwtSecurityToken = securityToken as JwtSecurityToken;
+        
+        if (jwtSecurityToken is null || !jwtSecurityToken.Header.Alg
+                .Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+        {
+            throw new SecurityTokenException("Invalid token algorithm");
+        }
+        return principal;
+    }
+    
     private TokenValidationParameters CreateTokenValidationParameters()
     {
         return new TokenValidationParameters

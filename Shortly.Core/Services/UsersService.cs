@@ -21,7 +21,6 @@ public class UsersService(IUserRepository userRepository, IConfiguration configu
 
     public async Task<AuthenticationResponse?> Login(LoginRequest loginRequest)
     {
-        var stopwatch = Stopwatch.StartNew();
         var user = await _userRepository.GetUserByEmail(loginRequest.Email);
     
         if (user == null)
@@ -29,13 +28,11 @@ public class UsersService(IUserRepository userRepository, IConfiguration configu
             throw new AuthenticationException("Invalid email or password.");
         }
 
-        // Verify the password matches the hashed password
+        //Verify the password matches the hashed password
         if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.Password))
         {
             throw new AuthenticationException("Invalid email or password.");
         }
-        stopwatch.Stop();
-        Console.WriteLine($"Time: {stopwatch.ElapsedMilliseconds}ms");
 
         var tokens = _jwtService.GenerateTokensAsync(user);
         
@@ -59,8 +56,11 @@ public class UsersService(IUserRepository userRepository, IConfiguration configu
             Password = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password), // Hash the Password
         };
         
+        var stopwatch2 = Stopwatch.StartNew();
         user = await _userRepository.AddUser(user);
         var tokens = _jwtService.GenerateTokensAsync(user);
+        stopwatch2.Stop();
+        Console.WriteLine($"With Add and generate tokens in register Time: {stopwatch2.ElapsedMilliseconds}ms");
         
         return new AuthenticationResponse(user.Id, user.Name, user.Email, tokens.Result, true);
     }

@@ -17,13 +17,7 @@ public class RefreshTokenRepository(SQLServerDbContext dbContext):IRefreshTokenR
 
     public async Task<RefreshToken?> GetRefreshTokenAsync(string token)
     {
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            return null;
-        }
-        var refreshToken = await _dbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
-        
-        return refreshToken;
+        return await _dbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
     }
 
     public async Task<RefreshToken?> GetActiveRefreshTokenByUserIdAsync(Guid userId)
@@ -68,5 +62,10 @@ public class RefreshTokenRepository(SQLServerDbContext dbContext):IRefreshTokenR
         await _dbContext.RefreshTokens
             .Where(rt => rt.ExpiresAt <= DateTime.UtcNow)
             .ExecuteDeleteAsync();
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext.SaveChangesAsync();
     }
 }

@@ -28,7 +28,7 @@ internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
 
     public async Task<User?> GetUserByEmail(string? email)
     {
-        return await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == email);
+        return await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(user => user.Email == email);
     }
 
     public async Task<User?> GetUserByUsername(string? username)

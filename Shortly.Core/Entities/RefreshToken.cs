@@ -9,6 +9,8 @@ public class RefreshToken
     public DateTime CreatedAt { get; set; }
     public Guid UserId { get; set; } // Foreign key to your user table
         
+    public User? User { get; set; }
+    
     public bool IsExpired => DateTime.UtcNow >= ExpiresAt;
     public bool IsActive => !IsRevoked && !IsExpired;
 }

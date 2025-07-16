@@ -12,4 +12,5 @@ public interface IRefreshTokenRepository
     Task<User?> GetUserFromRefreshTokenAsync(Guid userId);
     Task<bool> IsRefreshTokenActiveAsync(string token);
     Task CleanupExpiredTokensAsync();
+    Task SaveChangesAsync();
 }
