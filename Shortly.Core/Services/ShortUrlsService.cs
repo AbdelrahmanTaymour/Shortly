@@ -3,6 +3,7 @@ using Shortly.Core.DTOs;
 using Shortly.Core.Entities;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.ServiceContracts;
+using Shortly.Core.Utilities;
 
 namespace Shortly.Core.Services;
 
@@ -35,9 +36,15 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
         var shortUrlDomain = _mapper.Map<ShortUrl>(shortUrlRequest);
         
         //TODO: ADD THE SHORTEN CODE LOGIC HERE.
-        shortUrlDomain.ShortCode = Guid.NewGuid().ToString().Substring(0, 6);
+        
         
         shortUrlDomain = await _shortUrlRepository.CreateShortUrlAsync(shortUrlDomain);
+        if (shortUrlDomain is null)
+            throw new Exception("Error creating short url");
+            
+        shortUrlDomain.ShortCode = Base62Converter.Encode(shortUrlDomain.Id);
+        await _shortUrlRepository.SaveChangesAsync();
+        
         return _mapper.Map<ShortUrlResponse>(shortUrlDomain);
     }
 

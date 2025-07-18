@@ -5,7 +5,7 @@ namespace Shortly.Core.Entities;
 /// </summary>
 public class ShortUrl
 {
-    public Guid Id { get; set; }
+    public int Id { get; set; }
     public string OriginalUrl { get; set; }
     public string? ShortCode { get; set; }
     public DateTime CreatedAt { get; set; }

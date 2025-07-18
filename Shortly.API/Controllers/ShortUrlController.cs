@@ -37,6 +37,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     /// <param name="shortCode">The short code of the URL to retrieve.</param>
     /// <returns> <see cref="ShortUrlResponse"/> that contains the original URL and shortened URL details.</returns>
     [HttpGet("{shortCode}", Name = "GetByShortCode")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ShortUrlResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByShortCode(string shortCode)
@@ -47,7 +48,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
             return NotFound();
         }
 
-        return Ok(shortUrlResponse);
+        return RedirectPermanent(shortUrlResponse.OriginalUrl);
     }
     
     

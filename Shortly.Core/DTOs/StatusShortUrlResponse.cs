@@ -1,7 +1,7 @@
 namespace Shortly.Core.DTOs;
 
 public record StatusShortUrlResponse(
-    Guid Id,
+    int Id,
     string OriginalUrl,
     string ShortCode,
     DateTime CreatedAt,
@@ -9,6 +9,6 @@ public record StatusShortUrlResponse(
     int AccessCount)
 {
     // Parameterless constructor
-    public StatusShortUrlResponse(): this(Guid.Empty, String.Empty, 
+    public StatusShortUrlResponse(): this(-1, String.Empty, 
         String.Empty, DateTime.MinValue, DateTime.MinValue, 0) { }
 }
