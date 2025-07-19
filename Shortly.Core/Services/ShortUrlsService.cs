@@ -35,7 +35,7 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
     {
         var shortUrlDomain = _mapper.Map<ShortUrl>(shortUrlRequest);
         
-        //TODO: ADD THE SHORTEN CODE LOGIC HERE.
+        //TODO: IMPROVE SHORTEN CODE ALGORITHM
         
         
         shortUrlDomain = await _shortUrlRepository.CreateShortUrlAsync(shortUrlDomain);

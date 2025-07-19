@@ -13,24 +13,14 @@ using Shortly.Core.ServiceContracts;
 
 namespace Shortly.Core.Services;
 
-public class JwtService: IJwtService
+public class JwtService(IRefreshTokenRepository refreshTokenRepository, 
+    IConfiguration configuration, ILogger<JwtService> logger): IJwtService
 {
-    private readonly IRefreshTokenRepository _refreshTokenRepository;
-    private readonly ILogger<JwtService> _logger;
-    private readonly IConfiguration _configuration;
-    private readonly IConfigurationSection _jwtSection;
-    private readonly TokenValidationParameters _tokenValidationParameters;
-    public JwtService(
-        IConfiguration configuration,
-        IRefreshTokenRepository refreshTokenRepository,
-        ILogger<JwtService> logger)
-    {
-        _configuration = configuration;
-        _refreshTokenRepository = refreshTokenRepository;
-        _logger = logger;
-        _jwtSection = _configuration.GetSection("Jwt");
-        _tokenValidationParameters = CreateTokenValidationParameters();
-    }
+    private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
+    private readonly ILogger<JwtService> _logger = logger;
+    private readonly IConfiguration _configuration = configuration;
+    private readonly IConfigurationSection _jwtSection = configuration.GetSection("Jwt");
+    
 
     public async Task<TokenResponse> GenerateTokensAsync(User user)
     {
@@ -116,9 +106,6 @@ public class JwtService: IJwtService
     {
         try
         {
-            var validationParameters = _tokenValidationParameters;
-            validationParameters.ValidateLifetime = validateLifetime;
-
             var principal = GetPrincipalFromExpiredToken(token, validateLifetime);
 
             return new TokenValidationResulDto
@@ -259,12 +246,20 @@ public class JwtService: IJwtService
 
     private ClaimsPrincipal GetPrincipalFromExpiredToken(string token, bool validateLifetime = true)
     {
-        var tokenValidationParameters = _tokenValidationParameters;
-        tokenValidationParameters.ValidateLifetime = validateLifetime;
+        var tokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = validateLifetime,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = _jwtSection["Issuer"],
+            ValidAudience = _jwtSection["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSection["Key"])),
+            ClockSkew = TimeSpan.Zero // Remove default 5-minute clock skew
+        };
         
         var tokenHandler = new JwtSecurityTokenHandler();
-        SecurityToken securityToken;
-        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
+        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
         var jwtSecurityToken = securityToken as JwtSecurityToken;
         
         if (jwtSecurityToken is null || !jwtSecurityToken.Header.Alg
@@ -275,21 +270,6 @@ public class JwtService: IJwtService
         return principal;
     }
     
-    private TokenValidationParameters CreateTokenValidationParameters()
-    {
-        return new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = _jwtSection["Issuer"],
-            ValidAudience = _jwtSection["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSection["Key"])),
-            ClockSkew = TimeSpan.Zero // Remove default 5-minute clock skew
-        };
-    }
-
     private async Task<User?> GetUserFromRefreshTokenAsync(RefreshToken refreshToken)
     {
         return await _refreshTokenRepository.GetUserFromRefreshTokenAsync(refreshToken.UserId);
