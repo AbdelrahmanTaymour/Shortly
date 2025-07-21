@@ -28,6 +28,13 @@ public interface IShortUrlRepository
     Task<ShortUrl?> GetShortUrlByShortCodeAsync(string shortCode);
     
     /// <summary>
+    /// Checks if a short code already exists in the database.
+    /// </summary>
+    /// <param name="shortCode">The short code to check for existence.</param>
+    /// <returns>True if the short code exists, otherwise false.</returns>
+    Task<bool> ShortCodeExistsAsync(string shortCode);
+    
+    /// <summary>
     /// Creates a new `ShortUrl` entity in the database.
     /// </summary>
     /// <param name="shortUrl">The <see cref="ShortUrl"/> object to be created.</param>

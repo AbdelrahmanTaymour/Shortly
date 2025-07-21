@@ -35,14 +35,40 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
     {
         var shortUrlDomain = _mapper.Map<ShortUrl>(shortUrlRequest);
         
-        //TODO: IMPROVE SHORTEN CODE ALGORITHM
+        // Enhanced URL generation algorithm with multiple strategies
+        string shortCode;
         
-        
-        shortUrlDomain = await _shortUrlRepository.CreateShortUrlAsync(shortUrlDomain);
-        if (shortUrlDomain is null)
-            throw new Exception("Error creating short url");
+        // Check if custom short code is provided
+        if (!string.IsNullOrEmpty(shortUrlRequest.CustomShortCode))
+        {
+            // Validate custom short code
+            var (isValid, errorMessage) = EnhancedUrlCodeGenerator.ValidateCustomCode(shortUrlRequest.CustomShortCode);
+            if (!isValid)
+                throw new ArgumentException($"Invalid custom short code: {errorMessage}");
+                
+            // Check if custom code already exists
+            if (await _shortUrlRepository.ShortCodeExistsAsync(shortUrlRequest.CustomShortCode))
+                throw new ArgumentException("Custom short code already exists");
+                
+            shortCode = shortUrlRequest.CustomShortCode;
+        }
+        else
+        {
+            // Create entity first to get ID
+            shortUrlDomain = await _shortUrlRepository.CreateShortUrlAsync(shortUrlDomain);
+            if (shortUrlDomain is null)
+                throw new Exception("Error creating short url");
             
-        shortUrlDomain.ShortCode = Base62Converter.Encode(shortUrlDomain.Id);
+            // Generate optimized short code using the new algorithm
+            shortCode = await EnhancedUrlCodeGenerator.GenerateCodeAsync(
+                shortUrlDomain.Id, 
+                _shortUrlRepository, 
+                GetOptimalCodeLength()
+            );
+        }
+        
+        // Update the entity with the generated/custom short code
+        shortUrlDomain.ShortCode = shortCode;
         await _shortUrlRepository.SaveChangesAsync();
         
         return _mapper.Map<ShortUrlResponse>(shortUrlDomain);
@@ -79,5 +105,20 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
         }
 
         return _mapper.Map<StatusShortUrlResponse>(existingUrl);
+    }
+    
+    /// <summary>
+    /// Determines optimal code length based on current URL count and growth projections
+    /// </summary>
+    private int GetOptimalCodeLength()
+    {
+        // For now, use a conservative approach
+        // In production, you could query the database for current URL count
+        // and use EnhancedUrlCodeGenerator.RecommendCodeLength()
+        
+        const long projectedUrls = 10_000_000; // 10 million URLs projection
+        const double maxCollisionProbability = 0.001; // 0.1% collision rate
+        
+        return EnhancedUrlCodeGenerator.RecommendCodeLength(projectedUrls, maxCollisionProbability);
     }
 }
