@@ -71,4 +71,11 @@ public interface IShortUrlRepository
     /// <param name="shortCode">The unique short code of the <see cref="ShortUrl"/> whose access count is to be incremented.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     Task IncrementAccessCountAsync(string shortCode);
+    
+    /// <summary>
+    /// Checks if a short code already exists in the database.
+    /// </summary>
+    /// <param name="shortCode">The short code to check for existence.</param>
+    /// <returns>True if the short code exists, otherwise false.</returns>
+    Task<bool> ShortCodeExistsAsync(string shortCode);
 }

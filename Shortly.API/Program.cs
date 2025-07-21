@@ -26,6 +26,17 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontend", policy =>
+            {
+                policy.WithOrigins("http://127.0.0.1:5501") // MUST match exactly
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
+        
         // Add Infrastructure Services
         builder.Services.AddInfrastructure(builder.Configuration);
         builder.Services.AddCore();
@@ -90,10 +101,12 @@ public class Program
                         new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
                     ClockSkew = TimeSpan.Zero
                 });
-        //builder.Services.AddScoped<IJwtService, JwtService>();
+        
         
         var app = builder.Build();
 
+        app.UseCors("AllowFrontend");
+        
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
@@ -104,6 +117,7 @@ public class Program
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         app.UseRouting();
+        
         app.UseHttpsRedirection();
 
         app.UseAuthentication();
