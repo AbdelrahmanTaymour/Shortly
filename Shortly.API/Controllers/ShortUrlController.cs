@@ -36,6 +36,11 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     /// </summary>
     /// <param name="shortCode">The short code of the URL to retrieve.</param>
     /// <returns> <see cref="ShortUrlResponse"/> that contains the original URL and shortened URL details.</returns>
+    /// <remarks>
+    /// Using RedirectPermanent (301) causes the browser to cache the redirect,
+    /// so future requests skip the server entirely and go straight to the target URL.
+    /// This results in the access counter increasing only once per browser.
+    /// </remarks>
     [HttpGet("{shortCode}", Name = "GetByShortCode")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ShortUrlResponse), StatusCodes.Status200OK)]
@@ -48,6 +53,9 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
             return NotFound();
         }
 
+        // Using RedirectPermanent (301) causes the browser to cache the redirect,
+        // so future requests skip the server entirely and go straight to the target URL.
+        // This results in the access counter increasing only once per browser.
         return RedirectPermanent(shortUrlResponse.OriginalUrl);
     }
     
