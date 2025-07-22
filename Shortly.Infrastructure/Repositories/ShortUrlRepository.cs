@@ -108,8 +108,13 @@ internal class ShortUrlRepository(SQLServerDbContext dbContext) : IShortUrlRepos
                 s.SetProperty(x => x.AccessCount, x => x.AccessCount + 1));
     }
 
-    public Task<bool> ShortCodeExistsAsync(string shortCode)
+    public async Task<bool> ShortCodeExistsAsync(string shortCode)
     {
-        return _dbContext.ShortUrls.AnyAsync(s => s.ShortCode == shortCode);
+        return await _dbContext.ShortUrls.AnyAsync(s => s.ShortCode == shortCode);
+    }
+
+    public async Task<int> GetShortUrlCountAsync()
+    {
+        return await _dbContext.ShortUrls.CountAsync();
     }
 }

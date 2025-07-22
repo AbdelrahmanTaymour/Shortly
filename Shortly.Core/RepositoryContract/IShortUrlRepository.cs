@@ -78,4 +78,7 @@ public interface IShortUrlRepository
     /// <param name="shortCode">The short code to check for existence.</param>
     /// <returns>True if the short code exists, otherwise false.</returns>
     Task<bool> ShortCodeExistsAsync(string shortCode);
+    
+    
+    Task<int> GetShortUrlCountAsync();
 }
