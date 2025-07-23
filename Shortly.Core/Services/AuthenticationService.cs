@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Authentication;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,21 +8,67 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core.DTOs;
-using Shortly.Core.Entities;
+using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.ServiceContracts;
 
 namespace Shortly.Core.Services;
 
-public class JwtService(IRefreshTokenRepository refreshTokenRepository, 
-    IConfiguration configuration, ILogger<JwtService> logger): IJwtService
+public class AuthenticationService(IUserRepository userRepository,IRefreshTokenRepository refreshTokenRepository,
+    IConfiguration configuration, ILogger<AuthenticationService> logger): IAuthenticationService
 {
     private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
-    private readonly ILogger<JwtService> _logger = logger;
+    private readonly ILogger<AuthenticationService> _logger = logger;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly IConfiguration _configuration = configuration;
     private readonly IConfigurationSection _jwtSection = configuration.GetSection("Jwt");
-    
 
+    public async Task<AuthenticationResponse?> Login(LoginRequest loginRequest)
+    {
+        var user = await _userRepository.GetUserByEmail(loginRequest.Email);
+    
+        if (user == null)
+        {
+            throw new AuthenticationException("Invalid email or password.");
+        }
+
+        //Verify the password matches the hashed password
+        if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.Password))
+        {
+            throw new AuthenticationException("Invalid email or password.");
+        }
+
+        var tokens = GenerateTokensAsync(user);
+        
+        return new AuthenticationResponse(user.Id, user.Name, user.Email, tokens.Result, true);
+    }
+
+    public async Task<AuthenticationResponse?> Register(RegisterRequest registerRequest)
+    {
+        bool userExists =
+            await _userRepository.IsEmailOrUsernameTaken(registerRequest.Email, registerRequest.Username);
+        
+        if (userExists)
+            throw new Exception("User with the same username or email already exists.");
+        
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Name = registerRequest.Name,
+            Email = registerRequest.Email,
+            Username = registerRequest.Username,
+            Password = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password), // Hash the Password
+        };
+        
+        var stopwatch2 = Stopwatch.StartNew();
+        user = await _userRepository.AddUser(user);
+        var tokens = GenerateTokensAsync(user);
+        stopwatch2.Stop();
+        Console.WriteLine($"With Add and generate tokens in register Time: {stopwatch2.ElapsedMilliseconds}ms");
+        
+        return new AuthenticationResponse(user.Id, user.Name, user.Email, tokens.Result, true);
+    }
+    
     public async Task<TokenResponse> GenerateTokensAsync(User user)
     {
         try

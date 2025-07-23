@@ -9,10 +9,9 @@ namespace Shortly.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IUsersService usersService, IJwtService jwtService) : ControllerBase
+public class AuthController(IAuthenticationService authenticationService) : ControllerBase
 {
-    private readonly IUsersService _usersService = usersService;
-    private readonly IJwtService _jwtService = jwtService;
+    private readonly IAuthenticationService _authenticationService = authenticationService;
 
     
     [HttpPost("register", Name = "Register")]
@@ -26,7 +25,7 @@ public class AuthController(IUsersService usersService, IJwtService jwtService) 
     [SwaggerResponse(StatusCodes.Status500InternalServerError, "Internal server error")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        AuthenticationResponse? authResponse = await _usersService.Register(request);
+        AuthenticationResponse? authResponse = await _authenticationService.Register(request);
         if (authResponse is null || !authResponse.Success)
         {
             return BadRequest();
@@ -46,7 +45,7 @@ public class AuthController(IUsersService usersService, IJwtService jwtService) 
     [SwaggerResponse(StatusCodes.Status500InternalServerError, "Internal server error")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        AuthenticationResponse? authResponse = await _usersService.Login(request);
+        AuthenticationResponse? authResponse = await _authenticationService.Login(request);
         if (authResponse is null || !authResponse.Success)
         {
             return BadRequest();
@@ -71,7 +70,7 @@ public class AuthController(IUsersService usersService, IJwtService jwtService) 
             return BadRequest("Invalid refresh token request");
         }
 
-        var response = await _jwtService.RefreshTokenAsync(refreshTokenRequest.RefreshToken, extendExpiry: false);
+        var response = await _authenticationService.RefreshTokenAsync(refreshTokenRequest.RefreshToken, extendExpiry: false);
         if (response == null)
         {
             return Unauthorized("Invalid or expired refresh token");
