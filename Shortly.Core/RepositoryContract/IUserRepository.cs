@@ -1,4 +1,4 @@
-using Shortly.Core.Entities;
+using Shortly.Domain.Entities;
 
 namespace Shortly.Core.RepositoryContract;
 
