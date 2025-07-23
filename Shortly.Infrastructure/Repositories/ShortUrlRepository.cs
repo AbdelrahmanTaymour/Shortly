@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Shortly.Core.Entities;
+using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
 using Shortly.Infrastructure.DbContexts;
 

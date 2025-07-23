@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Shortly.Core.Entities;
+using Shortly.Domain.Entities;
 using Shortly.Infrastructure.DbContexts.Configurations;
 
 namespace Shortly.Infrastructure.DbContexts;

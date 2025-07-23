@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Shortly.Core.Entities;
+using Shortly.Domain.Entities;
 
 namespace Shortly.Infrastructure.DbContexts.Configurations;
 

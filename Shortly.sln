@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.Infrastructure", "S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.Core", "Shortly.Core\Shortly.Core.csproj", "{9C8BEEE3-AB93-473B-86C6-0674510E382E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.Domain", "Shortly.Domain\Shortly.Domain.csproj", "{DF59F271-5975-435F-8878-2F888F33B0E4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{9C8BEEE3-AB93-473B-86C6-0674510E382E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C8BEEE3-AB93-473B-86C6-0674510E382E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C8BEEE3-AB93-473B-86C6-0674510E382E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF59F271-5975-435F-8878-2F888F33B0E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF59F271-5975-435F-8878-2F888F33B0E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF59F271-5975-435F-8878-2F888F33B0E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF59F271-5975-435F-8878-2F888F33B0E4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

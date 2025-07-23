@@ -1,6 +1,6 @@
 using AutoMapper;
 using Shortly.Core.DTOs;
-using Shortly.Core.Entities;
+using Shortly.Domain.Entities;
 
 namespace Shortly.Core.Mappers;
 

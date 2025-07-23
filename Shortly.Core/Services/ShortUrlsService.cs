@@ -1,9 +1,9 @@
 using AutoMapper;
 using Shortly.Core.DTOs;
-using Shortly.Core.Entities;
+using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.ServiceContracts;
-using Shortly.Core.Utilities;
+using Shortly.Core.Extensions;
 
 namespace Shortly.Core.Services;
 
@@ -35,11 +35,11 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
     {
         var shortUrlDomain = _mapper.Map<ShortUrl>(shortUrlRequest);
         
-        // Check if custom short code is provided
+        // Check if a custom short code is provided
         if (!string.IsNullOrEmpty(shortUrlRequest.CustomShortCode))
         {
             // Validate custom short code
-            var (isValid, errorMessage) = UrlCodeGenerator.ValidateCustomCode(shortUrlRequest.CustomShortCode);
+            var (isValid, errorMessage) = UrlCodeExtensions.ValidateCustomCode(shortUrlRequest.CustomShortCode);
             if (!isValid)
                 throw new ArgumentException($"Invalid custom short code: {errorMessage}");
                 
@@ -62,7 +62,7 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
                 throw new Exception("Error creating short url");
             
             // Generate optimized short code 
-            var shortCode = await UrlCodeGenerator.GenerateCodeAsync(
+            var shortCode = await UrlCodeExtensions.GenerateCodeAsync(
                 shortUrlDomain.Id, 
                 _shortUrlRepository,
                 await GetOptimalCodeLength()
@@ -116,8 +116,8 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
     private async Task<int> GetOptimalCodeLength()
     {
         var projectedUrls = await _shortUrlRepository.GetShortUrlCountAsync();
-        double maxCollisionProbability = UrlCodeGenerator.GetCollisionProbability(6, projectedUrls);
+        double maxCollisionProbability = UrlCodeExtensions.GetCollisionProbability(6, projectedUrls);
         
-        return UrlCodeGenerator.RecommendCodeLength(projectedUrls, maxCollisionProbability);
+        return UrlCodeExtensions.RecommendCodeLength(projectedUrls, maxCollisionProbability);
     }
 }
