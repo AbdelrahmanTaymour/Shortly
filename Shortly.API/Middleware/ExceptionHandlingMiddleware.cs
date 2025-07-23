@@ -1,4 +1,5 @@
 using System.Security.Authentication;
+using FluentValidation;
 
 namespace Shortly.API.Middleware;
 
@@ -37,6 +38,17 @@ public class ExceptionHandlingMiddleware
         try
         {
             await _next(httpContext);
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogWarning("Validation failed: {Message}", ex.Message);
+
+            httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await httpContext.Response.WriteAsJsonAsync(new
+            {
+                Message = ex.Message,
+                Type = ex.GetType().ToString()
+            });
         }
         catch (Exception ex)
         {
