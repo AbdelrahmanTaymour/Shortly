@@ -2,12 +2,12 @@ using System.Security.Cryptography;
 using System.Text;
 using Shortly.Core.RepositoryContract;
 
-namespace Shortly.Core.Utilities;
+namespace Shortly.Core.Extensions;
 
 /// <summary>
 /// Enhanced URL code generator with multiple strategies for optimal performance and collision avoidance
 /// </summary>
-public static class UrlCodeGenerator
+public static class UrlCodeExtensions
 {
     // Optimized character set (no confusing characters like 0, O, I, l, 1)
     private const string SafeCharacters = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
