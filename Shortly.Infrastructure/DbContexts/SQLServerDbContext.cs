@@ -17,6 +17,8 @@ public class SQLServerDbContext: DbContext
     public DbSet<ShortUrl> ShortUrls { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<Organization> Organizations { get; set; }
+    public DbSet<OrganizationMember> OrganizationMembers { get; set; }
 
     /// <summary>
     /// Configures the model for the ShortlyDbContext by applying entity configurations and other custom settings.
@@ -27,7 +29,11 @@ public class SQLServerDbContext: DbContext
         base.OnModelCreating(modelBuilder);
         
         modelBuilder.ApplyConfiguration(new ShortUrlConfiguration());
+        modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new OrganizationConfiguration());
+        modelBuilder.ApplyConfiguration(new OrganizationMemberConfiguration());
 
-        
+
     }
 }

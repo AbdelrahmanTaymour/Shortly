@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core.DTOs.AuthDTOs;
+using Shortly.Core.DTOs.ValidationDTOs;
 using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.ServiceContracts;
@@ -23,6 +24,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
     private readonly IConfiguration _configuration = configuration;
     private readonly IConfigurationSection _jwtSection = configuration.GetSection("Jwt");
 
+    
     public async Task<AuthenticationResponse?> Login(LoginRequest loginRequest)
     {
         var user = await _userRepository.GetUserByEmail(loginRequest.Email);
@@ -60,11 +62,8 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
             Password = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password), // Hash the Password
         };
         
-        var stopwatch2 = Stopwatch.StartNew();
         user = await _userRepository.AddUser(user);
         var tokens = GenerateTokensAsync(user);
-        stopwatch2.Stop();
-        Console.WriteLine($"With Add and generate tokens in register Time: {stopwatch2.ElapsedMilliseconds}ms");
         
         return new AuthenticationResponse(user.Id, user.Name, user.Email, tokens.Result, true);
     }
@@ -149,13 +148,13 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         }
     }
     
-    public TokenValidationResulDto ValidateToken(string token, bool validateLifetime = true)
+    public TokenValidationResultDto ValidateToken(string token, bool validateLifetime = true)
     {
         try
         {
             var principal = GetPrincipalFromExpiredToken(token, validateLifetime);
 
-            return new TokenValidationResulDto
+            return new TokenValidationResultDto
             (
                 IsValid: true,
                 Principal: principal
@@ -164,7 +163,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Token validation failed");
-            return new TokenValidationResulDto
+            return new TokenValidationResultDto
             (
                 IsValid: false,
                 ErrorMessage: ex.Message

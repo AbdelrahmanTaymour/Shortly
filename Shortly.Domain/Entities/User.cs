@@ -10,10 +10,9 @@ public class User
     public string Email { get; set; }
     public string Username { get; set; }
     public string Password { get; set; }
-
     public enSubscriptionPlan SubscriptionPlan { get; set; } = enSubscriptionPlan.Free;
     public enUserRole Role { get; set; } = enUserRole.StandardUser;
-
     public bool IsActive { get; set; } = true;
+    public DateTime UpdatedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

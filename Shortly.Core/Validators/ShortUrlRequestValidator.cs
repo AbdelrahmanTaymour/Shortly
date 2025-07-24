@@ -3,7 +3,7 @@ using Shortly.Core.DTOs.ShortUrlDTOs;
 
 namespace Shortly.Core.Validators;
 
-public sealed class ShortUrlRequestValidator: AbstractValidator<ShortUrlRequest>
+public class ShortUrlRequestValidator: AbstractValidator<ShortUrlRequest>
 {
     public ShortUrlRequestValidator()
     {
