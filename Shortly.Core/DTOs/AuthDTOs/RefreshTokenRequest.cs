@@ -1,3 +1,3 @@
-namespace Shortly.Core.DTOs;
+namespace Shortly.Core.DTOs.AuthDTOs;
 
 public record RefreshTokenRequest(string RefreshToken);

@@ -1,4 +1,4 @@
-namespace Shortly.Core.DTOs;
+namespace Shortly.Core.DTOs.ShortUrlDTOs;
 
 public record ShortUrlResponse(
     int Id,

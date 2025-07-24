@@ -1,6 +1,6 @@
 using System.Security.Authentication;
 using FluentValidation;
-using Shortly.Core.DTOs;
+using Shortly.Core.DTOs.ValidationDTOs;
 
 namespace Shortly.API.Middleware;
 

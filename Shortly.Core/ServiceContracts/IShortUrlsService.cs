@@ -1,4 +1,4 @@
-using Shortly.Core.DTOs;
+using Shortly.Core.DTOs.ShortUrlDTOs;
 
 namespace Shortly.Core.ServiceContracts;
 

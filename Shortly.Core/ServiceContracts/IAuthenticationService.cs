@@ -1,4 +1,4 @@
-using Shortly.Core.DTOs;
+using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Core.ServiceContracts;

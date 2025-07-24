@@ -1,7 +1,8 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.Core.DTOs;
+using Shortly.Core.DTOs.ShortUrlDTOs;
+using Shortly.Core.DTOs.ValidationDTOs;
 using Shortly.Core.ServiceContracts;
 using Shortly.Domain.Enums;
 using Swashbuckle.AspNetCore.Annotations;

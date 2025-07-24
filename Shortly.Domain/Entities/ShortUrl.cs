@@ -13,7 +13,7 @@ public class ShortUrl
     public DateTime UpdatedAt { get; set; }
     public int AccessCount { get; set; } = 0;
     public bool IsActive { get; set; } = true;
-    public string? ApiKey { get; set; }
+    public string? ApiKey { get; set; } = null;
     
     // Navigation properties
     public User? User { get; set; }

@@ -1,5 +1,5 @@
 using FluentValidation;
-using Shortly.Core.DTOs;
+using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Core.RepositoryContract;
 
 namespace Shortly.Core.Validators;

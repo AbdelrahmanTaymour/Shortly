@@ -7,7 +7,7 @@ public class OrganizationMember
     public Guid Id { get; set; }
     public Guid OrganizationId { get; set; }
     public Guid UserId { get; set; }
-    public enUserRole Role { get; set; }
+    public enUserRole Role { get; set; } = enUserRole.StandardUser;
     public enPermissions CustomPermissions { get; set; } = enPermissions.None;
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;

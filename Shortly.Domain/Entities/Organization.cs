@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Shortly.Domain.Enums;
 
 namespace Shortly.Domain.Entities;
@@ -6,7 +7,7 @@ public class Organization
 {
     public Guid Id { get; set; }
     public string Name { get; set; }
-    public enSubscriptionPlan SubscriptionPlan { get; set; }
+    public enSubscriptionPlan SubscriptionPlan { get; set; } = enSubscriptionPlan.Enterprise;
     public Guid OwnerId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     // TODO: public Dictionary<string, object> Settings { get; set; } = new();

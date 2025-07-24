@@ -1,5 +1,5 @@
 using AutoMapper;
-using Shortly.Core.DTOs;
+using Shortly.Core.DTOs.ShortUrlDTOs;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Core.Mappers;
