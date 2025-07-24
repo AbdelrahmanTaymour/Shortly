@@ -12,7 +12,6 @@ namespace Shortly.API.Controllers;
 public class AuthController(IAuthenticationService authenticationService) : ControllerBase
 {
     private readonly IAuthenticationService _authenticationService = authenticationService;
-
     
     [HttpPost("register", Name = "Register")]
     [ProducesResponseType(typeof(AuthenticationResponse), StatusCodes.Status200OK)]
