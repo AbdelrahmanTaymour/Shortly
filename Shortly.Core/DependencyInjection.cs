@@ -28,9 +28,8 @@ public static class DependencyInjection
     {
         // Register Core-related services.
         services.AddScoped<IShortUrlsService, ShortUrlsService>();
-        services.AddScoped<IUsersService, UsersService>();
-        services.AddScoped<IJwtService, JwtService>();
-
+        services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<IAuthorizationService, AuthorizationService>();
 
         services.AddValidatorsFromAssemblyContaining<ShortUrlRequestValidator>();
         
