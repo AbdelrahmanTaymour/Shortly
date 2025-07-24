@@ -1,5 +1,6 @@
 using System.Security.Authentication;
 using FluentValidation;
+using Shortly.Core.DTOs;
 
 namespace Shortly.API.Middleware;
 
@@ -39,16 +40,27 @@ public class ExceptionHandlingMiddleware
         {
             await _next(httpContext);
         }
+        catch (AuthenticationException ex)
+        {
+            _logger.LogWarning("Authentication failed: {Message}", ex.Message);
+            
+            httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await httpContext.Response.WriteAsJsonAsync(new ExceptionResponseDto
+            (
+                Message: ex.Message,
+                Type: ex.GetType().ToString()
+            ));
+        }
         catch (ValidationException ex)
         {
             _logger.LogWarning("Validation failed: {Message}", ex.Message);
 
             httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await httpContext.Response.WriteAsJsonAsync(new
-            {
-                Message = ex.Message,
-                Type = ex.GetType().ToString()
-            });
+            await httpContext.Response.WriteAsJsonAsync(new ExceptionResponseDto
+            (
+                Message: ex.Message,
+                Type: ex.GetType().ToString()
+            ));
         }
         catch (Exception ex)
         {
@@ -60,11 +72,11 @@ public class ExceptionHandlingMiddleware
             }
             
             httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await httpContext.Response.WriteAsJsonAsync(new
-            {
-                Message = ex.Message,
-                Type = ex.GetType().ToString()
-            });
+            await httpContext.Response.WriteAsJsonAsync(new ExceptionResponseDto
+            (
+                Message: ex.Message,
+                Type: ex.GetType().ToString()
+            ));
 
         }
     }
@@ -85,3 +97,4 @@ public static class ExceptionHandlingMiddlewareExtensions
         return builder.UseMiddleware<ExceptionHandlingMiddleware>();
     }
 }
+

@@ -4,12 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using Shortly.Core.DTOs;
 using Shortly.Core.ServiceContracts;
 using Shortly.Domain.Enums;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Shortly.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class ShortUrlController(IShortUrlsService shortUrlsService) : ControllerBase
 {
     private readonly IShortUrlsService _shortUrlsService = shortUrlsService;
@@ -29,8 +30,6 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
         return Ok(shortUrls);
     }
     
-    
-    
     /// <summary>
     /// Retrieve the original URL from a short URL
     /// </summary>
@@ -42,9 +41,10 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     /// This results in the access counter increasing only once per browser.
     /// </remarks>
     [HttpGet("{shortCode}", Name = "GetByShortCode")]
+    [ProducesResponseType(typeof(ShortUrlResponse), StatusCodes.Status301MovedPermanently)]
+    [ProducesResponseType(typeof(ExceptionResponseDto),StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ExceptionResponseDto),StatusCodes.Status500InternalServerError)]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ShortUrlResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByShortCode(string shortCode)
     {
         var shortUrlResponse = await _shortUrlsService.GetByShortCodeAsync(shortCode);
@@ -52,14 +52,8 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
         {
             return NotFound();
         }
-
-        // Using RedirectPermanent (301) causes the browser to cache the redirect,
-        // so future requests skip the server entirely and go straight to the target URL.
-        // This results in the access counter increasing only once per browser.
         return RedirectPermanent(shortUrlResponse.OriginalUrl);
     }
-    
-    
     
     /// <summary>
     /// Creates a new shortened URL.
@@ -68,14 +62,13 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     /// <returns>The newly created <see cref="ShortUrlResponse"/> for the shortened URL.</returns>
     [HttpPost(Name = "CreateShortUrl")]
     [ProducesResponseType(typeof(ShortUrlResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateShortUrl([FromBody] ShortUrlRequest shortUrlRequest)
     {
         var shortUrlResponse = await _shortUrlsService.CreateShortUrlAsync(shortUrlRequest);
         return CreatedAtAction(nameof(GetByShortCode), new { shortCode = shortUrlResponse.ShortCode }, shortUrlResponse);
     }
-    
-    
     
     /// <summary>
     /// Update an existing URL by its short code.
@@ -86,7 +79,8 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     [HttpPut("shortcode/{shortCode}", Name = "UpdateShortUrlByShortCode")]
     [ProducesResponseType(typeof(ShortUrlRequest), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ExceptionResponseDto),StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateShortUrlByShortCode(string shortCode, [FromBody] ShortUrlRequest updatedShortUrl)
     {
         var shortUrlResponse = await _shortUrlsService.UpdateShortUrlAsync(shortCode, updatedShortUrl);
@@ -96,8 +90,6 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
         }
         return Ok(shortUrlResponse);
     }
-    
-    
     
     /// <summary>
     /// Delete an existing short URL by its short code.
@@ -116,8 +108,6 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
         }
         return NoContent();
     }
-    
-    
     
     /// <summary>
     /// Retrieve statistics for a short URL.

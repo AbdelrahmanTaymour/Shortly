@@ -1,22 +1,14 @@
 using System.Text;
-using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core;
-using Shortly.Core.DTOs;
 using Shortly.Core.Mappers;
-using Shortly.Core.ServiceContracts;
-using Shortly.Core.Validators;
 using Shortly.Infrastructure;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
+using Shortly.API.Authorization;
 using Shortly.API.Middleware;
-using Shortly.Core.Services;
-
-//using Shortly.Core.Authentication;
-
 
 namespace Shortly.API;
 
@@ -26,35 +18,35 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.Services.AddCors(options =>
-        {
-            options.AddPolicy("AllowFrontend", policy =>
-            {
-                policy.WithOrigins("http://127.0.0.1:5501") // MUST match exactly
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
-            });
-        });
-        
-        // Add Infrastructure Services
-        builder.Services.AddInfrastructure(builder.Configuration);
-        builder.Services.AddCore();
-        
-        // Add services to the container.
-
         builder.Services.AddControllers();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
+        
+        // Add AutoMapper
+        builder.Services.AddAutoMapper(typeof(ShortUrlMappingProfile).Assembly);
+        
+        // FluentValidations
+        builder.Services.AddFluentValidationAutoValidation();
+        
+        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddSwaggerGen(options =>
         {
-            options.SwaggerDoc("v1", new OpenApiInfo{Title = "Shortly API", Version = "v1"});
+            options.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "Shortly API", 
+                Version = "v1",
+                Description = "API documentation for the Link Management System",
+            });
+            
+            // JWT Authentication
             options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
             {
+                Description =
+                    "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
                 Name = "Authorization",
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.ApiKey,
-                Scheme = JwtBearerDefaults.AuthenticationScheme
+                Scheme = JwtBearerDefaults.AuthenticationScheme,
+                BearerFormat = "JWT"
             });
             
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -76,11 +68,14 @@ public class Program
             });
         });
         builder.Services.AddSwaggerGen();
-
-        builder.Services.AddAutoMapper(typeof(ShortUrlMappingProfile).Assembly);
         
-        // FluentValidations
-        builder.Services.AddFluentValidationAutoValidation();
+        // Register Services
+        builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddCore();
+
+        //Authorization
+        builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        builder.Services.AddUrlShortenerAuthorization();
 
         // Authentication
         builder.Services.AddAuthentication(options =>
@@ -102,11 +97,20 @@ public class Program
                     ClockSkew = TimeSpan.Zero
                 });
         
-        
+        // Register CORS policy
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontend", policy =>
+            {
+                policy.WithOrigins("http://127.0.0.1:5501") // MUST match exactly
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
         var app = builder.Build();
 
         app.UseCors("AllowFrontend");
-        
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
@@ -114,32 +118,15 @@ public class Program
             app.UseSwaggerUI();
         }
         
+        // Exception Handling
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         app.UseRouting();
-        
         app.UseHttpsRedirection();
-
         app.UseAuthentication();
         app.UseAuthorization();
-        
         app.MapControllers();
         
-        /*app.Map("/{shortCode}", async (string shortCode, IShortUrlsService service, HttpContext context) =>
-        {
-            var urlData = await service.GetByShortCodeAsync(shortCode);
-            if (urlData == null)
-            {
-                context.Response.StatusCode = 404;
-                await context.Response.WriteAsync("Short URL not found.");
-                return;
-            }
-
-            context.Response.Redirect(urlData.OriginalUrl!); // 302 Redirect
-        });
-        */
-
-
         app.Run();
     }
 }
