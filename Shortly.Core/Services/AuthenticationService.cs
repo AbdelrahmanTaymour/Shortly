@@ -104,41 +104,46 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
     {
         try
         {
-            // Validate refresh token
             var storedRefreshToken = await _refreshTokenRepository
                 .GetRefreshTokenAsync(SHA256Extensions.ComputeHash(refreshToken));
-            if (storedRefreshToken == null || !storedRefreshToken.IsActive)
+            
+            // Validate refresh token
+            if (storedRefreshToken == null)
             {
-                _logger.LogWarning("Invalid refresh token attempted: {Token}", refreshToken);
+                _logger.LogWarning("Invalid refresh token attempted");
                 throw new SecurityTokenException("Invalid refresh token");
             }
-            
-            // Get user from token
-            var user = await GetUserFromRefreshTokenAsync(storedRefreshToken);
-            if (user == null)
+
+            // Remove the Invalid refresh token
+            if (!storedRefreshToken.IsActive)
             {
-                _logger.LogWarning("User not found for refresh token: {UserId}", storedRefreshToken.UserId);
-                throw new SecurityTokenException("User not found");
+                _logger.LogWarning("Inactive refresh token attempted for user {UserId}", storedRefreshToken.UserId);
+                await _refreshTokenRepository.RemoveRefreshTokenAsync(storedRefreshToken);
+                throw new SecurityTokenException("Invalid refresh token");
             }
 
-            // Update refresh token
-            storedRefreshToken.Token = GenerateRefreshTokenString();
+            // Generate new refresh token string
+            var newRefreshToken = GenerateRefreshTokenString();
+            
+            // Update Refresh Token entity
             if(extendExpiry)
             {
                 storedRefreshToken.ExpiresAt =
-                    DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"]));
+                    DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] 
+                                                         ?? throw new InvalidOperationException()));
             }
+            storedRefreshToken.Token = SHA256Extensions.ComputeHash(newRefreshToken);
             await _refreshTokenRepository.SaveChangesAsync();
 
             // Generate new tokens
-            var newAccessToken = GenerateAccessToken(user);
+            var newAccessToken = GenerateAccessToken(storedRefreshToken.User);
 
-            _logger.LogInformation("Tokens refreshed successfully for user {UserId}", user.Id);
+            _logger.LogInformation("Tokens refreshed successfully for user {UserId}", storedRefreshToken.User.Id);
 
             return new TokenResponse
             (
                 AccessToken: newAccessToken,
-                RefreshToken: storedRefreshToken.Token,
+                RefreshToken: newRefreshToken,
                 AccessTokenExpiry: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"])),
                 RefreshTokenExpiry: storedRefreshToken.ExpiresAt
             );
@@ -150,6 +155,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         }
     }
     
+   
     public TokenValidationResultDto ValidateToken(string token, bool validateLifetime = true)
     {
         try
@@ -177,7 +183,8 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
     {
         try
         {
-            var storedRefreshToken = await _refreshTokenRepository.GetRefreshTokenAsync(refreshToken);
+            var storedRefreshToken = await _refreshTokenRepository
+                .GetRefreshTokenAsync(SHA256Extensions.ComputeHash(refreshToken));
             if (storedRefreshToken != null && storedRefreshToken.IsActive)
             {
                 storedRefreshToken.IsRevoked = true;
@@ -197,6 +204,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         try
         {
             var activeTokens = await _refreshTokenRepository.GetAllActiveRefreshTokensByUserIdAsync(userId);
+            if (activeTokens == null || activeTokens.Count == 0) return;
             foreach (var token in activeTokens)
             {
                 token.IsRevoked = true;
@@ -226,7 +234,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
 
     private SigningCredentials GetSigningCredentials()
     {
-        var key = Encoding.UTF8.GetBytes(_jwtSection["Key"]);
+        var key = Encoding.UTF8.GetBytes(_jwtSection["Key"] ?? throw new InvalidOperationException());
         var secret = new SymmetricSecurityKey(key);
         return new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
     }
@@ -270,8 +278,8 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         var refreshToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
-            Token = SHA256Extensions.ComputeHash(refreshTokenString),
-            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"])),
+            Token = SHA256Extensions.ComputeHash(refreshTokenString), // Hash to store in the database
+            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? throw new InvalidOperationException())),
             CreatedAt = DateTime.UtcNow,
             UserId = userId,
             IsRevoked = false
@@ -282,6 +290,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         {
             throw new InvalidOperationException("Failed to save refresh token");
         }
+        savedToken.Token = refreshTokenString; // Re-assign the token with unhashed token
 
         return savedToken;
     }
@@ -296,7 +305,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
             ValidateIssuerSigningKey = true,
             ValidIssuer = _jwtSection["Issuer"],
             ValidAudience = _jwtSection["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSection["Key"])),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSection["Key"] ?? throw new InvalidOperationException())),
             ClockSkew = TimeSpan.Zero // Remove default 5-minute clock skew
         };
         
