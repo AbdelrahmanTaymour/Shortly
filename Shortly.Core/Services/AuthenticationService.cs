@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Core.DTOs.ValidationDTOs;
+using Shortly.Core.Extensions;
 using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.ServiceContracts;
@@ -104,7 +105,8 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         try
         {
             // Validate refresh token
-            var storedRefreshToken = await _refreshTokenRepository.GetRefreshTokenAsync(refreshToken);
+            var storedRefreshToken = await _refreshTokenRepository
+                .GetRefreshTokenAsync(SHA256Extensions.ComputeHash(refreshToken));
             if (storedRefreshToken == null || !storedRefreshToken.IsActive)
             {
                 _logger.LogWarning("Invalid refresh token attempted: {Token}", refreshToken);
@@ -236,15 +238,9 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
-
-        // TODO: Add role claims
-        // if (user.Roles != null)
-        // {
-        //     claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
-        // }
-
         return claims;
     }
 
@@ -274,7 +270,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         var refreshToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
-            Token = refreshTokenString,
+            Token = SHA256Extensions.ComputeHash(refreshTokenString),
             ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"])),
             CreatedAt = DateTime.UtcNow,
             UserId = userId,
