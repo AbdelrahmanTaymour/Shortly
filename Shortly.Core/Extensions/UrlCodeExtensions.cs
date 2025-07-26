@@ -53,11 +53,11 @@ public static class UrlCodeExtensions
             workingNumber /= Base;
         }
 
-        // Pad to minimum length for consistent URL appearance
-        while (result.Length < minLength)
-        {
-            result.Insert(0, SafeCharacters[0]);
-        }
+        // TODO: Pad to minimum length for consistent URL appearance
+        // while (result.Length < minLength)
+        // {
+        //     result.Insert(0, SafeCharacters[0]);
+        // }
 
         return result.ToString();
     }
