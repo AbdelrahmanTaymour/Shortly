@@ -36,7 +36,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         }
 
         //Verify the password matches the hashed password
-        if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.Password))
+        if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
         {
             throw new AuthenticationException("Invalid email or password.");
         }
@@ -60,7 +60,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
             Name = registerRequest.Name,
             Email = registerRequest.Email,
             Username = registerRequest.Username,
-            Password = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password), // Hash the Password
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password), // Hash the Password
         };
         
         user = await _userRepository.AddUser(user);

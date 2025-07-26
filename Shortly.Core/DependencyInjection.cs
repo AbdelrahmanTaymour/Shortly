@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IShortUrlsService, ShortUrlsService>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IAuthorizationService, AuthorizationService>();
+        services.AddScoped<IUserService, UserService>();
 
         services.AddValidatorsFromAssemblyContaining<ShortUrlRequestValidator>();
         
