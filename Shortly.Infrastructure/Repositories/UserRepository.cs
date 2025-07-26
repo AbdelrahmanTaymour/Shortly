@@ -18,7 +18,7 @@ internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
 
     public async Task<User?> GetUserByEmailAndPassword(string? email, string? password)
     {
-        return await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == email && user.Password == password);
+        return await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == email && user.PasswordHash == password);
     }
     
     public async Task<bool> IsEmailOrUsernameTaken(string email, string username)

@@ -42,7 +42,7 @@ public class OrganizationMemberConfiguration: IEntityTypeConfiguration<Organizat
             .OnDelete(DeleteBehavior.Cascade);
             
         builder.HasOne(e => e.User)
-            .WithMany()
+            .WithMany(u => u.OrganizationMemberships)
             .HasForeignKey(e => e.UserId)
             .OnDelete(DeleteBehavior.Cascade);
     }

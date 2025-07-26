@@ -29,21 +29,15 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
     public async Task<AuthenticationResponse?> Login(LoginRequest loginRequest)
     {
         var user = await _userRepository.GetUserByEmail(loginRequest.Email);
-    
         if (user == null)
-        {
             throw new AuthenticationException("Invalid email or password.");
-        }
 
         //Verify the password matches the hashed password
-        if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.Password))
-        {
+        if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
             throw new AuthenticationException("Invalid email or password.");
-        }
 
-        var tokens = GenerateTokensAsync(user);
-        
-        return new AuthenticationResponse(user.Id, user.Name, user.Email, tokens.Result, true);
+        var tokensResponse = await GenerateTokensAsync(user);
+        return new AuthenticationResponse(user.Id, user.Name, user.Email, tokensResponse, true);
     }
 
     public async Task<AuthenticationResponse?> Register(RegisterRequest registerRequest)
@@ -60,99 +54,76 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
             Name = registerRequest.Name,
             Email = registerRequest.Email,
             Username = registerRequest.Username,
-            Password = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password), // Hash the Password
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password), // Hash the PasswordHash
         };
         
         user = await _userRepository.AddUser(user);
-        var tokens = GenerateTokensAsync(user);
+        if(user == null) throw new Exception("Error creating user");
         
-        return new AuthenticationResponse(user.Id, user.Name, user.Email, tokens.Result, true);
+        var tokensResponse = await GenerateTokensAsync(user);
+        return new AuthenticationResponse(user.Id, user.Name, user.Email, tokensResponse, true);
     }
     
     public async Task<TokenResponse> GenerateTokensAsync(User user)
     {
-        try
-        {
-           // Revoke any existing active refresh tokens for this user
-            await RevokeAllUserTokensAsync(user.Id);
+        // Revoke any existing active refresh tokens for this user
+        await RevokeAllUserTokensAsync(user.Id);
             
-            // Generate an access token
-            var accessToken = GenerateAccessToken(user);
-            var accessTokenExpiry = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"]));
+        // Generate an access token
+        var accessToken = GenerateAccessToken(user);
+        var accessTokenExpiry = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"]));
 
-            // Generate refresh token
-            var refreshToken = await CreateRefreshTokenAsync(user.Id);
-            
-
-            _logger.LogInformation("Tokens generated successfully for user {UserId}", user.Id);
-            return new TokenResponse
-            (
-                AccessToken: accessToken,
-                RefreshToken: refreshToken.Token,
-                AccessTokenExpiry: accessTokenExpiry,
-                RefreshTokenExpiry: refreshToken.ExpiresAt
-            );
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating tokens for user {UserId}", user.Id);
-            throw new InvalidOperationException("Failed to generate authentication tokens", ex);
-        }
+        // Generate refresh token
+        var refreshToken = await CreateRefreshTokenAsync(user.Id);
+        
+        _logger.LogInformation("Tokens generated successfully for user {UserId}", user.Id);
+        return new TokenResponse
+        (
+            AccessToken: accessToken,
+            RefreshToken: refreshToken.Token,
+            AccessTokenExpiry: accessTokenExpiry,
+            RefreshTokenExpiry: refreshToken.ExpiresAt
+        );
     }
 
-    public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken, bool extendExpiry)
+    public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken)
     {
-        try
-        {
-            var storedRefreshToken = await _refreshTokenRepository
-                .GetRefreshTokenAsync(SHA256Extensions.ComputeHash(refreshToken));
+        var storedRefreshToken = await _refreshTokenRepository
+            .GetRefreshTokenAsync(SHA256Extensions.ComputeHash(refreshToken));
             
-            // Validate refresh token
-            if (storedRefreshToken == null)
-            {
-                _logger.LogWarning("Invalid refresh token attempted");
-                throw new SecurityTokenException("Invalid refresh token");
-            }
-
-            // Remove the Invalid refresh token
-            if (!storedRefreshToken.IsActive)
-            {
-                _logger.LogWarning("Inactive refresh token attempted for user {UserId}", storedRefreshToken.UserId);
-                await _refreshTokenRepository.RemoveRefreshTokenAsync(storedRefreshToken);
-                throw new SecurityTokenException("Invalid refresh token");
-            }
-
-            // Generate new refresh token string
-            var newRefreshToken = GenerateRefreshTokenString();
-            
-            // Update Refresh Token entity
-            if(extendExpiry)
-            {
-                storedRefreshToken.ExpiresAt =
-                    DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] 
-                                                         ?? throw new InvalidOperationException()));
-            }
-            storedRefreshToken.Token = SHA256Extensions.ComputeHash(newRefreshToken);
-            await _refreshTokenRepository.SaveChangesAsync();
-
-            // Generate new tokens
-            var newAccessToken = GenerateAccessToken(storedRefreshToken.User);
-
-            _logger.LogInformation("Tokens refreshed successfully for user {UserId}", storedRefreshToken.User.Id);
-
-            return new TokenResponse
-            (
-                AccessToken: newAccessToken,
-                RefreshToken: newRefreshToken,
-                AccessTokenExpiry: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"])),
-                RefreshTokenExpiry: storedRefreshToken.ExpiresAt
-            );
-        }
-        catch (Exception ex)
+        // Validate refresh token
+        if (storedRefreshToken == null)
         {
-            _logger.LogError(ex, "Error refreshing token");
-            throw;
+            _logger.LogWarning("Invalid refresh token attempted");
+            throw new SecurityTokenException("Invalid refresh token");
         }
+
+        // Remove the Invalid refresh token
+        if (!storedRefreshToken.IsActive)
+        {
+            _logger.LogWarning("Inactive refresh token attempted for user {UserId}", storedRefreshToken.UserId);
+            await _refreshTokenRepository.RemoveRefreshTokenAsync(storedRefreshToken);
+            throw new SecurityTokenException("Invalid refresh token");
+        }
+
+        // Generate new refresh token string
+        var newRefreshToken = GenerateRefreshTokenString();
+            
+        // Update Refresh Token entity
+        storedRefreshToken.Token = SHA256Extensions.ComputeHash(newRefreshToken);
+        await _refreshTokenRepository.SaveChangesAsync();
+
+        // Generate new tokens
+        var newAccessToken = GenerateAccessToken(storedRefreshToken.User);
+
+        _logger.LogInformation("Tokens refreshed successfully for user {UserId}", storedRefreshToken.User.Id);
+        return new TokenResponse
+        (
+            AccessToken: newAccessToken,
+            RefreshToken: newRefreshToken,
+            AccessTokenExpiry: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"])),
+            RefreshTokenExpiry: storedRefreshToken.ExpiresAt
+        );
     }
     
    
@@ -181,42 +152,28 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
 
     public async Task RevokeTokenAsync(string refreshToken)
     {
-        try
+       
+        var storedRefreshToken = await _refreshTokenRepository
+            .GetRefreshTokenAsync(SHA256Extensions.ComputeHash(refreshToken));
+        
+        if (storedRefreshToken != null && storedRefreshToken.IsActive)
         {
-            var storedRefreshToken = await _refreshTokenRepository
-                .GetRefreshTokenAsync(SHA256Extensions.ComputeHash(refreshToken));
-            if (storedRefreshToken != null && storedRefreshToken.IsActive)
-            {
-                storedRefreshToken.IsRevoked = true;
-                await _refreshTokenRepository.UpdateRefreshTokenAsync(storedRefreshToken);
-                _logger.LogInformation("Refresh token revoked: {Token}", refreshToken);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error revoking refresh token");
-            throw;
+            storedRefreshToken.IsRevoked = true;
+            await _refreshTokenRepository.UpdateRefreshTokenAsync(storedRefreshToken);
+            _logger.LogInformation("Refresh token revoked: {Token}", refreshToken);
         }
     }
 
     public async Task RevokeAllUserTokensAsync(Guid userId)
     {
-        try
+        var activeTokens = await _refreshTokenRepository.GetAllActiveRefreshTokensByUserIdAsync(userId);
+        if (activeTokens == null || activeTokens.Count == 0) return;
+        foreach (var token in activeTokens)
         {
-            var activeTokens = await _refreshTokenRepository.GetAllActiveRefreshTokensByUserIdAsync(userId);
-            if (activeTokens == null || activeTokens.Count == 0) return;
-            foreach (var token in activeTokens)
-            {
-                token.IsRevoked = true;
-                await _refreshTokenRepository.UpdateRefreshTokenAsync(token);
-            }
-            _logger.LogInformation("All refresh tokens revoked for user {UserId}", userId);
+            token.IsRevoked = true;
+            await _refreshTokenRepository.UpdateRefreshTokenAsync(token);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error revoking all user tokens");
-            throw;
-        }
+        _logger.LogInformation("All refresh tokens revoked for user {UserId}", userId);
     }
 
     

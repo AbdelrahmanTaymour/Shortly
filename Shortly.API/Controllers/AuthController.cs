@@ -57,7 +57,7 @@ public class AuthController(IAuthenticationService authenticationService) : Cont
             return BadRequest("Invalid refresh token request");
         }
 
-        var response = await _authenticationService.RefreshTokenAsync(refreshTokenRequest.RefreshToken, extendExpiry: false);
+        var response = await _authenticationService.RefreshTokenAsync(refreshTokenRequest.RefreshToken);
         if (response == null)
         {
             return Unauthorized("Invalid or expired refresh token");

@@ -58,7 +58,7 @@ public class ShortUrlConfiguration: IEntityTypeConfiguration<ShortUrl>
          
          // Foreign key relationship
          builder.HasOne(e => e.User)
-             .WithMany()
+             .WithMany(s => s.ShortUrls)
              .HasForeignKey(e => e.UserId)
              .OnDelete(DeleteBehavior.SetNull);  // Their URLs become anonymous but still work
     }

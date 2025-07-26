@@ -28,7 +28,7 @@ public class OrganizationConfiguration: IEntityTypeConfiguration<Organization>
         
         // Foreign key relationships
         builder.HasOne(e => e.Owner)
-            .WithMany()
+            .WithMany(u => u.OwnedOrganizations)
             .HasForeignKey(e => e.OwnerId)
             .OnDelete(DeleteBehavior.Restrict); // Prevent cascading delete
             
