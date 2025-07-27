@@ -2,6 +2,7 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Domain.Configuration;
 
+// TODO: REVISIT THIS AFTER BUILDING ALL FEATURE
 public class RoleConfiguration
 {
     public enUserRole Role { get; set; }

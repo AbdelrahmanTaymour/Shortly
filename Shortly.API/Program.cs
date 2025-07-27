@@ -24,8 +24,6 @@ public class Program
             });
         builder.Services.AddEndpointsApiExplorer();
         
-        // Add AutoMapper
-        builder.Services.AddAutoMapper(typeof(ShortUrlMappingProfile).Assembly);
         
         // FluentValidations
         builder.Services.AddFluentValidationAutoValidation();

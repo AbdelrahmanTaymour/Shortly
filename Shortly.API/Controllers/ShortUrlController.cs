@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Shortly.API.Authorization;
 using Shortly.Core.DTOs.ShortUrlDTOs;
 using Shortly.Core.DTOs.ValidationDTOs;
 using Shortly.Core.ServiceContracts;
@@ -9,7 +10,7 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Shortly.API.Controllers;
 
-[Authorize]
+//[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ShortUrlController(IShortUrlsService shortUrlsService) : ControllerBase
@@ -24,10 +25,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     [ProducesResponseType(typeof(List<ShortUrlResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
-        var stopwatch = Stopwatch.StartNew();
         var shortUrls = await _shortUrlsService.GetAllAsync();
-        stopwatch.Stop();
-        Console.WriteLine($"Time: {stopwatch.ElapsedMilliseconds}ms");
         return Ok(shortUrls);
     }
     
@@ -41,11 +39,11 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     /// so future requests skip the server entirely and go straight to the target URL.
     /// This results in the access counter increasing only once per browser.
     /// </remarks>
+    [AllowAnonymous]
     [HttpGet("{shortCode}", Name = "GetByShortCode")]
     [ProducesResponseType(typeof(ShortUrlResponse), StatusCodes.Status301MovedPermanently)]
     [ProducesResponseType(typeof(ExceptionResponseDto),StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto),StatusCodes.Status500InternalServerError)]
-    [AllowAnonymous]
     public async Task<IActionResult> GetByShortCode(string shortCode)
     {
         var shortUrlResponse = await _shortUrlsService.GetByShortCodeAsync(shortCode);
@@ -61,6 +59,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     /// </summary>
     /// <param name="shortUrlRequest">The Short Url DTO that contains the original url to be shortened.</param>
     /// <returns>The newly created <see cref="ShortUrlResponse"/> for the shortened URL.</returns>
+    [AllowAnonymous]
     [HttpPost(Name = "CreateShortUrl")]
     [ProducesResponseType(typeof(ShortUrlResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
@@ -77,7 +76,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     /// <param name="shortCode">The short code of the URL to update.</param>
     /// <param name="updatedShortUrl">The updated URL information.</param>
     /// <returns><see cref="ShortUrlResponse"/> the updated shortened URL.</returns>
-    [HttpPut("shortcode/{shortCode}", Name = "UpdateShortUrlByShortCode")]
+    [HttpPut("{shortCode:required}", Name = "UpdateShortUrlByShortCode")]
     [ProducesResponseType(typeof(ShortUrlRequest), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto),StatusCodes.Status400BadRequest)]
@@ -97,7 +96,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService) : Controller
     /// </summary>
     /// <param name="shortCode">The short code of the URL to delete.</param>
     /// <returns>No content (204) if successful. Otherwise, Not Found (404)</returns>
-    [HttpDelete("shortcode/{shortCode}", Name = "DeleteShortUrlByShortCode")]
+    [HttpDelete("{shortCode}", Name = "DeleteShortUrlByShortCode")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteShortUrlByShortCode(string shortCode)

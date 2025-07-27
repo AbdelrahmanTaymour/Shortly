@@ -1,10 +1,16 @@
 namespace Shortly.Domain.Enums;
 
+
+
+
+// TODO: REVISIT THIS AFTER BUILDING ALL FEATURE
+
+
 [Flags]
 public enum enPermissions : long
 {
     None = 0,
-
+    
     // URL Management
     CreateUrl = 1L << 0,      // 1
     ReadUrl = 1L << 1,        // 2
@@ -46,8 +52,28 @@ public enum enPermissions : long
     ConfigureWebhooks = 1L << 27,   // 134217728
     ManageIntegrations = 1L << 28,  // 268435456
 
+    // User Management - Self Operations (Every authenticated user should have these)
+    ViewOwnProfile = 1L << 29,          // 536870912
+    UpdateOwnProfile = 1L << 30,        // 1073741824
+    DeleteOwnAccount = 1L << 31,        // 2147483648
+    ChangeOwnPassword = 1L << 32,       // 4294967296
+    ManageOwnTwoFactor = 1L << 33,      // 8589934592
+    ViewOwnUsageStats = 1L << 34,       // 17179869184
+
+    // User Management - Administrative Operations
+    ViewAllUsers = 1L << 35,            // 34359738368
+    SearchUsers = 1L << 36,             // 68719476736
+    LockUserAccounts = 1L << 37,        // 137438953472
+    UnlockUserAccounts = 1L << 38,      // 274877906944
+    ActivateUsers = 1L << 39,           // 549755813888
+    DeactivateUsers = 1L << 40,         // 1099511627776
+    ViewUserAnalytics = 1L << 41,       // 2199023255552
+    ManageUserRoles = 1L << 42,         // 4398046511104
+    ViewUserDetails = 1L << 43,         // 8796093022208
+    ResetUserPasswords = 1L << 44,      // 17592186044416
+
     // System Administration
-    SystemAdmin = 1L << 29,     // 536870912
+    SystemAdmin = 1L << 45,             // 35184372088832
 
     // Convenience combinations
     // URL Operations
@@ -63,6 +89,15 @@ public enum enPermissions : long
     // Customization
     CustomizationFeatures = UseCustomDomain | CreateCustomAlias | CreateBrandedLinks | GenerateQrCodes | SetPasswordProtection | SetLinkExpiration,
 
+    // User Self-Management (Basic user permissions)
+    SelfManagement = ViewOwnProfile | UpdateOwnProfile | DeleteOwnAccount | ChangeOwnPassword | ManageOwnTwoFactor | ViewOwnUsageStats,
+
+    // User Administration (Admin permissions for managing other users)
+    UserAdministration = ViewAllUsers | SearchUsers | LockUserAccounts | UnlockUserAccounts | ActivateUsers | DeactivateUsers | ViewUserAnalytics | ViewUserDetails,
+    
+    // Advanced User Administration (Super admin permissions)
+    AdvancedUserAdministration = UserAdministration | ManageUserRoles | ResetUserPasswords,
+
     // Team & Organization
     TeamManagement = InviteTeamMembers | RemoveTeamMembers | ManageTeamRoles,
     OrganizationManagement = ManageOrganization | ManageBilling,
@@ -72,9 +107,9 @@ public enum enPermissions : long
     ApiUser = ApiRead | ApiWrite,
     ApiFullAccess = ApiUser | ApiAdmin,
 
-    // Advanced
+    // Advanced Features
     AdvancedFeatures = ManageCampaigns | ConfigureWebhooks | ManageIntegrations,
-
+    
     // Superuser
-    AllPermissions = -1
+    AllPermissions = ~None,
 }

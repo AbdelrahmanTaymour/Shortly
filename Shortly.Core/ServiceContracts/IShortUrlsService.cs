@@ -16,7 +16,7 @@ public interface IShortUrlsService
     /// A task representing the asynchronous operation, with a result containing
     /// a list of <see cref="ShortUrlResponse"/> objects representing the details of all short URLs.
     /// </returns>
-    Task<List<ShortUrlResponse>> GetAllAsync();
+    Task<IEnumerable<ShortUrlResponse>> GetAllAsync();
 
     /// <summary>
     /// Retrieves a short URL detail based on the provided short code.

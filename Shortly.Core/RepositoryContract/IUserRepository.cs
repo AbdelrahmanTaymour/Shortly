@@ -46,6 +46,7 @@ public interface IUserRepository
     Task<bool> CanCreateMoreLinks(Guid userId, int limit);
     
     // Advanced queries
+    Task<IEnumerable<User>> GetAll();
     Task<IEnumerable<User>> GetUsersByRole(Domain.Enums.enUserRole role);
     Task<IEnumerable<User>> GetUsersBySubscriptionPlan(Domain.Enums.enSubscriptionPlan plan);
     Task<IEnumerable<User>> GetActiveUsers();

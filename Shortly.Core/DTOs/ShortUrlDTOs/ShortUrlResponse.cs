@@ -5,9 +5,4 @@ public record ShortUrlResponse(
     string OriginalUrl,
     string ShortCode,
     DateTime CreatedAt,
-    DateTime UpdatedAt)
-{
-    // Parameterless constructor
-    public ShortUrlResponse(): this(-1, String.Empty, 
-        String.Empty, DateTime.MinValue, DateTime.MinValue) { }
-}
+    DateTime UpdatedAt);

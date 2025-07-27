@@ -17,7 +17,7 @@ internal class ShortUrlRepository(SQLServerDbContext dbContext) : IShortUrlRepos
     
     public async Task<List<ShortUrl>> GetAllAsync()
     {
-        return await _dbContext.ShortUrls.ToListAsync();
+        return await _dbContext.ShortUrls.AsNoTracking().ToListAsync();
     }
 
     

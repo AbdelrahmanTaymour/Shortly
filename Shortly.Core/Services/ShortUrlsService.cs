@@ -1,21 +1,20 @@
-using AutoMapper;
 using Shortly.Core.DTOs.ShortUrlDTOs;
 using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.ServiceContracts;
 using Shortly.Core.Extensions;
+using Shortly.Core.Mappers;
 
 namespace Shortly.Core.Services;
 
-internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper mapper) : IShortUrlsService
+internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShortUrlsService
 {
     private readonly IShortUrlRepository _shortUrlRepository = shortUrlRepository;
-    private readonly IMapper _mapper = mapper;
 
-    public async Task<List<ShortUrlResponse>> GetAllAsync()
+    public async Task<IEnumerable<ShortUrlResponse>> GetAllAsync()
     {
         var allShortedUrls = await _shortUrlRepository.GetAllAsync();
-        return _mapper.Map<List<ShortUrlResponse>>(allShortedUrls);
+        return allShortedUrls.MapToShortUrlResponseList();
     }
 
     public async Task<ShortUrlResponse?> GetByShortCodeAsync(string shortCode)
@@ -28,12 +27,12 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
             await _shortUrlRepository.IncrementAccessCountAsync(shortCode);
 
         }
-        return _mapper.Map<ShortUrlResponse>(shortUrl);
+        return shortUrl?.MapToShortUrlResponse();
     }
 
     public async Task<ShortUrlResponse> CreateShortUrlAsync(ShortUrlRequest shortUrlRequest)
     {
-        var shortUrlDomain = _mapper.Map<ShortUrl>(shortUrlRequest);
+        var shortUrlDomain = shortUrlRequest.MapToShortUrl();
         
         // Check if a custom short code is provided
         if (!string.IsNullOrEmpty(shortUrlRequest.CustomShortCode))
@@ -74,7 +73,7 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
         }
         
         
-        return _mapper.Map<ShortUrlResponse>(shortUrlDomain);
+        return shortUrlDomain.MapToShortUrlResponse();
     }
 
     public async Task<ShortUrlResponse?> UpdateShortUrlAsync(string shortCode, ShortUrlRequest updatedShortUrlRequest)
@@ -90,7 +89,7 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
         
         await _shortUrlRepository.SaveChangesAsync();
         
-        return _mapper.Map<ShortUrlResponse>(existingUrl);
+        return existingUrl.MapToShortUrlResponse();
     }
 
     public async Task<bool> DeleteShortUrlAsync(string shortCode)
@@ -107,7 +106,7 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository, IMapper 
             return null;
         }
 
-        return _mapper.Map<StatusShortUrlResponse>(existingUrl);
+        return existingUrl.MapToStatusShortUrlResponse();
     }
     
     /// <summary>
