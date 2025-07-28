@@ -63,6 +63,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasDefaultValueSql("GETUTCDATE()")
             .HasColumnType("datetime2(0)");
         
+        builder.Property(user => user.DeletedAt)
+            .HasColumnType("datetime2(0)");
+        
+        
         // Usage tracking for subscription limits
         
         builder.Property(user => user.MonthlyLinksCreated)

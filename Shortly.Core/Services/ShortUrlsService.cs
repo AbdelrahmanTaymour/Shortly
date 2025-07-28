@@ -83,7 +83,7 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShort
         {
             return null;
         }
-
+        
         existingUrl.OriginalUrl = updatedShortUrlRequest.OriginalUrl;
         existingUrl.UpdatedAt = DateTime.UtcNow;
         

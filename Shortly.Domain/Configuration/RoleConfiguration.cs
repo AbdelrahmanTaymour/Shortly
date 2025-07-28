@@ -56,6 +56,11 @@ public class RoleConfiguration
             DefaultPermissions = enPermissions.AllPermissions & ~enPermissions.SystemAdmin,
             Description = "Organization owner with full organizational control"
         },
+        [enUserRole.Admin] = new RoleConfiguration
+        {
+            Role = enUserRole.Admin,
+            DefaultPermissions = enPermissions.AllPermissions & ~enPermissions.SystemAdmin,
+        },
         [enUserRole.SuperAdmin] = new RoleConfiguration
         {
             Role = enUserRole.SuperAdmin,

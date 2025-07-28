@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using MethodTimer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.Core.DTOs.AuthDTOs;
@@ -14,6 +15,7 @@ public class AuthController(IAuthenticationService authenticationService) : Cont
 {
     private readonly IAuthenticationService _authenticationService = authenticationService;
     
+    [Time]
     [HttpPost("register", Name = "Register")]
     [ProducesResponseType(typeof(AuthenticationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto),StatusCodes.Status400BadRequest)]
@@ -29,6 +31,7 @@ public class AuthController(IAuthenticationService authenticationService) : Cont
         return Ok(authResponse);
     }
 
+    [Time]
     [HttpPost("login", Name = "Login")]
     [ProducesResponseType(typeof(AuthenticationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto),StatusCodes.Status400BadRequest)]
@@ -44,6 +47,7 @@ public class AuthController(IAuthenticationService authenticationService) : Cont
         return Ok(authResponse);
     }
     
+    [Time]
     [HttpPost("refresh-token",Name = "RefreshToken")]
     [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto),StatusCodes.Status400BadRequest)]

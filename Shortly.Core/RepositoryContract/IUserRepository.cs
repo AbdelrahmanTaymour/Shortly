@@ -5,13 +5,16 @@ namespace Shortly.Core.RepositoryContract;
 public interface IUserRepository
 {
     Task<User?> GetUserById(Guid userId);
-    Task<User?> GetUserByEmail(string? email);
-    Task<User?> GetUserByUsername(string? username);
-    Task<User?> GetUserByEmailAndPassword(string? email, string? password);
+    Task<User?> GetActiveUserByEmail(string? email);
+    Task<User?> GetActiveUserByUsername(string? username);
+    Task<User?> GetActiveUserByEmailAndPassword(string? email, string? password);
     Task<User?> AddUser(User user);
     Task<User?> UpdateUser(User user);
-    Task<bool> DeleteUser(Guid userId);
+    Task<bool> HardDeleteUser(User user);
+    Task<bool> SoftDeleteUser(Guid userId, Guid deletedBy);
     Task<bool> IsEmailOrUsernameTaken(string email, string username);
+    Task<bool> IsUserActive(Guid id);
+    Task<bool> IsUserActiveByEmail(string email);
     
     // Authentication and security
     Task<bool> VerifyPassword(Guid userId, string password);
@@ -21,6 +24,7 @@ public interface IUserRepository
     Task<bool> LockUser(Guid userId, DateTime? lockUntil);
     Task<bool> UnlockUser(Guid userId);
     Task<bool> IsUserLocked(Guid userId);
+    Task<bool> IsUserExists(Guid userId);
     
     // Email verification
     Task<bool> MarkEmailAsVerified(Guid userId);

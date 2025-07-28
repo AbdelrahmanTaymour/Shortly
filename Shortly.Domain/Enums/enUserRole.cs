@@ -8,5 +8,6 @@ public enum enUserRole
     TeamManager,
     OrgAdmin,
     OrgOwner,
+    Admin,
     SuperAdmin
 }

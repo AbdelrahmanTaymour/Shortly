@@ -2,8 +2,7 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Core.DTOs.UsersDTOs;
 
-public sealed record UserProfileDto(
-    Guid Id,
+public sealed record UpdateUserDto(
     string Name,
     string Email,
     string Username,
@@ -11,13 +10,11 @@ public sealed record UserProfileDto(
     enUserRole Role,
     bool IsActive,
     bool IsEmailConfirmed,
-    DateTime? LastLoginAt,
     string? TimeZone,
     string? ProfilePictureUrl,
     int MonthlyLinksCreated,
     int TotalLinksCreated,
     DateTime MonthlyResetDate,
-    bool TwoFactorEnabled,
-    DateTime CreatedAt,
-    DateTime UpdatedAt
+    int FailedLoginAttempts,
+    DateTime? LockedUntil
 );

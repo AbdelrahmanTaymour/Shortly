@@ -25,13 +25,4 @@ public class UserController(IUserService userService) : ControllerBase
         return userEmailClaim ?? string.Empty;
     }
     
-    
-    // Advanced Query
-    [HttpGet("getAllUser", Name = "GetAllUsers")]
-    [ProducesResponseType(typeof(List<UserProfileDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll()
-    {
-        var users = await _userService.GetAllUsersAsync();
-        return Ok(users);
-    }
 }

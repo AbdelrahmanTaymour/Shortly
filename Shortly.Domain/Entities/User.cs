@@ -13,13 +13,15 @@ public class User
     public enSubscriptionPlan SubscriptionPlan { get; set; } = enSubscriptionPlan.Free;
     public enUserRole Role { get; set; } = enUserRole.StandardUser;
     public bool IsActive { get; set; } = true;
-    public bool IsDeleted { get; set; }
     public bool IsEmailConfirmed { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public string? TimeZone { get; set; } = "UTC";
     public string? ProfilePictureUrl { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; init; }
+    public Guid? DeletedBy { get; set; }
     
     // Usage tracking for subscription limits
     public int MonthlyLinksCreated { get; set; } = 0;

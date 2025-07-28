@@ -15,23 +15,24 @@ internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
     {
         return await _dbContext.Users.FindAsync(userId);
     }
-    public async Task<User?> GetUserByEmail(string? email)
+    public async Task<User?> GetActiveUserByEmail(string? email)
     {
         return await _dbContext.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(user => user.Email == email);
+            .FirstOrDefaultAsync(u => u.Email == email && u.IsActive && !u.IsDeleted);
     }
-    public async Task<User?> GetUserByUsername(string? username)
+    public async Task<User?> GetActiveUserByUsername(string? username)
     {
         return await _dbContext.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(user => user.Username == username);
+            .FirstOrDefaultAsync(u => u.Username == username && u.IsActive && !u.IsDeleted);
     }
-    public async Task<User?> GetUserByEmailAndPassword(string? email, string? password)
+    public async Task<User?> GetActiveUserByEmailAndPassword(string? email, string? password)
     {
         return await _dbContext.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(user => user.Email == email && user.PasswordHash == password);
+            .FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == password
+               && u.IsActive && !u.IsDeleted);
     }
     public async Task<User?> AddUser(User user)
     {
@@ -41,26 +42,61 @@ internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
     }
     public async Task<User?> UpdateUser(User user)
     {
-        user.UpdatedAt = DateTime.UtcNow;
         _dbContext.Users.Update(user);
         await _dbContext.SaveChangesAsync();
         return user;
     }
-    public async Task<bool> DeleteUser(Guid userId)
+
+    public async Task<bool> HardDeleteUser(User user)
     {
-        var user = await _dbContext.Users.FindAsync(userId);
         if (user == null) return false;
-        
         _dbContext.Users.Remove(user);
         return await _dbContext.SaveChangesAsync() > 0;
     }
+
+    public async Task<bool> SoftDeleteUser(Guid userId, Guid deletedBy)
+    {
+        var affectedRows = await _dbContext.Users
+            .Where(u => u.Id == userId && !u.IsDeleted)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(u => u.IsDeleted, true)
+                .SetProperty(u => u.DeletedAt, DateTime.UtcNow)
+                .SetProperty(u => u.DeletedBy, deletedBy)
+                .SetProperty(u => u.IsActive, false)
+            );
+
+        return affectedRows > 0;
+    }
+    
     public async Task<bool> IsEmailOrUsernameTaken(string email, string username)
     {
         return await _dbContext.Users
             .AsNoTracking()
             .AnyAsync(user => user.Email == email || user.Username == username);
     }
+
+    public async Task<bool> IsUserActive(Guid id)
+    {
+        return await _dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(user => user.Id == id && user.IsActive && !user.IsDeleted);
+    }
+
+    public async Task<bool> IsUserActiveByEmail(string email)
+    {
+        return await _dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(user => user.Email == email && user.IsActive && !user.IsDeleted);
+    }
+
+    public async Task<bool> IsUserExists(Guid userId)
+    {
+        return await _dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(user => user.Id == userId && !user.IsDeleted);
+    }
     
+
     #endregion
     
     #region Authentication and security

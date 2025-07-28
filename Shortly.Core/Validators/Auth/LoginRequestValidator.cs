@@ -1,7 +1,7 @@
 using FluentValidation;
 using Shortly.Core.DTOs.AuthDTOs;
 
-namespace Shortly.Core.Validators;
+namespace Shortly.Core.Validators.Auth;
 
 public class LoginRequestValidator : AbstractValidator<LoginRequest>
 {

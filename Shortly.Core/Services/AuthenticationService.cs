@@ -28,22 +28,15 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
     
     public async Task<AuthenticationResponse?> Login(LoginRequest loginRequest)
     {
-        var stopwatch = Stopwatch.StartNew();
-        
-        var user = await _userRepository.GetUserByEmail(loginRequest.Email);
+        var user = await _userRepository.GetActiveUserByEmail(loginRequest.Email);
         if (user == null)
             throw new AuthenticationException("Invalid email or password.");
-        Console.WriteLine($"\n\nGetUserByEmail took {stopwatch.ElapsedMilliseconds}ms");
 
-        stopwatch.Restart();
         //Verify the password matches the hashed password
         if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
             throw new AuthenticationException("Invalid email or password.");
-        Console.WriteLine($"\n\nBCrypt.Verify took {stopwatch.ElapsedMilliseconds}ms");
 
-        stopwatch.Restart();
         var tokensResponse = await GenerateTokensAsync(user);
-        Console.WriteLine($"\n\nGenerateTokensAsync took {stopwatch.ElapsedMilliseconds}ms");
         
         return new AuthenticationResponse(user.Id, user.Name, user.Email, tokensResponse, true);
     }

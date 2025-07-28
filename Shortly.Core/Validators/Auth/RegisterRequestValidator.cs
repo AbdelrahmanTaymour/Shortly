@@ -2,7 +2,7 @@ using FluentValidation;
 using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Core.RepositoryContract;
 
-namespace Shortly.Core.Validators;
+namespace Shortly.Core.Validators.Auth;
 
 public class RegisterRequestValidator: AbstractValidator<RegisterRequest>
 {

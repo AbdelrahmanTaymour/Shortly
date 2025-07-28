@@ -1,7 +1,7 @@
 using FluentValidation;
 using Shortly.Core.DTOs.ShortUrlDTOs;
 
-namespace Shortly.Core.Validators;
+namespace Shortly.Core.Validators.ShortUrl;
 
 public class ShortUrlRequestValidator: AbstractValidator<ShortUrlRequest>
 {

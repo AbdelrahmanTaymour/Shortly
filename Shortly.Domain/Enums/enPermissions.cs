@@ -71,9 +71,14 @@ public enum enPermissions : long
     ManageUserRoles = 1L << 42,         // 4398046511104
     ViewUserDetails = 1L << 43,         // 8796093022208
     ResetUserPasswords = 1L << 44,      // 17592186044416
-
+    
+    
     // System Administration
-    SystemAdmin = 1L << 45,             // 35184372088832
+    AddUser = 1L << 45,           // 35184372088832
+    UpdateUser = 1L << 46,
+    SoftDeleteUser = 1L << 47,
+    HardDeleteUser = 1L << 48,
+    SystemAdmin = 1L << 49,             
 
     // Convenience combinations
     // URL Operations
