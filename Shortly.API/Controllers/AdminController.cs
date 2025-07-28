@@ -16,11 +16,28 @@ public class AdminController(IUserService userService) : ControllerBase
 {
     
     // TODO: THIS CONTROLLER NEEDS ENHANCEMENT
+
+    [Time]
+    [HttpGet("users/search", Name = "SearchUsers")]
+    [RequirePermission(enPermissions.ViewAllUsers)]
+    [ProducesResponseType(typeof(UserSearchResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SearchUsers(
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] enUserRole? role = null,
+        [FromQuery] enSubscriptionPlan? subscriptionPlan = null,
+        [FromQuery] bool? isActive = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        var response = await userService
+            .SearchUsers(searchTerm, role, subscriptionPlan, isActive, page, pageSize);
+        return Ok(response);
+    }
     
     [Time]
     [HttpGet("users", Name = "GetAllUsers")]
     [RequirePermission(enPermissions.ViewAllUsers)]
-    [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<UserDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
         var users = await userService.GetAllUsersAsync();

@@ -1,3 +1,4 @@
+using Shortly.Core.DTOs.UsersDTOs;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Core.RepositoryContract;
@@ -59,12 +60,11 @@ public interface IUserRepository
     Task<IEnumerable<User>> GetLockedUsers();
     
     // Search and pagination
-    Task<(IEnumerable<User> Users, int TotalCount)> SearchUsers(
+    Task<(IEnumerable<UserViewDto> Users, int TotalCount)> SearchUsers(
         string? searchTerm, 
         Domain.Enums.enUserRole? role, 
         Domain.Enums.enSubscriptionPlan? subscriptionPlan,
         bool? isActive,
-        bool? emailVerified,
         int page, 
         int pageSize);
     

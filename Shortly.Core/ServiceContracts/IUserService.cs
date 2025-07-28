@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity.Data;
 using Shortly.Core.DTOs.UsersDTOs;
+using Shortly.Domain.Enums;
 using ForgotPasswordRequest = Shortly.Core.DTOs.UsersDTOs.ForgotPasswordRequest;
 
 namespace Shortly.Core.ServiceContracts;
@@ -12,6 +13,13 @@ public interface IUserService
     Task<CreateUserResponse> CreateUserAsync(CreateUserRequest createUserRequest);
     Task<UserDto> UpdateUserAsync(Guid id, UpdateUserDto updateUserDto);
     Task<bool> HardDeleteUserAsync(Guid id);
+    Task<UserSearchResponse> SearchUsers(
+        string? searchTerm,
+        enUserRole? role,
+        enSubscriptionPlan? subscriptionPlan,
+        bool? isActive,
+        int page,
+        int pageSize);
     
     // Client management Operations
     Task<UserProfileDto?> GetUserProfileAsync(Guid userId);

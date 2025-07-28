@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Shortly.Core.DTOs.UsersDTOs;
 using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
 using Shortly.Domain.Enums;
@@ -10,10 +11,43 @@ internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
 {
     private readonly SQLServerDbContext _dbContext = dbContext;
 
-    #region CRUD Operations
+    #region Admin
     public async Task<User?> GetUserById(Guid userId)
     {
         return await _dbContext.Users.FindAsync(userId);
+    }
+    public async Task<(IEnumerable<UserViewDto> Users, int TotalCount)> SearchUsers(string? searchTerm, enUserRole? role,
+        enSubscriptionPlan? subscriptionPlan, bool? isActive, int page, int pageSize)
+    {
+        var query = _dbContext.Users.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(u => 
+                u.Name.Contains(searchTerm) || 
+                u.Email.Contains(searchTerm) || 
+                u.Username.Contains(searchTerm));
+        }
+        
+        if (role.HasValue) 
+            query = query.Where(u => u.Role == role.Value);
+        
+        if(subscriptionPlan.HasValue) 
+            query = query.Where(u => u.SubscriptionPlan == subscriptionPlan.Value);
+        
+        if(isActive.HasValue)
+            query = query.Where(u => u.IsActive == isActive.Value);
+        
+        var totalCount = await query.CountAsync();
+
+        var users = await query
+            .OrderBy(u => u.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(u => new UserViewDto(u.Id, u.Name, u.Email, u.Username, u.SubscriptionPlan,u.Role,u.IsActive))
+            .ToListAsync();
+
+        return (users, totalCount);
     }
     public async Task<User?> GetActiveUserByEmail(string? email)
     {
@@ -260,13 +294,5 @@ internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
 
     #endregion
     
-    #region Search and pagination
-
-    public Task<(IEnumerable<User> Users, int TotalCount)> SearchUsers(string? searchTerm, enUserRole? role, enSubscriptionPlan? subscriptionPlan, bool? isActive,
-        bool? emailVerified, int page, int pageSize)
-    {
-        throw new NotImplementedException();
-    }
-
-    #endregion
+    
 }

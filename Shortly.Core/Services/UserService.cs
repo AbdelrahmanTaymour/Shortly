@@ -19,7 +19,6 @@ public class UserService(IUserRepository userRepository): IUserService
         var users = await _userRepository.GetAll();
         return users.MapToUserDtoList();
     }
-
     public async Task<UserDto> GetUserByIdAsync(Guid id)
     {
         var user = await _userRepository.GetUserById(id);
@@ -83,14 +82,32 @@ public class UserService(IUserRepository userRepository): IUserService
         await _userRepository.UpdateUser(user);
         return user.MapToUserDto();
     }
-
     public async Task<bool> HardDeleteUserAsync(Guid userId)
     {
         var user = await _userRepository.GetUserById(userId);
         if(user == null) throw new Exception("User not found");
         return await _userRepository.HardDeleteUser(user);
     }
-    
+
+    public async Task<UserSearchResponse> SearchUsers(string? searchTerm,
+        enUserRole? role, enSubscriptionPlan? subscriptionPlan, bool? isActive, int page, int pageSize)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+
+        var (users, count) = await _userRepository
+            .SearchUsers(searchTerm, role, subscriptionPlan, isActive, page, pageSize);
+
+        return new UserSearchResponse
+        (
+            users,
+            count,
+            page,
+            pageSize,
+            (int)Math.Ceiling(count / (double)pageSize)
+        );
+    }
+
     // Client management Operations
     public async Task<UserProfileDto?> GetUserProfileAsync(Guid userId)
     {
