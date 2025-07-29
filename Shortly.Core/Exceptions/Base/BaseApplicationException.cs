@@ -2,6 +2,9 @@ using System.Net;
 
 namespace Shortly.Core.Exceptions.Base;
 
+/// <summary>
+/// Base class for all custom application exceptions
+/// </summary>
 public abstract class BaseApplicationException : Exception
 {
     public abstract HttpStatusCode StatusCode { get; }
