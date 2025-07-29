@@ -1,5 +1,6 @@
 using System.Net;
 using Shortly.Core.Exceptions.Base;
+using FluentValidation;
 
 namespace Shortly.Core.Exceptions.ClientErrors;
 

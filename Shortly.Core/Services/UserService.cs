@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs.UsersDTOs;
+using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.ServiceContracts;
 using Shortly.Core.Mappers;
@@ -35,7 +36,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
     {
         var user = await _userRepository.GetUserById(id);
         if (user == null)
-            throw new Exception("User not found");
+            throw new NotFoundException("User", id);
         return user.MapToUserDto();
     }
     

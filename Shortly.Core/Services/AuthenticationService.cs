@@ -8,7 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core.DTOs.AuthDTOs;
-using Shortly.Core.DTOs.ValidationDTOs;
+using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Core.Extensions;
 using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
@@ -90,7 +90,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
     public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken)
     {
         var storedRefreshToken = await _refreshTokenRepository
-            .GetRefreshTokenAsync(SHA256Extensions.ComputeHash(refreshToken));
+            .GetRefreshTokenAsync(Sha256Extensions.ComputeHash(refreshToken));
             
         // Validate refresh token
         if (storedRefreshToken == null)
@@ -111,7 +111,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         var newRefreshToken = GenerateRefreshTokenString();
             
         // Update Refresh Token entity
-        storedRefreshToken.Token = SHA256Extensions.ComputeHash(newRefreshToken);
+        storedRefreshToken.Token = Sha256Extensions.ComputeHash(newRefreshToken);
         await _refreshTokenRepository.SaveChangesAsync();
 
         // Generate new tokens
@@ -155,7 +155,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
     {
        
         var storedRefreshToken = await _refreshTokenRepository
-            .GetRefreshTokenAsync(SHA256Extensions.ComputeHash(refreshToken));
+            .GetRefreshTokenAsync(Sha256Extensions.ComputeHash(refreshToken));
         
         if (storedRefreshToken != null && storedRefreshToken.IsActive)
         {
@@ -236,7 +236,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         var refreshToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
-            Token = SHA256Extensions.ComputeHash(refreshTokenString), // Hash to store in the database
+            Token = Sha256Extensions.ComputeHash(refreshTokenString), // Hash to store in the database
             ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? throw new InvalidOperationException())),
             CreatedAt = DateTime.UtcNow,
             UserId = userId,

@@ -6,7 +6,7 @@ namespace Shortly.Core.Extensions;
 /// <summary>
 /// Provides cryptographic helper methods including SHA-256 hashing and AES encryption/decryption.
 /// </summary>
-public static class SHA256Extensions
+public static class Sha256Extensions
 {
     /// <summary>
     /// Computes the SHA-256 hash of a UTF-8 encoded input string and returns the result as a lowercase hexadecimal string.
@@ -32,7 +32,7 @@ public static class SHA256Extensions
     /// <param name="plainText">The text to encrypt. If null, returns null.</param>
     /// <param name="key">The 16-byte encryption key (default is "1234567890123456").</param>
     /// <returns>The encrypted text as a Base64-encoded string.</returns>
-    public static string Encrypt(string plainText, string key = "1234567890123456")
+    public static string? Encrypt(string? plainText, string key = "1234567890123456")
     {
         if (plainText == null) return null;
 
@@ -67,7 +67,7 @@ public static class SHA256Extensions
     /// <param name="cipherText">The Base64-encoded encrypted string. If null, returns null.</param>
     /// <param name="key">The 16-byte decryption key (must match the encryption key).</param>
     /// <returns>The decrypted plain text string.</returns>
-    public static string Decrypt(string cipherText, string key = "1234567890123456")
+    public static string? Decrypt(string? cipherText, string key = "1234567890123456")
     {
         if (cipherText == null) return null;
 

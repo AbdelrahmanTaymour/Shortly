@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Authorization;
 using Shortly.Core.DTOs.ShortUrlDTOs;
-using Shortly.Core.DTOs.ValidationDTOs;
+using Shortly.Core.DTOs.ExceptionsDTOs;
 using Shortly.Core.ServiceContracts;
 using Shortly.Domain.Enums;
 using Swashbuckle.AspNetCore.Annotations;

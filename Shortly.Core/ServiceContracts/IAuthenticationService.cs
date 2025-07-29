@@ -1,5 +1,5 @@
 using Shortly.Core.DTOs.AuthDTOs;
-using Shortly.Core.DTOs.ValidationDTOs;
+using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Core.ServiceContracts;
