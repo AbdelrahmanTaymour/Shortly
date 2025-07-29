@@ -13,6 +13,12 @@ public interface IUserService
     Task<CreateUserResponse> CreateUserAsync(CreateUserRequest createUserRequest);
     Task<UserDto> UpdateUserAsync(Guid id, UpdateUserDto updateUserDto);
     Task<bool> HardDeleteUserAsync(Guid id);
+    Task<bool> SoftDeleteUserAccount(Guid userId, Guid deletedBy);
+    Task<bool> LockUser(Guid userId, DateTime? lockUntil);
+    Task<bool> UnlockUser(Guid userId);
+    Task<bool> ActivateUser(Guid userId);
+    Task<bool> DeactivateUser(Guid userId);
+    Task<UserAvailabilityInfo?> GetUserAvailabilityInfo(Guid userId);
     Task<UserSearchResponse> SearchUsers(
         string? searchTerm,
         enUserRole? role,
@@ -20,23 +26,6 @@ public interface IUserService
         bool? isActive,
         int page,
         int pageSize);
-    
-    // Client management Operations
-    Task<UserProfileDto?> GetUserProfileAsync(Guid userId);
-    Task<UserProfileDto> UpdateUserProfile(Guid userId, UpdateUserProfileRequest updateUserProfileRequest);
-    Task<bool> SoftDeleteUserAccount(Guid userId, Guid deletedBy);
-    
-    // Password management
-    Task<bool> ChangePassword(Guid userId, ChangePasswordRequest request);
-    Task<bool> ForgotPassword(ForgotPasswordRequest request);
-    Task<bool> ResetPassword(ResetPasswordRequest request);
-    Task<bool> ValidateResetCode(string email, string code);
-    
-    // Email verification
-    Task<bool> SendEmailVerification(Guid userId);
-    Task<bool> VerifyEmail(EmailVerificationRequest request);
-    Task<bool> ResendEmailVerification(string email);
-    
     
     
     

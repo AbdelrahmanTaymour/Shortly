@@ -56,7 +56,7 @@ public class AdminController(IUserService userService) : ControllerBase
     }
 
     [Time]
-    [HttpPost("users", Name = "AddUser")]
+    [HttpPost("users", Name = "AddNewUser")]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status201Created)]
     [RequirePermission(enPermissions.AddUser)]
     public async Task<IActionResult> AddUser([FromBody] CreateUserRequest request)
@@ -76,7 +76,7 @@ public class AdminController(IUserService userService) : ControllerBase
     }
 
     [Time]
-    [HttpDelete("users/soft-delete/{id:guid}")]
+    [HttpDelete("users/soft-delete/{id:guid}", Name = "SoftDeleteUser")]
     [RequirePermission(enPermissions.SoftDeleteUser)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -88,7 +88,7 @@ public class AdminController(IUserService userService) : ControllerBase
     }
 
     [Time]
-    [HttpDelete("users/hard-delete/{id:guid}")]
+    [HttpDelete("users/hard-delete/{id:guid}", Name = "HardDeleteUser")]
     [RequirePermission(enPermissions.HardDeleteUser)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -98,7 +98,14 @@ public class AdminController(IUserService userService) : ControllerBase
         return isDeleted ? NoContent() : NotFound();
     }
 
-
+    [Time]
+    [HttpGet("users/analytics", Name = "GetUserAnalytics")]
+    [RequirePermission(enPermissions.ViewUsersAnalytics)]
+    public async Task<IActionResult> GetUserAnalytics()
+    {
+        throw new NotImplementedException();
+    }
+    
     #region Private
 
     private Guid GetCurrentUserId()

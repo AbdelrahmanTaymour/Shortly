@@ -15,20 +15,29 @@ namespace Shortly.API;
 
 public class Program
 {
+    [Obsolete("Obsolete")]
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Basic Services
         builder.Services.AddControllers().AddJsonOptions(options => {
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
         builder.Services.AddEndpointsApiExplorer();
         
+        // Logging Configuration
+        builder.Logging.ClearProviders();
+        builder.Logging.AddConsole(options =>
+        {
+            options.TimestampFormat = "[yyyy-MM-dd HH:mm:ss] ";
+            options.IncludeScopes = false;
+        });
         
         // FluentValidations
         builder.Services.AddFluentValidationAutoValidation();
         
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+        // Swagger/OpenAPI Configuration
         builder.Services.AddSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo
@@ -38,7 +47,7 @@ public class Program
                 Description = "API documentation for the Link Management System",
             });
             
-            // JWT Authentication
+            // JWT Authentication for Swagger
             options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
             {
                 Description =
@@ -68,15 +77,18 @@ public class Program
                 }
             });
         });
-        builder.Services.AddSwaggerGen();
         
-        // Register Services
-        builder.Services.AddInfrastructure(builder.Configuration);
-        builder.Services.AddCore();
-
-        //Authorization
-        builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
-        builder.Services.AddUrlShortenerAuthorization();
+        // CORS Configuration
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontend", policy =>
+            {
+                policy.WithOrigins("http://127.0.0.1:5501") // MUST match exactly
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
 
         // Authentication
         builder.Services.AddAuthentication(options =>
@@ -97,35 +109,45 @@ public class Program
                         new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
                     ClockSkew = TimeSpan.Zero
                 });
+
+        // Authorization
+        builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        builder.Services.AddUrlShortenerAuthorization();
         
-        // Register CORS policy
-        builder.Services.AddCors(options =>
-        {
-            options.AddPolicy("AllowFrontend", policy =>
-            {
-                policy.WithOrigins("http://127.0.0.1:5501") // MUST match exactly
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
-            });
-        });
+        // Custom Services
+        builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddCore();
+
         var app = builder.Build();
 
+        // ===== MIDDLEWARE PIPELINE (ORDER IS CRITICAL) =====
+        
+        // 1. Exception Handling
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+        // 2. CORS
         app.UseCors("AllowFrontend");
-        // Configure the HTTP request pipeline.
+        
+        // 3. Development-only middleware
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
         }
-        
-        // Exception Handling
-        app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-        app.UseRouting();
+        // 4. HTTPS Redirection
         app.UseHttpsRedirection();
+        
+        // 5. Routing
+        app.UseRouting();
+        
+        // 6. Authentication
         app.UseAuthentication();
+        
+        // 7. Authorization
         app.UseAuthorization();
+        
+        // 8. Controller mapping
         app.MapControllers();
         
         app.Run();

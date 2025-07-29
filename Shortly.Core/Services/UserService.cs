@@ -1,17 +1,17 @@
-using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs.UsersDTOs;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.ServiceContracts;
 using Shortly.Core.Mappers;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
-using ForgotPasswordRequest = Shortly.Core.DTOs.UsersDTOs.ForgotPasswordRequest;
 
 namespace Shortly.Core.Services;
 
-public class UserService(IUserRepository userRepository): IUserService
+public class UserService(IUserRepository userRepository, ILogger<UserService> logger): IUserService
 {
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly ILogger<UserService> _logger = logger;
 
     // Admin Operations
     public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
@@ -48,7 +48,10 @@ public class UserService(IUserRepository userRepository): IUserService
         };
 
         user = await _userRepository.AddUser(user);
-        if(user == null) throw new Exception("Error creating user");
+        if(user == null) 
+            throw new Exception("Error creating user");
+        
+        _logger.LogInformation("User created successfully. UserId: {UserId}", user.Id);
         
         return user.MapToUserCreateResponse();
     }
@@ -80,13 +83,84 @@ public class UserService(IUserRepository userRepository): IUserService
         user.UpdatedAt = DateTime.UtcNow;
         
         await _userRepository.UpdateUser(user);
+        _logger.LogInformation("User updated successfully. UserId: {UserId}, Role: {Role}, " +
+                               "SubscriptionPlan: {SubscriptionPlan}", userId, user.Role, user.SubscriptionPlan);
         return user.MapToUserDto();
     }
     public async Task<bool> HardDeleteUserAsync(Guid userId)
     {
-        var user = await _userRepository.GetUserById(userId);
-        if(user == null) throw new Exception("User not found");
-        return await _userRepository.HardDeleteUser(user);
+        var isDeleteSucceed = await _userRepository.HardDeleteUser(userId);
+        
+        if (!isDeleteSucceed) 
+            throw new Exception("User not found");
+        
+        _logger.LogWarning("User hard deleted. UserId: {UserId}", userId);
+        
+        return true;
+    }
+    public async Task<bool> SoftDeleteUserAccount(Guid userId, Guid deletedBy)
+    {
+        var success = await _userRepository.SoftDeleteUser(userId, deletedBy);
+        if(success) 
+            _logger.LogInformation("User soft deleted. UserId: {UserId}, DeletedBy: {DeletedBy}", userId, deletedBy);
+        return success;
+    }
+
+    public async Task<bool> LockUser(Guid userId, DateTime? lockUntil)
+    {
+        var success = await _userRepository.LockUser(userId, lockUntil);
+        if(!success)
+            throw new Exception("User not found");
+        
+        _logger.LogWarning("User account with UserId: {UserId} Locked Until: {LockUntil}", userId, lockUntil);
+
+        return success;
+    }
+
+    public async Task<bool> UnlockUser(Guid userId)
+    {
+        var success = await _userRepository.UnlockUser(userId);
+        
+        if(!success)
+            throw new Exception("User not found");
+        
+        _logger.LogInformation("User account with UserId: {UserId}, Unlocked", userId);
+        
+        return success;
+    }
+
+    public async Task<bool> ActivateUser(Guid userId)
+    {
+        var success = await _userRepository.ActivateUser(userId);
+        
+        if(!success)
+            throw new Exception("User not found");
+        
+        _logger.LogInformation("User account activated. UserId: {UserId}", userId);
+        
+        return success;
+    }
+
+    public async Task<bool> DeactivateUser(Guid userId)
+    {
+        var success = await _userRepository.DeactivateUser(userId);
+        
+        if(!success)
+            throw new Exception("User not found");
+        
+        _logger.LogInformation("User account deactivated. UserId: {UserId}", userId);
+        
+        return success;
+    }
+
+    public async Task<UserAvailabilityInfo?> GetUserAvailabilityInfo(Guid userId)
+    {
+        var userAvailability = await _userRepository.GetUserAvailabilityInfo(userId);
+        
+        if(userAvailability == null)
+            throw new Exception("User not found");
+        
+        return userAvailability;
     }
 
     public async Task<UserSearchResponse> SearchUsers(string? searchTerm,
@@ -108,57 +182,6 @@ public class UserService(IUserRepository userRepository): IUserService
         );
     }
 
-    // Client management Operations
-    public async Task<UserProfileDto?> GetUserProfileAsync(Guid userId)
-    {
-        var user = await _userRepository.GetUserById(userId);
-        if(user == null) throw new Exception("User not found");
-        return user.MapToUserProfileDto();
-    }
-    public Task<UserProfileDto> UpdateUserProfile(Guid userId, UpdateUserProfileRequest updateUserProfileRequest)
-    {
-        throw new NotImplementedException();
-    }
-    public async Task<bool> SoftDeleteUserAccount(Guid userId, Guid deletedBy)
-    {
-        return await _userRepository.SoftDeleteUser(userId, deletedBy);
-    }
-
-    // Password management
-    public Task<bool> ChangePassword(Guid userId, ChangePasswordRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> ForgotPassword(ForgotPasswordRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> ResetPassword(ResetPasswordRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> ValidateResetCode(string email, string code)
-    {
-        throw new NotImplementedException();
-    }
-
-    // Email verification
-    public Task<bool> SendEmailVerification(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> VerifyEmail(EmailVerificationRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> ResendEmailVerification(string email)
-    {
-        throw new NotImplementedException();
-    }
+    
     
 }

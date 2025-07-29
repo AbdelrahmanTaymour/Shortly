@@ -67,7 +67,7 @@ public enum enPermissions : long
     UnlockUserAccounts = 1L << 38,      // 274877906944
     ActivateUsers = 1L << 39,           // 549755813888
     DeactivateUsers = 1L << 40,         // 1099511627776
-    ViewUserAnalytics = 1L << 41,       // 2199023255552
+    ViewUsersAnalytics = 1L << 41,       // 2199023255552
     ManageUserRoles = 1L << 42,         // 4398046511104
     ViewUserDetails = 1L << 43,         // 8796093022208
     ResetUserPasswords = 1L << 44,      // 17592186044416
@@ -98,7 +98,7 @@ public enum enPermissions : long
     SelfManagement = ViewOwnProfile | UpdateOwnProfile | DeleteOwnAccount | ChangeOwnPassword | ManageOwnTwoFactor | ViewOwnUsageStats,
 
     // User Administration (Admin permissions for managing other users)
-    UserAdministration = ViewAllUsers | SearchUsers | LockUserAccounts | UnlockUserAccounts | ActivateUsers | DeactivateUsers | ViewUserAnalytics | ViewUserDetails,
+    UserAdministration = ViewAllUsers | SearchUsers | LockUserAccounts | UnlockUserAccounts | ActivateUsers | DeactivateUsers | ViewUsersAnalytics | ViewUserDetails,
     
     // Advanced User Administration (Super admin permissions)
     AdvancedUserAdministration = UserAdministration | ManageUserRoles | ResetUserPasswords,
