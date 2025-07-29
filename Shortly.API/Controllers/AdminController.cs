@@ -99,8 +99,69 @@ public class AdminController(IUserService userService) : ControllerBase
     }
 
     [Time]
+    [HttpPost("Users/lock-user", Name = "LockUser")]
+    [RequirePermission(enPermissions.LockUserAccounts)]
+    [ProducesResponseType(StatusCodes.Status200OK)] 
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> LockUser(Guid id, [FromBody] DateTime? lockUntil = null)
+    {
+        var success = await userService.LockUser(id, lockUntil);
+        if(!success)
+        {
+            return BadRequest();
+        }
+        return Ok(new {message = "User account locked successfully." });
+    }
+    
+    [Time]
+    [HttpPost("Users/unlock-user", Name = "UnlockUser")]
+    [RequirePermission(enPermissions.LockUserAccounts)]
+    [ProducesResponseType(StatusCodes.Status200OK)] 
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UnlockUser(Guid id)
+    {
+        var success = await userService.UnlockUser(id);
+        if(!success)
+        {
+            return BadRequest();
+        }
+        return Ok(new {message = "User account unlocked successfully." });
+    }
+    
+    [Time]
+    [HttpPost("Users/activate-user", Name = "ActivateUser")]
+    [RequirePermission(enPermissions.LockUserAccounts)]
+    [ProducesResponseType(StatusCodes.Status200OK)] 
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ActivateUser(Guid id)
+    {
+        var success = await userService.ActivateUser(id);
+        if(!success)
+        {
+            return BadRequest();
+        }
+        return Ok(new {message = "User account activated successfully." });
+    }
+    
+    [Time]
+    [HttpPost("Users/deactivate-user", Name = "DeactivateUser")]
+    [RequirePermission(enPermissions.LockUserAccounts)]
+    [ProducesResponseType(StatusCodes.Status200OK)] 
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeactivateUser(Guid id)
+    {
+        var success = await userService.DeactivateUser(id);
+        if(!success)
+        {
+            return BadRequest();
+        }
+        return Ok(new {message = "User account deactivate successfully." });
+    }
+
+    [Time]
     [HttpGet("users/analytics", Name = "GetUserAnalytics")]
     [RequirePermission(enPermissions.ViewUsersAnalytics)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUserAnalytics()
     {
         throw new NotImplementedException();
