@@ -6,7 +6,7 @@ namespace Shortly.Core.Exceptions.ClientErrors;
 /// <summary>
 ///     Exception thrown when user is authenticated but lacks permission
 /// </summary>
-public class ForbiddenException : ClientErrorException
+public sealed class ForbiddenException : ClientErrorException
 {
     public override HttpStatusCode StatusCode => HttpStatusCode.Forbidden;
 
