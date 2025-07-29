@@ -7,20 +7,29 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories;
 
+/// <summary>
+/// Repository implementation for user-related data operations.
+/// Handles direct database interactions using Entity Framework Core.
+/// </summary>
 internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
 {
     private readonly SQLServerDbContext _dbContext = dbContext;
 
     #region Admin
-    public async Task<User?> GetUserById(Guid userId)
+    
+    /// <inheritdoc/>
+    public async Task<IEnumerable<User>> GetAll()
     {
-        return await _dbContext.Users.FindAsync(userId);
+        return await _dbContext.Users.AsNoTracking().ToListAsync();
     }
+    
+    /// <inheritdoc/>
     public async Task<(IEnumerable<UserViewDto> Users, int TotalCount)> SearchUsers(string? searchTerm, enUserRole? role,
         enSubscriptionPlan? subscriptionPlan, bool? isActive, int page, int pageSize)
     {
         var query = _dbContext.Users.AsNoTracking().AsQueryable();
 
+        // Apply filters
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             query = query.Where(u => 
@@ -38,8 +47,10 @@ internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
         if(isActive.HasValue)
             query = query.Where(u => u.IsActive == isActive.Value);
         
+        // Get total count for pagination
         var totalCount = await query.CountAsync();
 
+        // Apply pagination and projection
         var users = await query
             .OrderBy(u => u.Name)
             .Skip((page - 1) * pageSize)
@@ -49,18 +60,34 @@ internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
 
         return (users, totalCount);
     }
+    
+    
+    /// <inheritdoc/>
+    public async Task<User?> GetUserById(Guid userId)
+    {
+        return await _dbContext.Users.FindAsync(userId);
+    }
+    
+    
+    /// <inheritdoc/>
     public async Task<User?> GetActiveUserByEmail(string? email)
     {
         return await _dbContext.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email == email && u.IsActive && !u.IsDeleted);
     }
+    
+    
+    /// <inheritdoc/>
     public async Task<User?> GetActiveUserByUsername(string? username)
     {
         return await _dbContext.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Username == username && u.IsActive && !u.IsDeleted);
     }
+    
+    
+    /// <inheritdoc/>
     public async Task<User?> GetActiveUserByEmailAndPassword(string? email, string? password)
     {
         return await _dbContext.Users
@@ -68,26 +95,33 @@ internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
             .FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == password
                && u.IsActive && !u.IsDeleted);
     }
+    
+    /// <inheritdoc/>
     public async Task<User?> AddUser(User user)
     {
         var entity = await _dbContext.Users.AddAsync(user);
         await _dbContext.SaveChangesAsync();
         return entity.Entity;
     }
+    
+    /// <inheritdoc/>
     public async Task<User?> UpdateUser(User user)
     {
         _dbContext.Users.Update(user);
         await _dbContext.SaveChangesAsync();
         return user;
     }
-
-    public async Task<bool> HardDeleteUser(User user)
+    
+    /// <inheritdoc/>
+    public async Task<bool> HardDeleteUser(Guid userId)
     {
-        if (user == null) return false;
-        _dbContext.Users.Remove(user);
-        return await _dbContext.SaveChangesAsync() > 0;
+        var rowAffected = await _dbContext.Users
+            .Where(u => u.Id == userId)
+            .ExecuteDeleteAsync();
+        return rowAffected > 0;
     }
-
+    
+    /// <inheritdoc/>
     public async Task<bool> SoftDeleteUser(Guid userId, Guid deletedBy)
     {
         var affectedRows = await _dbContext.Users
@@ -102,197 +136,76 @@ internal class UserRepository(SQLServerDbContext dbContext) : IUserRepository
         return affectedRows > 0;
     }
     
+    /// <inheritdoc/>
+    public async Task<bool> LockUser(Guid userId, DateTime? lockUntil)
+    {
+        int rowsAffected = await _dbContext.Users
+            .Where(u => u.Id == userId && u.LockedUntil == null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(u => u.LockedUntil, lockUntil)
+                .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
+            );
+        return rowsAffected > 0;
+    }
+    
+    /// <inheritdoc/>
+    public async Task<bool> UnlockUser(Guid userId)
+    {
+        int rowsAffected = await _dbContext.Users
+            .Where(u => u.Id == userId && u.LockedUntil != null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(u => u.LockedUntil, (DateTime?)null)
+                .SetProperty(u => u.FailedLoginAttempts, 0)
+                .SetProperty(u => u.UpdatedAt, DateTime.UtcNow));
+        return rowsAffected > 0;
+    }
+    
+    /// <inheritdoc/>
+    public async Task<bool> ActivateUser(Guid userId)=> await SetUserActiveStatus(userId, true);
+    
+    /// <inheritdoc/>
+    public async Task<bool> DeactivateUser(Guid userId) => await SetUserActiveStatus(userId, false);
+
+    /// <inheritdoc/>
+    public async Task<UserAvailabilityInfo?> GetUserAvailabilityInfo(Guid userId)
+    {
+        var user = await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => new UserAvailabilityInfo
+                (
+                    !u.IsDeleted,                 // Exists
+                    u.IsActive && !u.IsDeleted, // IsActive
+                    u.LockedUntil.HasValue && u.LockedUntil.Value > DateTime.UtcNow   // IsLocked
+                )
+            )
+            .FirstOrDefaultAsync();
+        return user;
+    }
+    
+    /// <inheritdoc/>
     public async Task<bool> IsEmailOrUsernameTaken(string email, string username)
     {
         return await _dbContext.Users
             .AsNoTracking()
             .AnyAsync(user => user.Email == email || user.Username == username);
     }
-
-    public async Task<bool> IsUserActive(Guid id)
-    {
-        return await _dbContext.Users
-            .AsNoTracking()
-            .AnyAsync(user => user.Id == id && user.IsActive && !user.IsDeleted);
-    }
-
-    public async Task<bool> IsUserActiveByEmail(string email)
-    {
-        return await _dbContext.Users
-            .AsNoTracking()
-            .AnyAsync(user => user.Email == email && user.IsActive && !user.IsDeleted);
-    }
-
-    public async Task<bool> IsUserExists(Guid userId)
-    {
-        return await _dbContext.Users
-            .AsNoTracking()
-            .AnyAsync(user => user.Id == userId && !user.IsDeleted);
-    }
-    
-
     #endregion
-    
-    #region Authentication and security
-    
-    public Task<bool> VerifyPassword(Guid userId, string password)
-    {
-        throw new NotImplementedException();
-    }
-    public Task<bool> UpdatePassword(Guid userId, string passwordHash)
-    {
-        throw new NotImplementedException();
-    }
-    public Task<bool> UpdateLastLogin(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-    public Task<bool> IncrementFailedLoginAttempts(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-    public Task<bool> LockUser(Guid userId, DateTime? lockUntil)
-    {
-        throw new NotImplementedException();
-    }
-    public Task<bool> UnlockUser(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-    public Task<bool> IsUserLocked(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-    
-    #endregion
-    
-    #region Email verification
 
-    public Task<bool> MarkEmailAsVerified(Guid userId)
+    
+    
+    #region Private Helper Methods
+
+    private async Task<bool> SetUserActiveStatus(Guid userId, bool isActive)
     {
-        throw new NotImplementedException();
-    }
-    public Task<bool> IsEmailVerified(Guid userId)
-    {
-        throw new NotImplementedException();
+        var rowAffected = await _dbContext.Users
+            .Where(u => u.Id == userId && u.IsActive == !isActive)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(u => u.IsActive, isActive)
+                .SetProperty(u => u.UpdatedAt, DateTime.UtcNow));
+        return rowAffected > 0;
     }
 
     #endregion
-    
-    #region Two-factor authentication
-
-    public Task<bool> EnableTwoFactor(Guid userId, string secret)
-    {
-        throw new NotImplementedException();
-    }
-    public Task<bool> DisableTwoFactor(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-    public Task<string?> GetTwoFactorSecret(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    #endregion
-    
-    #region Profile management
-
-    public Task<bool> UpdateProfile(Guid userId, string name, string? timeZone, string? profilePictureUrl)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> UpdateSubscriptionPlan(Guid userId, enSubscriptionPlan plan)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> UpdateUserRole(Guid userId, enUserRole role)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> ActivateUser(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> DeactivateUser(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    #endregion
-
-    #region Usage tracking
-
-    public Task<bool> IncrementLinksCreated(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> ResetMonthlyUsage(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<int> GetMonthlyLinksCreated(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<int> GetTotalLinksCreated(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> CanCreateMoreLinks(Guid userId, int limit)
-    {
-        throw new NotImplementedException();
-    }
-    
-
-    #endregion
-    
-    #region Advanced queries
-
-    public async Task<IEnumerable<User>> GetAll()
-    {
-        return await _dbContext.Users.AsNoTracking().ToListAsync();
-    }
-    
-    public Task<IEnumerable<User>> GetUsersByRole(enUserRole role)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IEnumerable<User>> GetUsersBySubscriptionPlan(enSubscriptionPlan plan)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IEnumerable<User>> GetActiveUsers()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IEnumerable<User>> GetInactiveUsers()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IEnumerable<User>> GetUnverifiedUsers()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IEnumerable<User>> GetLockedUsers()
-    {
-        throw new NotImplementedException();
-    }
-
-    #endregion
-    
     
 }

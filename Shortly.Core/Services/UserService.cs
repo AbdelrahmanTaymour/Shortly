@@ -8,17 +8,29 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Core.Services;
 
+/// <summary>
+/// Implements user management operations defined in <see cref="IUserService"/>.
+/// Handles business logic, validation, and coordinates with the user repository.
+/// </summary>
 public class UserService(IUserRepository userRepository, ILogger<UserService> logger): IUserService
 {
     private readonly IUserRepository _userRepository = userRepository;
     private readonly ILogger<UserService> _logger = logger;
 
-    // Admin Operations
+    #region Admin
+
+
+    /// <inheritdoc/>
     public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
     {
         var users = await _userRepository.GetAll();
         return users.MapToUserDtoList();
     }
+    
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Maps the domain User entity to UserDto for client consumption.
+    /// </remarks>
     public async Task<UserDto> GetUserByIdAsync(Guid id)
     {
         var user = await _userRepository.GetUserById(id);
@@ -26,6 +38,15 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
             throw new Exception("User not found");
         return user.MapToUserDto();
     }
+    
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Performs the following operations:
+    /// 1. Validates email and username uniqueness
+    /// 2. Creates new user with hashed password
+    /// 3. Sets default values for optional fields
+    /// 4. Logs successful creation
+    /// </remarks>
     public async Task<CreateUserResponse> CreateUserAsync(CreateUserRequest createUserRequest)
     {
         var userExists = await _userRepository
@@ -55,6 +76,15 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         
         return user.MapToUserCreateResponse();
     }
+    
+    
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Updates all user properties and maintains audit fields:
+    /// - Sets UpdatedAt to current UTC time
+    /// - Validates email/username uniqueness before update
+    /// - Logs successful updates with role and subscription changes
+    /// </remarks>
     public async Task<UserDto> UpdateUserAsync(Guid userId, UpdateUserDto updateUserDto)
     {
         var user = await _userRepository.GetUserById(userId);
@@ -66,6 +96,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         if(isEmailOrUsernameTaken) 
             throw new Exception("User with the same username or email already exists.");
 
+        // Update user properties
         user.Name = updateUserDto.Name;
         user.Email = updateUserDto.Email;
         user.Username = updateUserDto.Username;
@@ -87,6 +118,12 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
                                "SubscriptionPlan: {SubscriptionPlan}", userId, user.Role, user.SubscriptionPlan);
         return user.MapToUserDto();
     }
+    
+    
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Logs a warning message upon successful deletion as this is a destructive operation.
+    /// </remarks>
     public async Task<bool> HardDeleteUserAsync(Guid userId)
     {
         var isDeleteSucceed = await _userRepository.HardDeleteUser(userId);
@@ -98,6 +135,9 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         
         return true;
     }
+    
+    
+    /// <inheritdoc/>
     public async Task<bool> SoftDeleteUserAccount(Guid userId, Guid deletedBy)
     {
         var success = await _userRepository.SoftDeleteUser(userId, deletedBy);
@@ -106,53 +146,62 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         return success;
     }
 
+    /// <inheritdoc/>
     public async Task<bool> LockUser(Guid userId, DateTime? lockUntil)
     {
+        lockUntil ??= DateTime.UtcNow.AddDays(1);
+        
         var success = await _userRepository.LockUser(userId, lockUntil);
         if(!success)
-            throw new Exception("User not found");
+            throw new Exception("Bad Request: Invalid operation. User may not exist or is already locked.");
         
         _logger.LogWarning("User account with UserId: {UserId} Locked Until: {LockUntil}", userId, lockUntil);
 
         return success;
     }
 
+    /// <inheritdoc/>
     public async Task<bool> UnlockUser(Guid userId)
     {
         var success = await _userRepository.UnlockUser(userId);
         
         if(!success)
-            throw new Exception("User not found");
+            throw new Exception("Bad Request: Invalid operation");
         
         _logger.LogInformation("User account with UserId: {UserId}, Unlocked", userId);
         
         return success;
     }
 
+    /// <inheritdoc/>
     public async Task<bool> ActivateUser(Guid userId)
     {
         var success = await _userRepository.ActivateUser(userId);
-        
-        if(!success)
-            throw new Exception("User not found");
+
+        if (!success)
+            return false;
+            //throw new Exception("Bad Request: Invalid operation");
         
         _logger.LogInformation("User account activated. UserId: {UserId}", userId);
         
         return success;
     }
 
+    /// <inheritdoc/>
     public async Task<bool> DeactivateUser(Guid userId)
     {
         var success = await _userRepository.DeactivateUser(userId);
         
         if(!success)
-            throw new Exception("User not found");
+            return false;
+            //throw new Exception("User not found");
         
         _logger.LogInformation("User account deactivated. UserId: {UserId}", userId);
         
         return success;
     }
 
+    /// <inheritdoc/>
     public async Task<UserAvailabilityInfo?> GetUserAvailabilityInfo(Guid userId)
     {
         var userAvailability = await _userRepository.GetUserAvailabilityInfo(userId);
@@ -163,6 +212,13 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         return userAvailability;
     }
 
+    
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Enforces minimum values for pagination parameters:
+    /// - Page numbers less than 1 are set to 1
+    /// - Page sizes less than 1 are set to 10
+    /// </remarks>
     public async Task<UserSearchResponse> SearchUsers(string? searchTerm,
         enUserRole? role, enSubscriptionPlan? subscriptionPlan, bool? isActive, int page, int pageSize)
     {
@@ -183,5 +239,6 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
     }
 
     
+    #endregion
     
 }
