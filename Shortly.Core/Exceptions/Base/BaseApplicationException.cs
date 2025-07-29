@@ -15,8 +15,10 @@ public abstract class BaseApplicationException : Exception
     {
     }
 
-    protected BaseApplicationException(string message, Exception innerException) : base(message, innerException)
+    protected BaseApplicationException(string message, Exception innerException, object? details = null) 
+        : base(message, innerException)
     {
+        Details = details;
     }
 
     protected BaseApplicationException(string message, object? details) : base(message)
