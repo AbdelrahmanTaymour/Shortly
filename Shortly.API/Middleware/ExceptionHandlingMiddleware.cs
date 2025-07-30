@@ -156,14 +156,14 @@ public class ExceptionHandlingMiddleware
     /// <param name="statusCode">The HTTP status code.</param>
     /// <param name="traceId">The unique identifier for tracing the request.</param>
     /// <returns>A standardized exception response DTO.</returns>
-    public static ExceptionResponseDto CreateErrorResponse(string message, string errorCode, HttpStatusCode statusCode,
+    private static ExceptionResponseDto CreateErrorResponse(string message, string errorCode, HttpStatusCode statusCode,
         string traceId)
     {
         return new ExceptionResponseDto(message, errorCode, "SystemException", (int)statusCode, null, traceId);
     }
 
     /// <summary>
-    ///     Logs exception details with appropriate severity level.
+    ///     Logs exception details with the appropriate severity level.
     /// </summary>
     /// <param name="exception">The exception to log.</param>
     /// <param name="statusCode">The HTTP status code associated with the error.</param>

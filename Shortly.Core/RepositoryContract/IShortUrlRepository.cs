@@ -43,7 +43,7 @@ public interface IShortUrlRepository
     /// The updated <see cref="ShortUrl"/> object containing values for <see cref="ShortUrl.OriginalUrl"/> and <see cref="ShortUrl.ShortCode"/>.
     /// </param>
     /// <returns>The updated <see cref="ShortUrl"/> instance if found and updated, otherwise null.</returns>
-    Task<ShortUrl?> UpdateShortUrlByIdAsync(Guid id, ShortUrl updatedShortUrl);
+    Task<bool> UpdateShortUrlByIdAsync(int id, ShortUrl updatedShortUrl);
     
     /// <summary>
     /// Deletes a `ShortUrl` entity by its unique identifier.

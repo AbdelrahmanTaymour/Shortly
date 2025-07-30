@@ -67,5 +67,5 @@ public interface IShortUrlsService
     /// A task representing the asynchronous operation, with a result containing the statistics
     /// as a <see cref="StatusShortUrlResponse"/> if the short code exists, or null if it does not exist.
     /// </returns>
-    Task<StatusShortUrlResponse?> GetStatisticsAsync(string shortCode);
+    Task<StatusShortUrlResponse> GetStatisticsAsync(string shortCode);
 }

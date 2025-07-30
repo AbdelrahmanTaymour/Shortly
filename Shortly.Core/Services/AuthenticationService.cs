@@ -1,6 +1,4 @@
-using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Authentication;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -8,7 +6,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core.DTOs.AuthDTOs;
-using Shortly.Core.DTOs.AuthDTOs;
+using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Extensions;
 using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
@@ -30,11 +29,11 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
     {
         var user = await _userRepository.GetActiveUserByEmail(loginRequest.Email);
         if (user == null)
-            throw new AuthenticationException("Invalid email or password.");
+            throw new NotFoundException("User with the specified email was not found.");
 
         //Verify the password matches the hashed password
         if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
-            throw new AuthenticationException("Invalid email or password.");
+            throw new UnauthorizedException("Invalid email or password.");
 
         var tokensResponse = await GenerateTokensAsync(user);
         
@@ -47,7 +46,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
             await _userRepository.IsEmailOrUsernameTaken(registerRequest.Email, registerRequest.Username);
         
         if (userExists)
-            throw new Exception("User with the same username or email already exists.");
+            throw new ConflictException("user", "email or username");
         
         var user = new User
         {
@@ -59,7 +58,8 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         };
         
         user = await _userRepository.AddUser(user);
-        if(user == null) throw new Exception("Error creating user");
+        if(user == null) 
+            throw new DatabaseException("Failed to create user. Please try again later.");
         
         var tokensResponse = await GenerateTokensAsync(user);
         return new AuthenticationResponse(user.Id, user.Name, user.Email, tokensResponse, true);
@@ -96,7 +96,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         if (storedRefreshToken == null)
         {
             _logger.LogWarning("Invalid refresh token attempted");
-            throw new SecurityTokenException("Invalid refresh token");
+            throw new UnauthorizedException("Refresh token is invalid or has expired.");
         }
 
         // Remove the Invalid refresh token
@@ -104,7 +104,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         {
             _logger.LogWarning("Inactive refresh token attempted for user {UserId}", storedRefreshToken.UserId);
             await _refreshTokenRepository.RemoveRefreshTokenAsync(storedRefreshToken);
-            throw new SecurityTokenException("Invalid refresh token");
+            throw new UnauthorizedException("Refresh token is no longer active.");
         }
 
         // Generate new refresh token string
@@ -192,7 +192,8 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
 
     private SigningCredentials GetSigningCredentials()
     {
-        var key = Encoding.UTF8.GetBytes(_jwtSection["Key"] ?? throw new InvalidOperationException());
+        var key = Encoding.UTF8.GetBytes(_jwtSection["Key"] 
+                                         ?? throw new ConfigurationException("JWT signing key is missing in configuration."));
         var secret = new SymmetricSecurityKey(key);
         return new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
     }
@@ -237,7 +238,8 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         {
             Id = Guid.NewGuid(),
             Token = Sha256Extensions.ComputeHash(refreshTokenString), // Hash to store in the database
-            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] ?? throw new InvalidOperationException())),
+            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] 
+                                                             ?? throw new ConfigurationException("JWT:RefreshTokenExpirationDays config is missing."))),
             CreatedAt = DateTime.UtcNow,
             UserId = userId,
             IsRevoked = false
@@ -245,11 +247,9 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
 
         var savedToken = await _refreshTokenRepository.AddRefreshTokenAsync(refreshToken);
         if (savedToken == null)
-        {
-            throw new InvalidOperationException("Failed to save refresh token");
-        }
+            throw new DatabaseException("Failed to persist refresh token.");
+        
         savedToken.Token = refreshTokenString; // Re-assign the token with unhashed token
-
         return savedToken;
     }
 
@@ -263,7 +263,8 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
             ValidateIssuerSigningKey = true,
             ValidIssuer = _jwtSection["Issuer"],
             ValidAudience = _jwtSection["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSection["Key"] ?? throw new InvalidOperationException())),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSection["Key"] 
+                                                                               ?? throw new ConfigurationException("JWT signing key is missing in configuration."))),
             ClockSkew = TimeSpan.Zero // Remove default 5-minute clock skew
         };
         
@@ -274,16 +275,11 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         if (jwtSecurityToken is null || !jwtSecurityToken.Header.Alg
                 .Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
         {
-            throw new SecurityTokenException("Invalid token algorithm");
+            throw new ValidationException("JWT token algorithm is invalid.");
         }
         return principal;
     }
     
-    private async Task<User?> GetUserFromRefreshTokenAsync(RefreshToken refreshToken)
-    {
-        return await _refreshTokenRepository.GetUserFromRefreshTokenAsync(refreshToken.UserId);
-    }
-
     #endregion
 
 }

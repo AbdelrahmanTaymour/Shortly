@@ -15,7 +15,7 @@ public sealed class ConflictException : ClientErrorException
     }
 
     public ConflictException(string entityName, object key)
-        : base($"The {entityName} with the identifier '{key}' already exists.",
+        : base($"The {entityName} with the '{key}' already exists.",
             new { EntityName = entityName, Key = key })
     {
     }

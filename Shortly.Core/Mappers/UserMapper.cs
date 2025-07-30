@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Shortly.Core.DTOs.UsersDTOs;
 using Shortly.Domain.Entities;
 

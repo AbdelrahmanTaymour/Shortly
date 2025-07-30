@@ -49,19 +49,11 @@ internal class ShortUrlRepository(SQLServerDbContext dbContext) : IShortUrlRepos
     /// The updated <see cref="ShortUrl"/> object containing values for <see cref="ShortUrl.OriginalUrl"/> and <see cref="ShortUrl.ShortCode"/>.
     /// </param>
     /// <returns>The updated <see cref="ShortUrl"/> instance if found and updated, otherwise null.</returns>
-    public async Task<ShortUrl?> UpdateShortUrlByIdAsync(Guid id, ShortUrl updatedShortUrl)
+    public async Task<bool> UpdateShortUrlByIdAsync(int id, ShortUrl updatedShortUrl)
     {
-        var existingUrl = await _dbContext.ShortUrls.FindAsync(id);
-        if (existingUrl is null)
-        {
-            return null;
-        }
-        
-        existingUrl.OriginalUrl = updatedShortUrl.OriginalUrl;
-        existingUrl.ShortCode = updatedShortUrl.ShortCode;
+        _dbContext.ShortUrls.Update(updatedShortUrl);
         await _dbContext.SaveChangesAsync();
-        
-        return existingUrl;
+        return await _dbContext.SaveChangesAsync() > 0;
     }
 
     

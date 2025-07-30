@@ -1,5 +1,6 @@
 using Shortly.Core.DTOs.ShortUrlDTOs;
-using Shortly.Domain.Entities;
+using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.ServiceContracts;
 using Shortly.Core.Extensions;
@@ -40,25 +41,25 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShort
             // Validate custom short code
             var (isValid, errorMessage) = UrlCodeExtensions.ValidateCustomCode(shortUrlRequest.CustomShortCode);
             if (!isValid)
-                throw new ArgumentException($"Invalid custom short code: {errorMessage}");
+                throw new ValidationException($"Invalid custom short code: {errorMessage}");
                 
             // Check if custom code already exists
             if (await _shortUrlRepository.ShortCodeExistsAsync(shortUrlRequest.CustomShortCode))
-                throw new ArgumentException("Custom short code already exists");
+                throw new ConflictException("Custom short code already exists.");
                 
             shortUrlDomain.ShortCode = shortUrlRequest.CustomShortCode;
             
             // Create entity
             shortUrlDomain = await _shortUrlRepository.CreateShortUrlAsync(shortUrlDomain);
             if (shortUrlDomain is null)
-                throw new Exception("Error creating short url");
+                throw new DatabaseException("Failed to create short URL with custom code.");
         }
         else
         {
             // Create an entity first to get ID
             shortUrlDomain = await _shortUrlRepository.CreateShortUrlAsync(shortUrlDomain);
             if (shortUrlDomain is null)
-                throw new Exception("Error creating short url");
+                throw new DatabaseException("Failed to create short URL.");
             
             // Generate optimized short code 
             var shortCode = await UrlCodeExtensions.GenerateCodeAsync(
@@ -80,14 +81,14 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShort
     {
         var existingUrl = await _shortUrlRepository.GetShortUrlByShortCodeAsync(shortCode);
         if (existingUrl is null)
-        {
-            return null;
-        }
+            throw new NotFoundException($"Short URL with code '{shortCode}' not found.");
         
         existingUrl.OriginalUrl = updatedShortUrlRequest.OriginalUrl;
         existingUrl.UpdatedAt = DateTime.UtcNow;
         
-        await _shortUrlRepository.SaveChangesAsync();
+        var success = await _shortUrlRepository.UpdateShortUrlByIdAsync(existingUrl.Id, existingUrl);
+        if (!success)
+            throw new DatabaseException("Failed to update short URL.");
         
         return existingUrl.MapToShortUrlResponse();
     }
@@ -95,16 +96,17 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShort
     public async Task<bool> DeleteShortUrlAsync(string shortCode)
     {
         var deletedUrl = await _shortUrlRepository.DeleteByShortCodeAsync(shortCode);
-        return deletedUrl is not null;
+        if (deletedUrl is null)
+            throw new NotFoundException($"Short URL with code '{shortCode}' not found or already deleted.");
+        
+        return true;
     }
 
-    public async Task<StatusShortUrlResponse?> GetStatisticsAsync(string shortCode)
+    public async Task<StatusShortUrlResponse> GetStatisticsAsync(string shortCode)
     {
         var existingUrl = await _shortUrlRepository.GetShortUrlByShortCodeAsync(shortCode);
         if (existingUrl is null)
-        {
-            return null;
-        }
+            throw new NotFoundException($"Short URL with code '{shortCode}' not found.");
 
         return existingUrl.MapToStatusShortUrlResponse();
     }
