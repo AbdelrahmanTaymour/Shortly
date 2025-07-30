@@ -65,7 +65,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(createUserRequest.Password, 10),
             SubscriptionPlan = createUserRequest.SubscriptionPlan ?? enSubscriptionPlan.Free,
             Role = createUserRequest.Role ?? enUserRole.StandardUser,
-            ProfilePictureUrl = createUserRequest.ProfilePictureUrl,
+            ProfilePictureUrl = createUserRequest.ProfilePictureUrl == "" ? null : createUserRequest.ProfilePictureUrl,
             TimeZone = createUserRequest.TimeZone,
             IsActive = createUserRequest.IsActive
         };

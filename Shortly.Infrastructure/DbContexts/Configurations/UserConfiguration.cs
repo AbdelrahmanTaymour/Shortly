@@ -26,14 +26,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.PasswordHash)
             .HasMaxLength(256) // For hashed passwords
             .IsUnicode(false);
-        
+
         builder.Property(user => user.SubscriptionPlan)
-            .HasConversion<byte>()
-            .HasDefaultValue(enSubscriptionPlan.Free);
-        
+            .HasConversion<byte>();
+
         builder.Property(user => user.Role)
-            .HasConversion<byte>()
-            .HasDefaultValue(enUserRole.StandardUser);
+            .HasConversion<byte>();
         
         builder.Property(user => user.IsActive)
             .HasDefaultValue(true);

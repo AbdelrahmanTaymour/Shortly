@@ -209,6 +209,7 @@ public class AdminController(IUserService userService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetUserAnalytics()
     {
+        // TODO: CREATE A COMPREHENSIVE USER Analytics
         throw new NotImplementedException();
     }
     

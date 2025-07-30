@@ -2,7 +2,7 @@ namespace Shortly.Domain.Enums;
 
 public enum enSubscriptionPlan
 {
-    Free,
+    Free =1,
     Starter,
     Professional,
     Enterprise
