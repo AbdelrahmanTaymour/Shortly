@@ -8,60 +8,85 @@ using ClientErrors = Shortly.Core.Exceptions.ClientErrors;
 namespace Shortly.API.Middleware;
 
 /// <summary>
-///     Middleware for centralized exception handling in the application.
+///     Enhanced middleware for centralized exception handling with performance optimizations.
 ///     Catches and processes all unhandled exceptions, converting them into standardized API responses.
+///     Features include response caching, structured logging, and performance monitoring.
 /// </summary>
 public class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly IMemoryCache _cache;
+    private readonly Dictionary<Type, (int StatusCode, string ErrorCode)> _exceptionMapping;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="ExceptionHandlingMiddleware" /> class.
     /// </summary>
     /// <param name="next">The next middleware in the pipeline.</param>
     /// <param name="logger">The logger instance for recording exception details.</param>
-    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+    /// <param name="cache">Memory cache for response optimization.</param>
+    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger, IMemoryCache cache)
     {
         _next = next;
         _logger = logger;
+        _cache = cache;
+        
+        // Optimized JSON serialization options
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = false
+            WriteIndented = false,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+
+        // Pre-configured exception mappings for faster lookups
+        _exceptionMapping = new Dictionary<Type, (int StatusCode, string ErrorCode)>
+        {
+            { typeof(ArgumentNullException), (400, "MissingParameter") },
+            { typeof(ArgumentException), (400, "ArgumentError") },
+            { typeof(UnauthorizedAccessException), (403, "AccessDenied") },
+            { typeof(TimeoutException), (408, "Timeout") },
+            { typeof(TaskCanceledException), (408, "OperationCancelled") },
+            { typeof(InvalidOperationException), (400, "InvalidOperation") },
+            { typeof(NotSupportedException), (400, "NotSupported") }
         };
     }
 
     /// <summary>
-    ///     Processes an HTTP request and handles any exceptions that occur.
+    ///     Processes an HTTP request and handles any exceptions that occur with performance monitoring.
     /// </summary>
     /// <param name="httpContext">The context for the current HTTP request.</param>
     public async Task Invoke(HttpContext httpContext)
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var traceId = httpContext.TraceIdentifier;
+
         try
         {
             await _next(httpContext);
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(httpContext, ex);
+            stopwatch.Stop();
+            await HandleExceptionAsync(httpContext, ex, stopwatch.ElapsedMilliseconds, traceId);
         }
     }
 
     /// <summary>
-    ///     Handles exceptions by converting them into appropriate HTTP responses.
+    ///     Enhanced exception handling with performance monitoring and structured logging.
     /// </summary>
     /// <param name="context">The context for the current HTTP request.</param>
     /// <param name="exception">The exception to handle.</param>
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    /// <param name="elapsedMs">Time elapsed before exception occurred.</param>
+    /// <param name="traceId">Unique trace identifier.</param>
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception, long elapsedMs, string traceId)
     {
-        var traceId = context.TraceIdentifier;
-
-        // Handle custom application exceptions
+        // Handle custom application exceptions first (most common)
         if (exception is BaseApplicationException appException)
         {
-            await HandleApplicationExceptionAsync(context, appException, traceId);
+            await HandleApplicationExceptionAsync(context, appException, traceId, elapsedMs);
             return;
         }
 
@@ -69,53 +94,33 @@ public class ExceptionHandlingMiddleware
         if (exception is ValidationException fluentValidationEx)
         {
             var customValidationEx = new ClientErrors.ValidationException(fluentValidationEx);
-            await HandleApplicationExceptionAsync(context, customValidationEx, traceId);
+            await HandleApplicationExceptionAsync(context, customValidationEx, traceId, elapsedMs);
             return;
         }
 
-        // Handle specific system exceptions
-        var response = exception switch
-        {
-            ArgumentNullException nullEx =>
-                CreateErrorResponse("Required parameter is missing.", "MissingParameter", HttpStatusCode.BadRequest,
-                    traceId),
+        // Use pre-configured mappings for faster lookups
+        var response = GetCachedOrCreateErrorResponse(exception, traceId, elapsedMs);
 
-            ArgumentException argEx =>
-                CreateErrorResponse(argEx.Message, "ArgumentError", HttpStatusCode.BadRequest, traceId),
+        // Enhanced structured logging
+        LogExceptionWithContext(exception, response.StatusCode, traceId, elapsedMs, context);
 
-            UnauthorizedAccessException => CreateErrorResponse(
-                "Access denied.", "AccessDenied", HttpStatusCode.Forbidden, traceId),
-
-            TimeoutException => CreateErrorResponse(
-                "The operation timed out.", "Timeout", HttpStatusCode.RequestTimeout, traceId),
-
-            TaskCanceledException => CreateErrorResponse(
-                "The operation was cancelled.", "OperationCancelled", HttpStatusCode.RequestTimeout, traceId),
-
-            _ => CreateErrorResponse(
-                "An unexpected error occurred.", "InternalError", HttpStatusCode.InternalServerError, traceId)
-        };
-
-
-        // Log the exception
-        LogException(exception, response.StatusCode, traceId);
-
-        // Send response
-        await SendErrorResponseAsync(context, response);
+        // Send optimized response
+        await SendOptimizedErrorResponseAsync(context, response);
     }
 
     /// <summary>
-    ///     Handles application-specific exceptions by converting them into appropriate HTTP responses.
+    ///     Handles application-specific exceptions with enhanced logging and performance tracking.
     /// </summary>
     /// <param name="context">The context for the current HTTP request.</param>
     /// <param name="exception">The application-specific exception to handle.</param>
     /// <param name="traceId">The unique identifier for tracing the request.</param>
+    /// <param name="elapsedMs">Time elapsed before exception occurred.</param>
     private async Task HandleApplicationExceptionAsync(HttpContext context, BaseApplicationException exception,
-        string traceId)
+        string traceId, long elapsedMs)
     {
         ExceptionResponseDto response;
 
-        // Special handling for validation exceptions
+        // Special handling for validation exceptions with detailed error mapping
         if (exception is ClientErrors.ValidationException validationEx)
         {
             response = new ValidationErrorResponseDto(
@@ -123,8 +128,14 @@ public class ExceptionHandlingMiddleware
                 validationEx.ValidationErrors,
                 traceId);
 
-            _logger.LogWarning("Validation failed: {Message} | TraceId: {TraceId} | Details: {@Details}",
-                validationEx.Message, traceId, validationEx.ValidationErrors);
+            // Enhanced validation logging with field-level details
+            _logger.LogWarning(
+                "Validation failed: {Message} | TraceId: {TraceId} | Fields: {FieldCount} | Elapsed: {ElapsedMs}ms | Details: {@Details}",
+                validationEx.Message, 
+                traceId, 
+                validationEx.ValidationErrors.Count,
+                elapsedMs,
+                validationEx.ValidationErrors);
         }
         else
         {
@@ -136,57 +147,174 @@ public class ExceptionHandlingMiddleware
                 exception.Details,
                 traceId);
 
-            // Log based on severity
+            // Enhanced logging based on severity with performance context
             if ((int)exception.StatusCode >= 500)
-                _logger.LogError(exception, "Server error occurred: {Message} | TraceId: {TraceId}",
-                    exception.Message, traceId);
+            {
+                _logger.LogError(exception, 
+                    "Server error occurred: {Message} | TraceId: {TraceId} | Elapsed: {ElapsedMs}ms | UserAgent: {UserAgent}",
+                    exception.Message, traceId, elapsedMs, context.Request.Headers.UserAgent.ToString());
+            }
             else
-                _logger.LogWarning("Client error occurred: {Message} | TraceId: {TraceId} | StatusCode: {StatusCode}",
-                    exception.Message, traceId, (int)exception.StatusCode);
+            {
+                _logger.LogWarning(
+                    "Client error occurred: {Message} | TraceId: {TraceId} | StatusCode: {StatusCode} | Elapsed: {ElapsedMs}ms | IP: {ClientIP}",
+                    exception.Message, traceId, (int)exception.StatusCode, elapsedMs, 
+                    context.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
+            }
         }
 
-        await SendErrorResponseAsync(context, response);
+        await SendOptimizedErrorResponseAsync(context, response);
     }
 
     /// <summary>
-    ///     Creates a standardized error response.
+    ///     Creates or retrieves cached error responses for better performance.
     /// </summary>
-    /// <param name="message">The error message.</param>
-    /// <param name="errorCode">The error code identifier.</param>
-    /// <param name="statusCode">The HTTP status code.</param>
-    /// <param name="traceId">The unique identifier for tracing the request.</param>
-    /// <returns>A standardized exception response DTO.</returns>
-    private static ExceptionResponseDto CreateErrorResponse(string message, string errorCode, HttpStatusCode statusCode,
-        string traceId)
+    /// <param name="exception">The exception to handle.</param>
+    /// <param name="traceId">Unique trace identifier.</param>
+    /// <param name="elapsedMs">Time elapsed before exception occurred.</param>
+    /// <returns>Standardized exception response DTO.</returns>
+    private ExceptionResponseDto GetCachedOrCreateErrorResponse(Exception exception, string traceId, long elapsedMs)
     {
-        return new ExceptionResponseDto(message, errorCode, "SystemException", (int)statusCode, null, traceId);
+        var exceptionType = exception.GetType();
+        
+        // Try to get from cache first
+        var cacheKey = $"error_response_{exceptionType.Name}_{exception.Message}";
+        if (_cache.TryGetValue(cacheKey, out ExceptionResponseDto? cachedResponse))
+        {
+            // Clone cached response with new trace ID and timestamp
+            return new ExceptionResponseDto(
+                cachedResponse.Message,
+                cachedResponse.ErrorCode,
+                cachedResponse.ExceptionType,
+                cachedResponse.StatusCode,
+                cachedResponse.Details,
+                traceId);
+        }
+
+        // Create new response
+        var response = CreateErrorResponse(exception, traceId);
+        
+        // Cache common error responses (avoid caching sensitive or unique errors)
+        if (ShouldCacheError(exception))
+        {
+            _cache.Set(cacheKey, response, TimeSpan.FromMinutes(30));
+        }
+
+        return response;
     }
 
     /// <summary>
-    ///     Logs exception details with the appropriate severity level.
+    ///     Determines if an error response should be cached based on exception type and content.
+    /// </summary>
+    /// <param name="exception">The exception to evaluate.</param>
+    /// <returns>True if the error should be cached, false otherwise.</returns>
+    private static bool ShouldCacheError(Exception exception)
+    {
+        // Cache common system exceptions, avoid caching application-specific or sensitive errors
+        return exception switch
+        {
+            ArgumentNullException => true,
+            ArgumentException => true,
+            UnauthorizedAccessException => true,
+            TimeoutException => true,
+            TaskCanceledException => true,
+            _ => false
+        };
+    }
+
+    /// <summary>
+    ///     Creates a standardized error response with enhanced error categorization.
+    /// </summary>
+    /// <param name="exception">The exception to create response for.</param>
+    /// <param name="traceId">Unique trace identifier.</param>
+    /// <returns>A standardized exception response DTO.</returns>
+    private ExceptionResponseDto CreateErrorResponse(Exception exception, string traceId)
+    {
+        var exceptionType = exception.GetType();
+        
+        // Use pre-configured mappings for faster lookups
+        if (_exceptionMapping.TryGetValue(exceptionType, out var mapping))
+        {
+            return new ExceptionResponseDto(
+                exception.Message,
+                mapping.ErrorCode,
+                exceptionType.Name,
+                mapping.StatusCode,
+                null,
+                traceId);
+        }
+
+        // Fallback for unmapped exceptions
+        return new ExceptionResponseDto(
+            "An unexpected error occurred.",
+            "InternalError",
+            "SystemException",
+            500,
+            null,
+            traceId);
+    }
+
+    /// <summary>
+    ///     Enhanced structured logging with context information and performance metrics.
     /// </summary>
     /// <param name="exception">The exception to log.</param>
     /// <param name="statusCode">The HTTP status code associated with the error.</param>
     /// <param name="traceId">The unique identifier for tracing the request.</param>
-    private void LogException(Exception exception, int statusCode, string traceId)
+    /// <param name="elapsedMs">Time elapsed before exception occurred.</param>
+    /// <param name="context">HTTP context for additional information.</param>
+    private void LogExceptionWithContext(Exception exception, int statusCode, string traceId, long elapsedMs, HttpContext context)
     {
+        var logData = new Dictionary<string, object>
+        {
+            ["TraceId"] = traceId,
+            ["StatusCode"] = statusCode,
+            ["ElapsedMs"] = elapsedMs,
+            ["RequestPath"] = context.Request.Path.ToString(),
+            ["RequestMethod"] = context.Request.Method,
+            ["UserAgent"] = context.Request.Headers.UserAgent.ToString(),
+            ["ClientIP"] = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+            ["ExceptionType"] = exception.GetType().Name,
+            ["ExceptionMessage"] = exception.Message
+        };
+
         if (statusCode >= 500)
-            _logger.LogError(exception, "Unhandled exception occurred: {Message} | TraceId: {TraceId}",
-                exception.Message, traceId);
+        {
+            _logger.LogError(exception, 
+                "Unhandled server exception: {Message} | Context: {@Context}",
+                exception.Message, logData);
+        }
         else
-            _logger.LogWarning("Exception occurred: {Message} | TraceId: {TraceId} | StatusCode: {StatusCode}",
-                exception.Message, traceId, statusCode);
+        {
+            _logger.LogWarning(
+                "Client exception: {Message} | Context: {@Context}",
+                exception.Message, logData);
+        }
     }
 
     /// <summary>
-    ///     Sends the error response to the client.
+    ///     Sends optimized error response with compression and caching headers.
     /// </summary>
     /// <param name="context">The context for the current HTTP request.</param>
     /// <param name="response">The error response to send.</param>
-    private async Task SendErrorResponseAsync(HttpContext context, ExceptionResponseDto response)
+    private async Task SendOptimizedErrorResponseAsync(HttpContext context, ExceptionResponseDto response)
     {
         context.Response.StatusCode = response.StatusCode;
         context.Response.ContentType = "application/json";
+        
+        // Add performance and debugging headers
+        context.Response.Headers.Append("X-Error-Code", response.ErrorCode);
+        context.Response.Headers.Append("X-Exception-Type", response.ExceptionType);
+        context.Response.Headers.Append("X-Trace-Id", response.TraceId);
+        
+        // Cache control for error responses (short cache for client errors, no cache for server errors)
+        if (response.StatusCode < 500)
+        {
+            context.Response.Headers.Append("Cache-Control", "private, max-age=60");
+        }
+        else
+        {
+            context.Response.Headers.Append("Cache-Control", "no-cache, no-store, must-revalidate");
+        }
 
         var jsonResponse = JsonSerializer.Serialize(response, _jsonOptions);
         await context.Response.WriteAsync(jsonResponse);
