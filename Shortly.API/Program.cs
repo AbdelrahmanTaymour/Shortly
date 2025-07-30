@@ -125,7 +125,7 @@ public class Program
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials()
-                    .WithExposedHeaders("X-Trace-Id", "X-Error-Code", "X-Cache", "X-Cache-Timestamp");
+                    .WithExposedHeaders("X-Trace-Id", "X-Error-Code", "X-Cache", "X-Cache-Timestamp", "X-Response-Time");
             });
         });
 
@@ -225,10 +225,13 @@ public class Program
         // 10. Authorization
         app.UseAuthorization();
         
-        // 11. Controller mapping
+        // 11. Response Transformation (after authorization, before controllers)
+        app.UseMiddleware<ResponseTransformationMiddleware>();
+        
+        // 12. Controller mapping
         app.MapControllers();
         
-        // 12. Health check endpoint
+        // 13. Health check endpoint
         app.MapGet("/health", () => new { 
             Status = "Healthy", 
             Timestamp = DateTime.UtcNow,
