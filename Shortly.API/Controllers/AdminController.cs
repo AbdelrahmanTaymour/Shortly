@@ -10,6 +10,7 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
 
+//[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class AdminController(IUserService userService) : ControllerBase
