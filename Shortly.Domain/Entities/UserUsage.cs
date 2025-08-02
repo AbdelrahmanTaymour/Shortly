@@ -1,0 +1,14 @@
+namespace Shortly.Domain.Entities;
+
+public class UserUsage
+{
+    public Guid UserId { get; set; }
+    public int MonthlyLinksCreated { get; set; }
+    public int MonthlyQrCodesCreated { get; set; }
+    public int TotalLinksCreated { get; set; }
+    public int TotalQrCodesCreated { get; set; }
+    public DateTime MonthlyResetDate { get; set; } = DateTime.UtcNow.AddDays(1);
+    
+    // Navigation properties
+    public User User { get; set; }
+}

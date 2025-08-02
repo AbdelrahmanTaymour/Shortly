@@ -13,14 +13,12 @@ public class OrganizationMemberConfiguration: IEntityTypeConfiguration<Organizat
         builder.HasKey(x => x.Id);
         
         // Properties configuration
-            
-        builder.Property(e => e.Role)
+        builder.Property(e => e.RoleId)
             .HasConversion<byte>()
-            .HasDefaultValue(enUserRole.StandardUser);
+            .HasDefaultValue((byte)enUserRole.Member);
             
         builder.Property(e => e.CustomPermissions)
-            .HasConversion<int>()
-            .HasDefaultValue(enPermissions.None);
+            .HasConversion<long>().HasDefaultValue(enPermissions.None);
             
         builder.Property(e => e.JoinedAt)
             .HasDefaultValueSql("GETUTCDATE()")
@@ -29,21 +27,25 @@ public class OrganizationMemberConfiguration: IEntityTypeConfiguration<Organizat
         builder.Property(e => e.IsActive)
             .HasDefaultValue(true);
         
-        // Indexes for performance
-        builder.HasIndex(x => new { x.OrganizationId, x.UserId })
-            .IsUnique()
-            .HasDatabaseName("IX_OrganizationMembers_OrganizationId_UserId");
-        
-        
-        // Foreign key relationships
-        builder.HasOne(e => e.Organization)
-            .WithMany(e => e.Members)
-            .HasForeignKey(e => e.OrganizationId)
-            .OnDelete(DeleteBehavior.Cascade);
-            
-        builder.HasOne(e => e.User)
-            .WithMany(u => u.OrganizationMemberships)
-            .HasForeignKey(e => e.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // Indexes
+        builder.HasIndex(om => new { om.OrganizationId, om.UserId }).IsUnique();
+        builder.HasIndex(om => om.UserId);
+        builder.HasIndex(om => new { om.OrganizationId, om.IsActive });
+
+        // Relationships
+        builder.HasOne(om => om.Role)
+            .WithMany()
+            .HasForeignKey(om => om.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(om => om.CreatedShortUrls)
+            .WithOne(s => s.CreatedBy)
+            .HasForeignKey(s => s.CreatedByMemberId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasMany(om => om.JoinedTeams)
+            .WithOne(tm => tm.Member)
+            .HasForeignKey(tm => tm.MemberId)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

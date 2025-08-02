@@ -12,30 +12,48 @@ public class OrganizationConfiguration: IEntityTypeConfiguration<Organization>
         // Primary key
         builder.HasKey(x => x.Id);
         
-        
         // Properties configuration
-        builder.Property(e => e.Name)
-            .HasMaxLength(50);
-            
-        builder.Property(e => e.SubscriptionPlan)
-            .HasConversion<byte>()
-            .HasDefaultValue(enSubscriptionPlan.Enterprise);
-            
-        builder.Property(e => e.CreatedAt)
-            .HasDefaultValueSql("GETUTCDATE()")
-            .HasColumnType("datetime2(0)");
+        builder.Property(e => e.Name).HasMaxLength(100);
+        builder.Property(o => o.Description).HasMaxLength(500);
+        builder.Property(o => o.Website).HasMaxLength(500).IsUnicode(false);
+        builder.Property(o => o.LogoUrl).HasMaxLength(500);
+        builder.Property(o => o.MemberLimit).HasDefaultValue(10);
+        builder.Property(o => o.IsActive).HasDefaultValue(false);
+        builder.Property(o => o.IsSubscribed).HasDefaultValue(false);
+        builder.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()").HasColumnType("datetime2(0)");
+        builder.Property(o => o.UpdatedAt).HasDefaultValueSql("GETUTCDATE()").HasColumnType("datetime2(0)");
+        builder.Property(o => o.DeletedAt).HasColumnType("datetime2(0)");
         
-        
-        // Foreign key relationships
-        builder.HasOne(e => e.Owner)
-            .WithMany(u => u.OwnedOrganizations)
-            .HasForeignKey(e => e.OwnerId)
-            .OnDelete(DeleteBehavior.Restrict); // Prevent cascading delete
-            
-        builder.HasMany(e => e.Members)
-            .WithOne(e => e.Organization)
-            .HasForeignKey(e => e.OrganizationId)
+        // Indexes
+        builder.HasIndex(o => o.OwnerId);
+        builder.HasIndex(o => o.IsActive);
+        builder.HasIndex(o => new { o.IsActive, o.DeletedAt });
+
+        // Relationships
+        builder.HasOne(o => o.Owner)
+            .WithMany()
+            .HasForeignKey(o => o.OwnerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(o => o.Members)
+            .WithOne(m => m.Organization)
+            .HasForeignKey(m => m.OrganizationId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(o => o.Teams)
+            .WithOne(t => t.Organization)
+            .HasForeignKey(t => t.OrganizationId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasMany(o => o.ShortUrls)
+            .WithOne(s => s.Organization)
+            .HasForeignKey(s => s.OrganizationId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasMany(o => o.AuditLogs)
+            .WithOne(a => a.Organization)
+            .HasForeignKey(a => a.OrganizationId)
+            .OnDelete(DeleteBehavior.NoAction);
 
     }
 }

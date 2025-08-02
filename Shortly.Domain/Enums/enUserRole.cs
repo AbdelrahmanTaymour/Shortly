@@ -3,8 +3,7 @@ namespace Shortly.Domain.Enums;
 public enum enUserRole
 {
     Viewer = 1,
-    StandardUser,
-    PowerUser,
+    Member,
     TeamManager,
     OrgAdmin,
     OrgOwner,

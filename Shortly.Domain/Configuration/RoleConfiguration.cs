@@ -17,16 +17,9 @@ public class RoleConfiguration
             DefaultPermissions = enPermissions.ReadUrl | enPermissions.ViewBasicAnalytics,
             Description = "Read-only access to URLs and analytics. Typically for guests or clients."
         },
-        [enUserRole.StandardUser] = new RoleConfiguration
+        [enUserRole.Member] = new RoleConfiguration
         {
-            Role = enUserRole.StandardUser,
-            DefaultPermissions = enPermissions.BasicUrlOperations | enPermissions.BasicAnalytics |
-                                 enPermissions.CreateCustomAlias | enPermissions.GenerateQrCodes,
-            Description = "Regular user with control over their own URLs and basic analytics."
-        },
-        [enUserRole.PowerUser] = new RoleConfiguration
-        {
-            Role = enUserRole.PowerUser,
+            Role = enUserRole.Member,
             DefaultPermissions = enPermissions.FullUrlManagement | enPermissions.FullAnalytics |
                                  enPermissions.CustomizationFeatures | enPermissions.ApiUser |
                                  enPermissions.SetPasswordProtection | enPermissions.ManageCampaigns,
