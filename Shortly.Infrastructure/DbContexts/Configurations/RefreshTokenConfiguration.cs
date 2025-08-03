@@ -11,15 +11,14 @@ public class RefreshTokenConfiguration: IEntityTypeConfiguration<RefreshToken>
         // Primary key
         builder.HasKey(x => x.Id);
         
-        
         // Properties configuration
-        builder.Property(e => e.Token)
-            .HasMaxLength(512)
+        builder.Property(e => e.TokenHash)
+            .HasMaxLength(128)
             .IsUnicode(false);
             
         builder.Property(e => e.ExpiresAt)
             .HasColumnType("datetime2(0)");
-            
+
         builder.Property(e => e.IsRevoked)
             .HasDefaultValue(false);
             
@@ -27,22 +26,17 @@ public class RefreshTokenConfiguration: IEntityTypeConfiguration<RefreshToken>
             .HasDefaultValueSql("GETUTCDATE()")
             .HasColumnType("datetime2(0)");
         
+        builder.Property(e => e.UpdatedAt)
+            .HasDefaultValueSql("GETUTCDATE()")
+            .HasColumnType("datetime2(0)");
+        
+        // Indexes
+        builder.HasIndex(rt => rt.TokenHash).IsUnique();
+        builder.HasIndex(rt => rt.UserId);
+        builder.HasIndex(rt => new { rt.UserId, rt.IsRevoked, rt.ExpiresAt });
         
         // Ignore computed properties
         builder.Ignore(e => e.IsExpired);
         builder.Ignore(e => e.IsActive);
-        
-        
-        // Indexes for performance
-        builder.HasIndex(x => x.Token)
-            .IsUnique()
-            .HasDatabaseName("IX_RefreshTokens_Token");
-        
-        
-        // Foreign key relationship
-        builder.HasOne(e => e.User)
-            .WithMany(u => u.RefreshTokens)
-            .HasForeignKey(e => e.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
     }
 }
