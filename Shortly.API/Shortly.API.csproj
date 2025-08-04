@@ -22,4 +22,10 @@
       <ProjectReference Include="..\Shortly.Infrastructure\Shortly.Infrastructure.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Reference Include="Shortly.Core">
+        <HintPath>bin\Debug\net8.0\Shortly.Core.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
 </Project>

@@ -1,5 +1,6 @@
 using FluentValidation;
 using Shortly.Core.DTOs.UsersDTOs;
+using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Core.Extensions;
 
 namespace Shortly.Core.Validators.Users;
@@ -8,7 +9,7 @@ public class UpdateUserDtoValidator : AbstractValidator<UpdateUserDto>
 {
     public UpdateUserDtoValidator()
     {
-        RuleFor(x => x.Name)
+        /*RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Name is required.")
             .Length(2, 100).WithMessage("Name must be between 2 and 100 characters.")
             .Must(name => name.IsValidName()).WithMessage("Name can only contain letters, spaces, hyphens, apostrophes, and periods.");
@@ -61,7 +62,9 @@ public class UpdateUserDtoValidator : AbstractValidator<UpdateUserDto>
         RuleFor(x => x.LockedUntil)
             .Must(date => date.IsInFuture())
             .When(x => x.LockedUntil.HasValue)
-            .WithMessage("Lock expiration date must be in the future.");
+            .WithMessage("Lock expiration date must be in the future.");*/
+        
+        throw new NotImplementedException();
 
     }
 }

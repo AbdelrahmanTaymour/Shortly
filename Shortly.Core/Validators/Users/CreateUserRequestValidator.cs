@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using FluentValidation;
 using Shortly.Core.DTOs.UsersDTOs;
+using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Core.Extensions;
 
 namespace Shortly.Core.Validators.Users;
@@ -24,7 +25,7 @@ public partial class CreateUserRequestValidator : AbstractValidator<CreateUserRe
     
     public CreateUserRequestValidator()
     {
-        RuleFor(x => x.Name)
+        /*RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Name is required.")
             .Length(2, 100).WithMessage("Name must be between 2 and 100 characters.")
             .Must(name => name.IsValidName()).WithMessage("Name can only contain letters, spaces, hyphens, apostrophes, and periods.");
@@ -67,8 +68,9 @@ public partial class CreateUserRequestValidator : AbstractValidator<CreateUserRe
 
         RuleFor(x => x.IsActive)
             .NotNull().WithMessage("IsActive status must be specified.");
+            */
 
-
+        throw new NotImplementedException();
     }
     
     // Optimized password complexity check - single pass through password

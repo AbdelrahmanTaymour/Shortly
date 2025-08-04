@@ -1,4 +1,3 @@
-using Shortly.Core.Context;
 using Shortly.Domain.Enums;
 
 namespace Shortly.Core.ServiceContracts;
@@ -13,5 +12,4 @@ public interface IAuthorizationService
     void GrantPermission(Guid userId, enPermissions permission);
     void RevokePermission(Guid userId, enPermissions permission);
     void ChangeUserRole(Guid userId, enPermissions newRole);
-    UserContext GetUserContext(Guid userId);
 }

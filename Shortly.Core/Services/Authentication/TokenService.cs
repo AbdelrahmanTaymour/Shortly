@@ -9,62 +9,21 @@ using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Extensions;
-using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
-using Shortly.Core.ServiceContracts;
+using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Domain.Entities;
 
-namespace Shortly.Core.Services;
+namespace Shortly.Core.Services.Authentication;
 
-public class AuthenticationService(IUserRepository userRepository,IRefreshTokenRepository refreshTokenRepository,
-    IConfiguration configuration, ILogger<AuthenticationService> logger): IAuthenticationService
+/// <summary>
+/// Provides methods for generating, validating, and revoking JWT access and refresh tokens.
+/// </summary>
+public class TokenService(IConfiguration configuration, ILogger<TokenService> logger,
+    IRefreshTokenRepository refreshTokenRepository) : ITokenService
 {
-    private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
-    private readonly ILogger<AuthenticationService> _logger = logger;
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IConfiguration _configuration = configuration;
     private readonly IConfigurationSection _jwtSection = configuration.GetSection("Jwt");
-
     
-    public async Task<AuthenticationResponse?> Login(LoginRequest loginRequest)
-    {
-        var user = await _userRepository.GetActiveUserByEmail(loginRequest.Email);
-        if (user == null)
-            throw new NotFoundException("User with the specified email was not found.");
-
-        //Verify the password matches the hashed password
-        if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
-            throw new UnauthorizedException("Invalid email or password.");
-
-        var tokensResponse = await GenerateTokensAsync(user);
-        
-        return new AuthenticationResponse(user.Id, user.Name, user.Email, tokensResponse, true);
-    }
-
-    public async Task<AuthenticationResponse?> Register(RegisterRequest registerRequest)
-    {
-        bool userExists =
-            await _userRepository.IsEmailOrUsernameTaken(registerRequest.Email, registerRequest.Username);
-        
-        if (userExists)
-            throw new ConflictException("user", "email or username");
-        
-        var user = new User
-        {
-            Id = Guid.NewGuid(),
-            Name = registerRequest.Name,
-            Email = registerRequest.Email,
-            Username = registerRequest.Username,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password,10), // Hash the PasswordHash
-        };
-        
-        user = await _userRepository.AddUser(user);
-        if(user == null) 
-            throw new DatabaseException("Failed to create user. Please try again later.");
-        
-        var tokensResponse = await GenerateTokensAsync(user);
-        return new AuthenticationResponse(user.Id, user.Name, user.Email, tokensResponse, true);
-    }
-    
+    /// <inheritdoc />
     public async Task<TokenResponse> GenerateTokensAsync(User user)
     {
         // Revoke any existing active refresh tokens for this user
@@ -77,33 +36,35 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         // Generate refresh token
         var refreshToken = await CreateRefreshTokenAsync(user.Id);
         
-        _logger.LogInformation("Tokens generated successfully for user {UserId}", user.Id);
+        logger.LogInformation("Tokens generated successfully for user {UserId}", user.Id);
         return new TokenResponse
         (
             AccessToken: accessToken,
-            RefreshToken: refreshToken.Token,
+            RefreshToken: refreshToken.TokenHash,
             AccessTokenExpiry: accessTokenExpiry,
             RefreshTokenExpiry: refreshToken.ExpiresAt
         );
     }
-
+    
+    /// <inheritdoc />
+    /// <exception cref="UnauthorizedException">Thrown if the token is invalid, expired, or inactive.</exception>
     public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken)
     {
-        var storedRefreshToken = await _refreshTokenRepository
+        var storedRefreshToken = await refreshTokenRepository
             .GetRefreshTokenAsync(Sha256Extensions.ComputeHash(refreshToken));
             
         // Validate refresh token
         if (storedRefreshToken == null)
         {
-            _logger.LogWarning("Invalid refresh token attempted");
+            logger.LogWarning("Invalid refresh token attempted");
             throw new UnauthorizedException("Refresh token is invalid or has expired.");
         }
 
         // Remove the Invalid refresh token
         if (!storedRefreshToken.IsActive)
         {
-            _logger.LogWarning("Inactive refresh token attempted for user {UserId}", storedRefreshToken.UserId);
-            await _refreshTokenRepository.RemoveRefreshTokenAsync(storedRefreshToken);
+            logger.LogWarning("Inactive refresh token attempted for user {UserId}", storedRefreshToken.UserId);
+            await refreshTokenRepository.RemoveRefreshTokenAsync(storedRefreshToken);
             throw new UnauthorizedException("Refresh token is no longer active.");
         }
 
@@ -111,13 +72,13 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         var newRefreshToken = GenerateRefreshTokenString();
             
         // Update Refresh Token entity
-        storedRefreshToken.Token = Sha256Extensions.ComputeHash(newRefreshToken);
-        await _refreshTokenRepository.SaveChangesAsync();
+        storedRefreshToken.TokenHash = Sha256Extensions.ComputeHash(newRefreshToken);
+        await refreshTokenRepository.SaveChangesAsync();
 
         // Generate new tokens
         var newAccessToken = GenerateAccessToken(storedRefreshToken.User);
 
-        _logger.LogInformation("Tokens refreshed successfully for user {UserId}", storedRefreshToken.User.Id);
+        logger.LogInformation("Tokens refreshed successfully for user {UserId}", storedRefreshToken.User.Id);
         return new TokenResponse
         (
             AccessToken: newAccessToken,
@@ -127,7 +88,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         );
     }
     
-   
+    /// <inheritdoc />
     public TokenValidationResultDto ValidateToken(string token, bool validateLifetime = true)
     {
         try
@@ -142,7 +103,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Token validation failed");
+            logger.LogWarning(ex, "Token validation failed");
             return new TokenValidationResultDto
             (
                 IsValid: false,
@@ -151,37 +112,43 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         }
     }
 
+    /// <inheritdoc />
     public async Task RevokeTokenAsync(string refreshToken)
     {
        
-        var storedRefreshToken = await _refreshTokenRepository
+        var storedRefreshToken = await refreshTokenRepository
             .GetRefreshTokenAsync(Sha256Extensions.ComputeHash(refreshToken));
         
         if (storedRefreshToken != null && storedRefreshToken.IsActive)
         {
             storedRefreshToken.IsRevoked = true;
-            await _refreshTokenRepository.UpdateRefreshTokenAsync(storedRefreshToken);
-            _logger.LogInformation("Refresh token revoked: {Token}", refreshToken);
+            await refreshTokenRepository.UpdateRefreshTokenAsync(storedRefreshToken);
+            logger.LogInformation("Refresh token revoked: {Token}", refreshToken);
         }
     }
-
+    
+    /// <inheritdoc />
     public async Task RevokeAllUserTokensAsync(Guid userId)
     {
-        var activeTokens = await _refreshTokenRepository.GetAllActiveRefreshTokensByUserIdAsync(userId);
+        var activeTokens = await refreshTokenRepository.GetAllActiveRefreshTokensByUserIdAsync(userId);
         if (activeTokens == null || activeTokens.Count == 0) return;
         foreach (var token in activeTokens)
         {
             token.IsRevoked = true;
-            await _refreshTokenRepository.UpdateRefreshTokenAsync(token);
+            await refreshTokenRepository.UpdateRefreshTokenAsync(token);
         }
-        _logger.LogInformation("All refresh tokens revoked for user {UserId}", userId);
+        logger.LogInformation("All refresh tokens revoked for user {UserId}", userId);
     }
 
     
     
-    
     #region Private Methods
 
+    /// <summary>
+    /// Generates a JWT access token for the specified user.
+    /// </summary>
+    /// <param name="user">The user to generate the token for.</param>
+    /// <returns>A signed JWT access token.</returns>
     private string GenerateAccessToken(User user)
     {
         var signingCredentials = GetSigningCredentials();
@@ -190,6 +157,11 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         return new JwtSecurityTokenHandler().WriteToken(tokenOptions);
     }
 
+    /// <summary>
+    /// Retrieves signing credentials from the JWT configuration.
+    /// </summary>
+    /// <returns>Signing credentials using HMAC SHA256 algorithm.</returns>
+    /// <exception cref="ConfigurationException">Thrown when the JWT signing key is missing in the configuration.</exception>
     private SigningCredentials GetSigningCredentials()
     {
         var key = Encoding.UTF8.GetBytes(_jwtSection["Key"] 
@@ -198,6 +170,11 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         return new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
     }
 
+    /// <summary>
+    /// Builds a list of JWT claims from the user object.
+    /// </summary>
+    /// <param name="user">The user for whom to create claims.</param>
+    /// <returns>A list of claims including user ID, name, email, and permissions.</returns>
     private List<Claim> GetClaims(User user)
     {
         var claims = new List<Claim>
@@ -205,12 +182,18 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role.ToString()),
+            new Claim("Permissions", user.Permissions.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
         return claims;
     }
 
+    /// <summary>
+    /// Constructs a <see cref="JwtSecurityToken"/> with the provided signing credentials and claims.
+    /// </summary>
+    /// <param name="signingCredentials">The credentials used to sign the token.</param>
+    /// <param name="claims">The claims to include in the token.</param>
+    /// <returns>A configured JWT token object.</returns>
     private JwtSecurityToken GenerateTokenOptions(SigningCredentials signingCredentials, List<Claim> claims)
     {
         return new JwtSecurityToken(
@@ -222,6 +205,10 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         );
     }
 
+    /// <summary>
+    /// Generates a secure, random refresh token string.
+    /// </summary>
+    /// <returns>A base64-encoded refresh token string.</returns>
     private string GenerateRefreshTokenString()
     {
         var randomNumber = new byte[32];
@@ -230,6 +217,13 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         return Convert.ToBase64String(randomNumber);
     }
     
+    /// <summary>
+    /// Creates and stores a hashed refresh token for the given user ID.
+    /// </summary>
+    /// <param name="userId">The ID of the user to associate with the token.</param>
+    /// <returns>The saved refresh token entity, with unhashed token in the TokenHash property.</returns>
+    /// <exception cref="DatabaseException">Thrown if storing the refresh token fails.</exception>
+    /// <exception cref="ConfigurationException">Thrown if the refresh token expiration config is missing.</exception>
     private async Task<RefreshToken> CreateRefreshTokenAsync(Guid userId)
     {
         var refreshTokenString = GenerateRefreshTokenString();
@@ -237,22 +231,31 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         var refreshToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
-            Token = Sha256Extensions.ComputeHash(refreshTokenString), // Hash to store in the database
-            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"] 
+            TokenHash = Sha256Extensions.ComputeHash(refreshTokenString), // Hash to store in the database
+            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(configuration["Jwt:RefreshTokenExpirationDays"] 
                                                              ?? throw new ConfigurationException("JWT:RefreshTokenExpirationDays config is missing."))),
             CreatedAt = DateTime.UtcNow,
             UserId = userId,
             IsRevoked = false
         };
 
-        var savedToken = await _refreshTokenRepository.AddRefreshTokenAsync(refreshToken);
+        var savedToken = await refreshTokenRepository.AddRefreshTokenAsync(refreshToken);
         if (savedToken == null)
             throw new DatabaseException("Failed to persist refresh token.");
         
-        savedToken.Token = refreshTokenString; // Re-assign the token with unhashed token
+        savedToken.TokenHash = refreshTokenString; // Re-assign the token with unhashed token
         return savedToken;
     }
 
+    /// <summary>
+    /// Extracts the claims principal from a JWT token.
+    /// </summary>
+    /// <param name="token">The JWT token to validate and parse.</param>
+    /// <param name="validateLifetime">Whether to validate token expiration.</param>
+    /// <returns>The <see cref="ClaimsPrincipal"/> extracted from the token.</returns>
+    /// <exception cref="ConfigurationException">Thrown if issuer, audience, or signing key is missing.</exception>
+    /// <exception cref="ValidationException">Thrown when the token algorithm is invalid.</exception>
+    /// <exception cref="SecurityTokenException">Thrown when token validation fails.</exception>
     private ClaimsPrincipal GetPrincipalFromExpiredToken(string token, bool validateLifetime = true)
     {
         var tokenValidationParameters = new TokenValidationParameters

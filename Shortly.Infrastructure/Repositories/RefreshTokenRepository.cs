@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Shortly.Core.Context;
 using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
 using Shortly.Infrastructure.DbContexts;
@@ -20,7 +19,7 @@ public class RefreshTokenRepository(SQLServerDbContext dbContext):IRefreshTokenR
     {
         return await _dbContext.RefreshTokens
             .Include(rt => rt.User)
-            .FirstOrDefaultAsync(rt => rt.Token == token);
+            .FirstOrDefaultAsync(rt => rt.TokenHash == token);
     }
 
     public async Task<RefreshToken?> GetActiveRefreshTokenByUserIdAsync(Guid userId)
@@ -63,7 +62,7 @@ public class RefreshTokenRepository(SQLServerDbContext dbContext):IRefreshTokenR
     public async Task<bool> IsRefreshTokenActiveAsync(string token)
     {
         return await _dbContext.RefreshTokens
-            .AnyAsync(rt => rt.Token == token && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow);
+            .AnyAsync(rt => rt.TokenHash == token && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow);
     }
 
     public async Task CleanupExpiredTokensAsync()

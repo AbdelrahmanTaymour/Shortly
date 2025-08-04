@@ -6,20 +6,19 @@ namespace Shortly.Domain.Entities;
 public class User
 {
     public Guid Id { get; set; }
-    public string Name {get; set;}
     public string Email { get; set; }
     public string Username { get; set; }
     public string PasswordHash { get; set; }
-    public enSubscriptionPlan SubscriptionPlanId { get; set; }
-    public long Permissions { get; set; }
-    public bool IsActive { get; set; }
-    public bool IsEmailConfirmed { get; set; }
-    public DateTime? LastLoginAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public DateTime CreatedAt { get; init; }
-    public bool IsDeleted { get; set; }
-    public DateTime? DeletedAt { get; init; }
-    public Guid? DeletedBy { get; set; }
+    public enSubscriptionPlan SubscriptionPlanId { get; set; } = enSubscriptionPlan.Free;
+    public long Permissions { get; set; } = (long)enPermissions.BasicUrlOperations;
+    public bool IsActive { get; set; } = true;
+    public bool IsEmailConfirmed { get; set; } = false;
+    public DateTime? LastLoginAt { get; set; } = null;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; init; } = null;
+    public Guid? DeletedBy { get; set; } = null;
     
     // Navigation properties
     public SubscriptionPlan? SubscriptionPlan { get; set; }
