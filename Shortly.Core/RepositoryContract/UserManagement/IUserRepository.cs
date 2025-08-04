@@ -1,4 +1,8 @@
+using System.Linq.Expressions;
+using Shortly.Core.DTOs.UsersDTOs.Search;
+using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Domain.Entities;
+using Shortly.Domain.Enums;
 
 namespace Shortly.Core.RepositoryContract.UserManagement;
 
@@ -137,4 +141,67 @@ public interface IUserRepository
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>A collection of users for the specified page.</returns>
     Task<IEnumerable<User>> GetPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves a paginated list of users that match the given custom criteria.
+    /// </summary>
+    /// <param name="predicateint">An expression used to filter users based on custom logic.</param>
+    /// <param name="page">The page number to retrieve (1-based index). Defaults to 1.</param>
+    /// <param name="pageSize">The number of users to retrieve per page. Defaults to 10.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the asynchronous operation.</param>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains an <see cref="IEnumerable{User}"/>
+    /// of users that match the specified criteria and fall within the specified page.
+    /// </returns>
+    Task<IEnumerable<User>> GetUsersByCustomCriteriaAsync(Expression<Func<User, bool>> predicateint, int page = 1,
+        int pageSize = 10, CancellationToken cancellationToken = default);
+    
+    
+    /// <summary>
+    /// Searches for users based on optional filtering criteria with support for pagination.
+    /// Allows returning either basic or complete user information.
+    /// </summary>
+    /// <param name="searchTerm">
+    ///     Optional term to search by email or username. Case-insensitive partial matches are supported.
+    /// </param>
+    /// <param name="subscriptionPlan">
+    ///     Optional subscription plan filter. If specified, limits results to users with the given plan.
+    /// </param>
+    /// <param name="isActive">
+    ///     Optional filter to include only active or inactive users.
+    /// </param>
+    /// <param name="isDeleted">
+    ///     Optional filter to include only deleted or non-deleted users.
+    /// </param>
+    /// <param name="isEmailConfirmed">
+    ///     Optional filter to include only confirmed or not-confirmed emails.
+    /// </param>
+    /// <param name="page">
+    ///     The 1-based page number. Must be greater than 0.
+    /// </param>
+    /// <param name="pageSize">
+    ///     The number of users to return per page. Must be between 1 and 1000.
+    /// </param>
+    /// <param name="retrieveCompleteUser">
+    ///     If true, includes detailed related data (profile, security, usage) per user. 
+    ///     If false, returns only basic user information.
+    /// </param>
+    ///  /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
+    /// <returns>
+    ///     A tuple containing:
+    ///     <list type="bullet">
+    ///         <item><description>A collection of <see cref="IUserSearchResult"/> records (either <see cref="UserSearchResult"/> or <see cref="CompleteUserSearchResult"/>)</description></item>
+    ///         <item><description>The total number of matching users</description></item>
+    ///     </list>
+    /// </returns>
+    Task<(IEnumerable<IUserSearchResult> Users, int TotalCount)> SearchUsers(
+        string? searchTerm = null,
+        enSubscriptionPlan? subscriptionPlan = null,
+        bool? isActive = null,
+        bool? isDeleted = null,
+        bool? isEmailConfirmed = null,
+        int page = 1,
+        int pageSize = 10,
+        bool retrieveCompleteUser = false,
+        CancellationToken cancellationToken = default);
 }

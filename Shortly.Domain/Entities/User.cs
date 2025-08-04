@@ -6,9 +6,9 @@ namespace Shortly.Domain.Entities;
 public class User
 {
     public Guid Id { get; set; }
-    public string Email { get; set; }
-    public string Username { get; set; }
-    public string PasswordHash { get; set; }
+    public required string Email { get; set; }
+    public required string Username { get; set; }
+    public required string PasswordHash { get; set; }
     public enSubscriptionPlan SubscriptionPlanId { get; set; } = enSubscriptionPlan.Free;
     public long Permissions { get; set; } = (long)enPermissions.BasicUrlOperations;
     public bool IsActive { get; set; } = true;
@@ -21,10 +21,10 @@ public class User
     public Guid? DeletedBy { get; set; } = null;
     
     // Navigation properties
-    public SubscriptionPlan? SubscriptionPlan { get; set; }
-    public UserProfile? Profile { get; set; }
-    public UserSecurity? UserSecurity { get; set; }
-    public UserUsage? UserUsage { get; set; }
+    public SubscriptionPlan SubscriptionPlan { get; set; }
+    public UserProfile Profile { get; set; }
+    public UserSecurity UserSecurity { get; set; }
+    public UserUsage UserUsage { get; set; }
     public ICollection<ShortUrl> OwnedShortUrls { get; set; }
     public ICollection<UserAuditLog> AuditLogs { get; set; }
     public ICollection<RefreshToken> RefreshTokens { get; set; }

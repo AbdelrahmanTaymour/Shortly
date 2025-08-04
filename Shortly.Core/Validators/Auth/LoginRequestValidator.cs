@@ -7,9 +7,8 @@ public class LoginRequestValidator : AbstractValidator<LoginRequest>
 {
     public LoginRequestValidator()
     {
-        RuleFor(request => request.Email)
-            .NotEmpty().WithMessage("Original URL is required.")
-            .EmailAddress().WithMessage("Invalid email address format.");
+        RuleFor(request => request.EmailOrUsername)
+            .NotEmpty().WithMessage("Email or username is required.");
 
         RuleFor(request => request.Password)
             .NotEmpty().WithMessage("Password is required.")
