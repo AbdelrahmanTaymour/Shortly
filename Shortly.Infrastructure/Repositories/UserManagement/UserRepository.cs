@@ -8,8 +8,17 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.UserManagement;
 
+/// <summary>
+/// SQL Server implementation of the user repository.
+/// </summary>
+/// <remarks>
+/// Implements comprehensive user management with soft delete pattern, bulk operations for performance,
+/// and transactional user creation with related entities.
+/// </remarks>
 public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository> logger) : IUserRepository
 {
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetByIdAsync(Guid id)
     {
         try
@@ -23,6 +32,9 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Uses Entity Framework's Find method - may return deleted users as it doesn't filter by IsDeleted.</remarks>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         try
@@ -38,6 +50,8 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         try
@@ -54,6 +68,8 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetByEmailOrUsernameAsync(string emailOrUsername, CancellationToken cancellationToken = default)
     {
         try
@@ -71,6 +87,9 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses eager loading with Include to fetch profile data in a single query.</remarks>
     public async Task<User?> GetWithProfileAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -87,6 +106,9 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Uses eager loading with Include to fetch security data in a single query.</remarks>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetWithSecurityAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -103,6 +125,9 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Uses eager loading with Include to fetch usage data in a single query.</remarks>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetWithUsageAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -119,6 +144,9 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Loads all related entities in a single query - use carefully as this can be expensive for large datasets.</remarks>
     public async Task<User?> GetCompleteUserAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -138,6 +166,13 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="ValidationException">Thrown when user ID is empty.</exception>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>
+    /// Creates user and all related entities (UserProfile, UserSecurity, UserUsage) in a single transaction.
+    /// Uses bulk insert with AddRangeAsync for optimal performance.
+    /// </remarks>
     public async Task<User> CreateAsync(User user, CancellationToken cancellationToken = default)
     {
         if(user.Id == Guid.Empty)
@@ -169,6 +204,8 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> UpdateAsync(User user, CancellationToken cancellationToken = default)
     {
         try
@@ -183,6 +220,9 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance bulk update without loading entity into memory.</remarks>
     public async Task<bool> DeleteAsync(Guid id, Guid deletedBy, CancellationToken cancellationToken = default)
     {
         try
@@ -204,6 +244,8 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -219,6 +261,8 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
     {
         try
@@ -234,6 +278,8 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default)
     {
         try
@@ -249,6 +295,8 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> EmailOrUsernameExistsAsync(string email, string username, CancellationToken cancellationToken = default)
     {
         try
@@ -266,6 +314,9 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="ValidationException">Thrown when page or pageSize parameters are invalid.</exception>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<IEnumerable<User>> GetPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
         if (page < 1)

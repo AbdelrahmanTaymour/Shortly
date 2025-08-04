@@ -7,8 +7,18 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.UserManagement;
 
+/// <summary>
+/// SQL Server implementation of the user usage repository.
+/// </summary>
+/// <remarks>
+/// Uses bulk update operations (ExecuteUpdateAsync) for optimal performance when incrementing usage counters.
+/// Designed for high-frequency operations like tracking link and QR code creation.
+/// </remarks>
 public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsageRepository> logger) : IUserUsageRepository
 {
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses AsNoTracking for optimal read-only performance.</remarks>
     public async Task<UserUsage?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -24,6 +34,8 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> UpdateAsync(UserUsage usage, CancellationToken cancellationToken = default)
     {
         try
@@ -38,6 +50,9 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance atomic increment of both monthly and total counters.</remarks>
     public async Task<bool> IncrementLinksCreatedAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -57,6 +72,9 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance atomic increment of both monthly and total counters.</remarks>
     public async Task<bool> IncrementQrCodesCreatedAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -76,6 +94,9 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance reset operation, typically called during billing cycles.</remarks>
     public async Task<bool> ResetMonthlyUsageAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -95,6 +116,12 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>
+    /// Uses date comparison with AddDays(1) to include the entire target day for comprehensive batch processing.
+    /// Designed for background service consumption.
+    /// </remarks>
     public async Task<IEnumerable<UserUsage>> GetUsersForMonthlyResetAsync(DateTime date, CancellationToken cancellationToken = default)
     {
         try

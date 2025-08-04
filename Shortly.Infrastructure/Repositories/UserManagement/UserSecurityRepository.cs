@@ -7,8 +7,18 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.UserManagement;
 
+/// <summary>
+/// SQL Server implementation of the user security repository.
+/// </summary>
+/// <remarks>
+/// Uses bulk update operations (ExecuteUpdateAsync) for optimal performance when modifying security counters and lock states.
+/// All operations update the UpdatedAt timestamp for audit tracking.
+/// </remarks>
 public class UserSecurityRepository(SQLServerDbContext dbContext, ILogger<UserSecurityRepository> logger) : IUserSecurityRepository
 {
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses AsNoTracking for optimal read-only performance.</remarks>
     public async Task<UserSecurity?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -24,6 +34,8 @@ public class UserSecurityRepository(SQLServerDbContext dbContext, ILogger<UserSe
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> UpdateAsync(UserSecurity security, CancellationToken cancellationToken = default)
     {
         try
@@ -38,6 +50,9 @@ public class UserSecurityRepository(SQLServerDbContext dbContext, ILogger<UserSe
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance atomic increment without loading entity into memory.</remarks>
     public async Task<bool> IncrementFailedLoginAttemptsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -57,6 +72,9 @@ public class UserSecurityRepository(SQLServerDbContext dbContext, ILogger<UserSe
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance atomic reset without loading entity into memory.</remarks>
     public async Task<bool> ResetFailedLoginAttemptsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -76,6 +94,9 @@ public class UserSecurityRepository(SQLServerDbContext dbContext, ILogger<UserSe
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance lock operation without loading entity into memory.</remarks>
     public async Task<bool> LockUserAsync(Guid userId, DateTime lockedUntil, CancellationToken cancellationToken = default)
     {
         try
@@ -95,6 +116,12 @@ public class UserSecurityRepository(SQLServerDbContext dbContext, ILogger<UserSe
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>
+    /// Uses ExecuteUpdateAsync for high-performance unlock operation that clears the lock date and resets failed attempts.
+    /// Performs comprehensive unlock in a single atomic operation.
+    /// </remarks>
     public async Task<bool> UnlockUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try

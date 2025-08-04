@@ -8,8 +8,17 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.UserManagement;
 
+/// <summary>
+/// SQL Server implementation of the user profile repository.
+/// </summary>
+/// <remarks>
+/// Uses Entity Framework Core with SQL Server for data access.
+/// </remarks>
 public class UserProfileRepository(SQLServerDbContext dbContext, ILogger<UserProfileRepository> logger) : IUserProfileRepository
 {
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses AsNoTracking for optimal read-only performance.</remarks>
     public async Task<UserProfile?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -25,6 +34,8 @@ public class UserProfileRepository(SQLServerDbContext dbContext, ILogger<UserPro
         }
     }
     
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> UpdateAsync(UserProfile profile, CancellationToken cancellationToken = default)
     {
         try
@@ -39,6 +50,8 @@ public class UserProfileRepository(SQLServerDbContext dbContext, ILogger<UserPro
         }
     }
 
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> DeleteAsync(UserProfile profile, CancellationToken cancellationToken = default)
     {
         try
