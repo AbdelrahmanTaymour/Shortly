@@ -1,6 +1,8 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.ServiceContracts;
+using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.Services.Authentication;
 using Shortly.Core.Services;
 using Shortly.Core.Validators.ShortUrl;
 
@@ -28,9 +30,8 @@ public static class DependencyInjection
         // Register Core-related services.
         services.AddScoped<IShortUrlsService, ShortUrlsService>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
-        services.AddScoped<IAuthorizationService, AuthorizationService>();
-        services.AddScoped<IUserService, UserService>();
-
+        services.AddScoped<ITokenService, TokenService>();
+        
         services.AddValidatorsFromAssemblyContaining<ShortUrlRequestValidator>();
         
         return services;
