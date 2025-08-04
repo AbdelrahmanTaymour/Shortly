@@ -54,6 +54,17 @@ public class RefreshTokenRepository(SQLServerDbContext dbContext):IRefreshTokenR
         await _dbContext.SaveChangesAsync();
     }
 
+    public async Task<bool> RevokeRefreshTokenAsync(string token, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.RefreshTokens
+            .AsNoTracking()
+            .Where(rf => rf.TokenHash == token && !rf.IsRevoked)
+            .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(rt => rt.IsRevoked, true)
+                    .SetProperty(rt => rt.RevokedAt, DateTime.UtcNow)
+                , cancellationToken) > 0;
+    }
+
     public async Task<User?> GetUserFromRefreshTokenAsync(Guid userId)
     {
         return await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);

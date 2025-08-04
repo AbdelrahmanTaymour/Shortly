@@ -113,31 +113,27 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
     }
 
     /// <inheritdoc />
-    public async Task RevokeTokenAsync(string refreshToken)
+    public async Task<bool> RevokeTokenAsync(string refreshToken, CancellationToken cancellationToken)
     {
-       
-        var storedRefreshToken = await refreshTokenRepository
-            .GetRefreshTokenAsync(Sha256Extensions.ComputeHash(refreshToken));
+        var result = await refreshTokenRepository.RevokeRefreshTokenAsync(Sha256Extensions.ComputeHash(refreshToken),
+            cancellationToken);
         
-        if (storedRefreshToken != null && storedRefreshToken.IsActive)
-        {
-            storedRefreshToken.IsRevoked = true;
-            await refreshTokenRepository.UpdateRefreshTokenAsync(storedRefreshToken);
-            logger.LogInformation("Refresh token revoked: {Token}", refreshToken);
-        }
+        if(result) logger.LogInformation("Refresh token revoked: {Token}", refreshToken);
+        return result;
     }
     
     /// <inheritdoc />
-    public async Task RevokeAllUserTokensAsync(Guid userId)
+    public async Task<bool> RevokeAllUserTokensAsync(Guid userId)
     {
         var activeTokens = await refreshTokenRepository.GetAllActiveRefreshTokensByUserIdAsync(userId);
-        if (activeTokens == null || activeTokens.Count == 0) return;
+        if (activeTokens == null || activeTokens.Count == 0) return false; // No active tokens to revoke;
         foreach (var token in activeTokens)
         {
             token.IsRevoked = true;
             await refreshTokenRepository.UpdateRefreshTokenAsync(token);
         }
         logger.LogInformation("All refresh tokens revoked for user {UserId}", userId);
+        return true;
     }
 
     

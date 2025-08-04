@@ -18,17 +18,10 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
     private readonly IUserRepository _userRepository = userRepository;
 
     /// <inheritdoc />
-    /// <exception cref="NotFoundException">Thrown when no user matches the given email or username.</exception>
-    /// <exception cref="UnauthorizedException">Thrown when the password does not match.</exception>
     public async Task<AuthenticationResponse?> Login(LoginRequest loginRequest, CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.GetByEmailOrUsernameAsync(loginRequest.EmailOrUsername, cancellationToken);
-        if (user == null)
-            throw new NotFoundException("User with the specified email was not found.");
-
-        //Verify the password matches the hashed password
-        if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
-            throw new UnauthorizedException("Invalid email or password.");
+        var user = await ValidateCredentialsAsync(loginRequest.EmailOrUsername, loginRequest.Password,
+            cancellationToken);
 
         // Generate access and refresh tokens
         var tokensResponse = await tokenService.GenerateTokensAsync(user);
@@ -67,5 +60,25 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
         
         var tokensResponse = await tokenService.GenerateTokensAsync(user);
         return new AuthenticationResponse(user.Id, user.Email, tokensResponse, true, !user.IsEmailConfirmed);
+    }
+
+    /// <inheritdoc/>
+    /// <exception cref="NotFoundException">
+    /// Thrown when no user is found with the specified email or username.
+    /// </exception>
+    /// <exception cref="UnauthorizedException">
+    /// Thrown when the password does not match the stored hash for the user.
+    /// </exception>
+    public async Task<User> ValidateCredentialsAsync(string emailOrUsername, string password, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByEmailOrUsernameAsync(emailOrUsername, cancellationToken);
+        if (user == null)
+            throw new NotFoundException("User with the specified email was not found.");
+
+        //Verify the password matches the hashed password
+        if(!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            throw new UnauthorizedException("Invalid email or password.");
+
+        return user;
     }
 }
