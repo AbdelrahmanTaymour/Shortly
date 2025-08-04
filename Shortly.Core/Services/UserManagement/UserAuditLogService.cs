@@ -5,6 +5,7 @@ using Shortly.Domain.Entities;
 
 namespace Shortly.Core.Services.UserManagement;
 
+
 public class UserAuditLogService(IUserAuditLogRepository auditLogRepository, ILogger<UserAuditLogService> logger)
     : IUserAuditLogService
 {

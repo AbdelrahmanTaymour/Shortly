@@ -57,4 +57,14 @@ public interface IUserSecurityRepository
     /// <returns>True if the unlock was successful; otherwise, false.</returns>
     Task<bool> UnlockUserAsync(Guid userId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Retrieves a paginated list of users who are currently locked based on the <c>LockedUntil</c> timestamp.
+    /// </summary>
+    /// <param name="page">The page number to retrieve (1-based index).</param>
+    /// <param name="pageSize">The number of users to retrieve per page.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains a collection of locked <see cref="User"/> entities.
+    /// </returns>
+    Task<IEnumerable<User>> GetLockedUsersAsync(int page, int pageSize, CancellationToken cancellationToken = default);
 }

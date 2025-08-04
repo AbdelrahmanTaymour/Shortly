@@ -141,4 +141,31 @@ public class UserSecurityRepository(SQLServerDbContext dbContext, ILogger<UserSe
             throw new DatabaseException("Failed to unlock user", ex);
         }
     }
+
+    /// <inheritdoc/>
+    /// <exception cref="DatabaseException">
+    /// Thrown when an error occurs while querying the database for locked users.
+    /// </exception>
+    /// <remarks>
+    /// A user is considered locked if their <c>UserSecurity.LockedUntil</c> value is set and is later than the current UTC time.
+    /// </remarks>
+    public async Task<IEnumerable<User>> GetLockedUsersAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Users
+                .AsNoTracking()
+                .Include(u => u.UserSecurity)
+                .Where(u => u.UserSecurity.LockedUntil.HasValue && u.UserSecurity.LockedUntil > DateTime.UtcNow)
+                .OrderByDescending(u => u.UserSecurity.LockedUntil)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving page locked users: Page {Page}, PageSize {PageSize}", page, pageSize);
+            throw new DatabaseException("Failed to unlock user", ex);
+        }
+    }
 }
