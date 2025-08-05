@@ -17,8 +17,6 @@ namespace Shortly.Infrastructure.Repositories.UserManagement;
 public class UserProfileRepository(SQLServerDbContext dbContext, ILogger<UserProfileRepository> logger) : IUserProfileRepository
 {
     /// <inheritdoc/>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    /// <remarks>Uses AsNoTracking for optimal read-only performance.</remarks>
     public async Task<UserProfile?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -35,7 +33,6 @@ public class UserProfileRepository(SQLServerDbContext dbContext, ILogger<UserPro
     }
     
     /// <inheritdoc/>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> UpdateAsync(UserProfile profile, CancellationToken cancellationToken = default)
     {
         try
@@ -50,19 +47,4 @@ public class UserProfileRepository(SQLServerDbContext dbContext, ILogger<UserPro
         }
     }
 
-    /// <inheritdoc/>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    public async Task<bool> DeleteAsync(UserProfile profile, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            dbContext.UserProfiles.Remove(profile);
-            return await dbContext.SaveChangesAsync(cancellationToken) > 0;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error deleting user profile for user ID: {UserId}", profile.UserId);
-            throw new DatabaseException("Failed to delete user profile", ex);
-        }
-    }
 }

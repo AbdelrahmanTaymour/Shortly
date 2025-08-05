@@ -15,5 +15,4 @@ public class UserSecurity
     public User? User { get; set; }
 }
 
-
     //TODO: public string[]? TwoFactorRecoveryCodes { get; set; }

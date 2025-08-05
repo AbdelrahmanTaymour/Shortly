@@ -52,7 +52,7 @@ public class AuthenticationService(IUserRepository userRepository,IRefreshTokenR
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password,10), // Hash the PasswordHash
         };
         
-        user = await _userRepository.CreateAsync(user, cancellationToken);
+        user = await _userRepository.CreateAsync(user);
         if(user == null)
         {
             throw new DatabaseException("Failed to create user. Please try again later.");

@@ -97,7 +97,7 @@ internal class ShortUrlRepository(SQLServerDbContext dbContext) : IShortUrlRepos
         await _dbContext.ShortUrls
             .Where(s => s.ShortCode == shortCode)
             .ExecuteUpdateAsync(s =>
-                s.SetProperty(x => x.AccessCount, x => x.AccessCount + 1));
+                s.SetProperty(x => x.TotalClicks, x => x.TotalClicks + 1));
     }
 
     public async Task<bool> ShortCodeExistsAsync(string shortCode)

@@ -9,10 +9,8 @@ namespace Shortly.API.Controllers;
 //[Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class UserController(IUserService userService) : ControllerBase
+public class UserController() : ControllerBase
 {
-    private readonly IUserService _userService = userService;
-
     private Guid GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -23,6 +21,12 @@ public class UserController(IUserService userService) : ControllerBase
     {
         var userEmailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
         return userEmailClaim ?? string.Empty;
+    }
+
+    private long GetCurrentUserPermissions()
+    {
+        var permissionsClaim = User.FindFirst("Permissions")?.Value;
+        return long.TryParse(permissionsClaim, out var permissions) ? permissions : 0;
     }
     
 }
