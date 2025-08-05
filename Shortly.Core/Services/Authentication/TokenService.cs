@@ -47,7 +47,6 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
     }
     
     /// <inheritdoc />
-    /// <exception cref="UnauthorizedException">Thrown if the token is invalid, expired, or inactive.</exception>
     public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken)
     {
         var storedRefreshToken = await refreshTokenRepository

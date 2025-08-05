@@ -1,36 +1,56 @@
+using Microsoft.Extensions.Logging;
+using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Core.ServiceContracts.UserManagement;
 
 namespace Shortly.Core.Services.UserManagement;
 
-public class UserSecurityService : IUserSecurityService
+/// <summary>
+/// Provides security-related operations for user accounts, such as login tracking and account locking.
+/// </summary>
+
+public class UserSecurityService(IUserSecurityRepository securityRepository, ILogger<UserSecurityService> logger)
+    : IUserSecurityService
 {
-    public Task<bool> ValidateUserAccessAsync(Guid userId, CancellationToken cancellationToken = default)
+    /// <inheritdoc/>
+    public async Task<bool> RecordFailedLoginAttemptAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var recorded = await securityRepository.IncrementFailedLoginAttemptsAsync(userId, cancellationToken);
+        if(!recorded)
+            throw new NotFoundException("UserSecurity", userId);
+        return recorded;
     }
 
-    public Task<bool> RecordFailedLoginAttemptAsync(Guid userId, CancellationToken cancellationToken = default)
+    /// <inheritdoc/>
+    public async Task<bool> ResetFailedLoginAttemptsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var done = await securityRepository.ResetFailedLoginAttemptsAsync(userId, cancellationToken);
+        if(!done)
+            throw new NotFoundException("UserSecurity", userId);
+        return done;
     }
 
-    public Task<bool> ResetFailedLoginAttemptsAsync(Guid userId, CancellationToken cancellationToken = default)
+    /// <inheritdoc/>
+    public async Task<bool> IsUserLockedAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return await securityRepository.IsUserLockedAsync(userId, cancellationToken);
     }
 
-    public Task<bool> IsUserLockedAsync(Guid userId, CancellationToken cancellationToken = default)
+    /// <inheritdoc/>
+    public async Task<bool> LockUserAsync(Guid userId, DateTime lockUntil, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var locked = await securityRepository.LockUserAsync(userId, lockUntil, cancellationToken);
+        if(!locked)
+            throw new NotFoundException($"User with id {userId} not found or already locked.");
+        return locked;
     }
 
-    public Task<bool> LockUserAsync(Guid userId, DateTime? lockUntil, string reason, CancellationToken cancellationToken = default)
+    /// <inheritdoc/>
+    public async Task<bool> UnlockUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> UnlockUserAsync(Guid userId, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
+        var unLocked = await securityRepository.UnlockUserAsync(userId, cancellationToken);
+        if(!unLocked)
+            throw new NotFoundException($"User with id {userId} not found or already unlocked.");
+        return unLocked;
     }
 }

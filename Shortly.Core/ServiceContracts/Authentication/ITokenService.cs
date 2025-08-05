@@ -1,4 +1,5 @@
 using Shortly.Core.DTOs.AuthDTOs;
+using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Core.ServiceContracts.Authentication;
@@ -20,6 +21,7 @@ public interface ITokenService
     /// </summary>
     /// <param name="refreshToken">The refresh token to use for generating new tokens.</param>
     /// <returns>A new <see cref="TokenResponse"/> if successful; otherwise, null.</returns>
+    /// <exception cref="UnauthorizedException">Thrown if the token is invalid, expired, or inactive.</exception>
     Task<TokenResponse?> RefreshTokenAsync(string refreshToken);
     
     /// <summary>

@@ -6,14 +6,22 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.UserManagement;
 
+/// <summary>
+/// SQL Server implementation of the user audit log repository.
+/// </summary>
+/// <remarks>
+/// Uses Entity Framework Core with SQL Server for data access.
+/// </remarks>
 public class UserAuditLogRepository(SQLServerDbContext dbContext, ILogger<UserAuditLogRepository> logger) : IUserAuditLogRepository
 {
+    /// <inheritdoc/>
     public async Task AddAsync(UserAuditLog log)
     {
         await dbContext.UserAuditLogs.AddAsync(log);
         await dbContext.SaveChangesAsync();
     }
 
+    /// <inheritdoc/>
     public async Task<IEnumerable<UserAuditLog>> GetByUserIdAsync(Guid userId, int limit = 50, CancellationToken cancellationToken = default)
     {
         return await dbContext.UserAuditLogs
@@ -24,6 +32,7 @@ public class UserAuditLogRepository(SQLServerDbContext dbContext, ILogger<UserAu
             .ToListAsync(cancellationToken);
     }
 
+    /// <inheritdoc/>
     public async Task<UserAuditLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await dbContext.UserAuditLogs
@@ -31,6 +40,7 @@ public class UserAuditLogRepository(SQLServerDbContext dbContext, ILogger<UserAu
             .FirstOrDefaultAsync(log => log.Id == id, cancellationToken);
     }
 
+    /// <inheritdoc/>
     public async Task<IEnumerable<UserAuditLog>> SearchAsync(Guid? userId = null, string? action = null, DateTime? from = null, DateTime? to = null, int page = 1,
         int pageSize = 100, CancellationToken cancellationToken = default)
     {
