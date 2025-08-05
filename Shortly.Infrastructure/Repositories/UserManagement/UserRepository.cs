@@ -507,23 +507,25 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
 
                 return (detailedUsers, detailedUsers.Count);
             }
+            else
+            {
+                var basicUsers = await query
+                    .OrderBy(u => u.Username)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(u => new UserSearchResult(
+                        u.Id,
+                        u.Email,
+                        u.Username,
+                        u.SubscriptionPlanId,
+                        u.IsActive,
+                        u.Permissions
+                    ))
+                    .Cast<IUserSearchResult>()
+                    .ToListAsync(cancellationToken);
 
-            var basicUsers = await query
-                .OrderBy(u => u.Username)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(u => new UserSearchResult(
-                    u.Id,
-                    u.Email,
-                    u.Username,
-                    u.SubscriptionPlanId,
-                    u.IsActive,
-                    u.Permissions
-                ))
-                .Cast<IUserSearchResult>()
-                .ToListAsync(cancellationToken);
-
-            return (basicUsers, totalCount);
+                return (basicUsers, totalCount);
+            }
         }
         catch (Exception ex)
         {

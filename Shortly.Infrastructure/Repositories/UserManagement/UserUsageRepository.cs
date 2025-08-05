@@ -20,9 +20,7 @@ namespace Shortly.Infrastructure.Repositories.UserManagement;
 public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsageRepository> logger) : IUserUsageRepository
 {
     /// <inheritdoc/>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    /// <remarks>Uses AsNoTracking for optimal read-only performance.</remarks>
-    public async Task<UserUsage?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+     public async Task<UserUsage?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -38,7 +36,6 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
     }
 
     /// <inheritdoc/>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> UpdateAsync(UserUsage usage, CancellationToken cancellationToken = default)
     {
         try
@@ -54,8 +51,6 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
     }
 
     /// <inheritdoc/>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    /// <remarks>Uses ExecuteUpdateAsync for high-performance atomic increment of both monthly and total counters.</remarks>
     public async Task<bool> IncrementLinksCreatedAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -76,8 +71,6 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
     }
 
     /// <inheritdoc/>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    /// <remarks>Uses ExecuteUpdateAsync for high-performance atomic increment of both monthly and total counters.</remarks>
     public async Task<bool> IncrementQrCodesCreatedAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -98,9 +91,7 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
     }
 
     /// <inheritdoc/>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    /// <remarks>Uses ExecuteUpdateAsync for high-performance reset operation, typically called during billing cycles.</remarks>
-    public async Task<bool> ResetMonthlyUsageAsync(Guid userId, CancellationToken cancellationToken = default)
+   public async Task<bool> ResetMonthlyUsageAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -120,24 +111,48 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
     }
 
     /// <inheritdoc/>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    /// <remarks>
-    /// Uses date comparison with AddDays(1) to include the entire target day for comprehensive batch processing.
-    /// Designed for background service consumption.
-    /// </remarks>
-    public async Task<IEnumerable<UserUsage>> GetUsersForMonthlyResetAsync(DateTime date, CancellationToken cancellationToken = default)
+   public async Task<int> ResetMonthlyUsageForAllAsync(DateTime resetDate, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var affectedRows = await (
+                    from usage in dbContext.UserUsage
+                    join user in dbContext.Users on usage.UserId equals user.Id
+                    where !user.IsDeleted && usage.MonthlyResetDate.Date <= resetDate.Date
+                    select usage
+                )
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(u => u.MonthlyLinksCreated, 0)
+                        .SetProperty(u => u.MonthlyQrCodesCreated, 0),
+                    cancellationToken);
+
+            logger.LogInformation("Monthly usage reset for {Count} users on {ResetDate}.", affectedRows, resetDate.Date);
+            return affectedRows;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error occurred while resetting monthly usage before {ResetDate}.", resetDate.Date);
+            throw new DatabaseException("Failed to reset monthly usage.", ex);
+        }
+    }
+
+
+    /// <inheritdoc/>
+   public async Task<IEnumerable<UserUsage>> GetUsersWithResetDateInRangeAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
     {
         try
         {
             return await dbContext.UserUsage
                 .AsNoTracking()
-                .Where(uu => uu.MonthlyResetDate.Date <= date.Date.AddDays(1)) // Include the entire day
+                .Where(uu =>
+                    uu.MonthlyResetDate.Date >= from.Date &&
+                    uu.MonthlyResetDate.Date <= to.Date)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving users for monthly reset on date: {Date}", date);
-            throw new DatabaseException("Failed to retrieve users for monthly reset", ex);
+            logger.LogError(ex, "Error retrieving user usage report between {From} and {To}.", from, to);
+            throw new DatabaseException("Failed to retrieve user usage report.", ex);
         }
     }
 

@@ -58,7 +58,11 @@ public static class UserMapper
         return new UserUsageDto(usage.MonthlyLinksCreated, usage.MonthlyQrCodesCreated, usage.TotalLinksCreated,
             usage.TotalQrCodesCreated, usage.MonthlyResetDate);
     }
-    
+
+    public static IEnumerable<UserUsageDto> MapToUserUsageDtoList(this IEnumerable<UserUsage> usages)
+    {
+        return usages.Select(MapToUserUsageDto);
+    }
     
     
 }

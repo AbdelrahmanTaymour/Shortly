@@ -21,14 +21,14 @@ public class User
     public Guid? DeletedBy { get; set; } = null;
     
     // Navigation properties
-    public SubscriptionPlan SubscriptionPlan { get; set; }
-    public UserProfile Profile { get; set; }
-    public UserSecurity UserSecurity { get; set; }
-    public UserUsage UserUsage { get; set; }
-    public ICollection<ShortUrl> OwnedShortUrls { get; set; }
-    public ICollection<UserAuditLog> AuditLogs { get; set; }
-    public ICollection<RefreshToken> RefreshTokens { get; set; }
-    public ICollection<OrganizationMember> OrganizationMemberships { get; set; }
+    public SubscriptionPlan? SubscriptionPlan { get; set; }
+    public UserProfile? Profile { get; set; }
+    public UserSecurity? UserSecurity { get; set; }
+    public UserUsage? UserUsage { get; set; }
+    public ICollection<ShortUrl>? OwnedShortUrls { get; set; }
+    public ICollection<UserAuditLog>? AuditLogs { get; set; }
+    public ICollection<RefreshToken>? RefreshTokens { get; set; }
+    public ICollection<OrganizationMember>? OrganizationMemberships { get; set; }
 }
 
 

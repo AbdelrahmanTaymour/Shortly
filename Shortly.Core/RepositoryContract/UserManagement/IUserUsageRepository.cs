@@ -17,6 +17,8 @@ public interface IUserUsageRepository
     /// <param name="userId">The unique identifier of the user whose usage information to retrieve.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The user usage information if found; otherwise, null.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses AsNoTracking for optimal read-only performance.</remarks>
     Task<UserUsage?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -25,6 +27,7 @@ public interface IUserUsageRepository
     /// <param name="usage">The user usage entity with updated information.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the update was successful; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> UpdateAsync(UserUsage usage, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -33,6 +36,8 @@ public interface IUserUsageRepository
     /// <param name="userId">The unique identifier of the user.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the increment was successful; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance atomic increment of both monthly and total counters.</remarks>
     Task<bool> IncrementLinksCreatedAsync(Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -41,6 +46,8 @@ public interface IUserUsageRepository
     /// <param name="userId">The unique identifier of the user.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the increment was successful; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance atomic increment of both monthly and total counters.</remarks>
     Task<bool> IncrementQrCodesCreatedAsync(Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -49,17 +56,38 @@ public interface IUserUsageRepository
     /// <param name="userId">The unique identifier of the user whose monthly usage should be reset.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the reset was successful; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance reset operation, typically called during billing cycles.</remarks>
     Task<bool> ResetMonthlyUsageAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resets the monthly usage statistics (links and QR codes) to zero for all users
+    /// whose <c>MonthlyResetDate</c> is on or before the provided <paramref name="resetDate"/>.
+    /// This operation excludes users who are soft-deleted.
+    /// </summary>
+    /// <param name="resetDate">The cutoff date for resetting user quotas.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation if needed.</param>
+    /// <returns>The number of user usage records that were updated.</returns>
+    /// <exception cref="DatabaseException">Thrown when the database operation fails.</exception>
+    Task<int> ResetMonthlyUsageForAllAsync(DateTime resetDate, CancellationToken cancellationToken = default);
     
     /// <summary>
-    /// Retrieves all users whose monthly reset date is due or past the specified date.
-    /// Used for batch processing of monthly usage resets.
+    /// Retrieves all user usage records where the monthly reset date falls within the specified date range (inclusive).
+    /// Typically used for generating reports or performing batch resets based on a date window.
     /// </summary>
-    /// <param name="date">The date to compare against monthly reset dates.</param>
-    /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
-    /// <returns>A collection of user usage records that need monthly reset processing.</returns>
-    Task<IEnumerable<UserUsage>> GetUsersForMonthlyResetAsync(DateTime date, CancellationToken cancellationToken = default);
-
+    /// <param name="from">The start date (inclusive) of the date range.</param>
+    /// <param name="to">The end date (inclusive) of the date range.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A collection of <see cref="UserUsage"/> entities that fall within the specified reset date range.</returns>
+    /// <exception cref="DatabaseException">
+    /// Thrown when a database error occurs during the retrieval operation.
+    /// </exception>
+    /// <remarks>
+    /// This method uses <c>AsNoTracking()</c> for performance since the returned entities are read-only.
+    /// Suitable for background jobs or admin dashboard reporting on usage reset cycles.
+    /// </remarks>
+    Task<IEnumerable<UserUsage>> GetUsersWithResetDateInRangeAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default);
+    
     /// <summary>
     /// Retrieves the user's subscription plan ID along with detailed usage statistics.
     /// </summary>
