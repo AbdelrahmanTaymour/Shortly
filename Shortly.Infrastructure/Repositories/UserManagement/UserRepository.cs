@@ -24,7 +24,6 @@ namespace Shortly.Infrastructure.Repositories.UserManagement;
 public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository> logger) : IUserRepository
 {
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetByIdAsync(Guid id)
     {
         try
@@ -40,7 +39,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
 
     /// <inheritdoc />
     /// <remarks>Uses Entity Framework's Find method - may return deleted users as it doesn't filter by IsDeleted.</remarks>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         try
@@ -57,7 +55,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         try
@@ -74,7 +71,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetByEmailOrUsernameAsync(string emailOrUsername,
         CancellationToken cancellationToken = default)
     {
@@ -94,8 +90,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    /// <remarks>Uses eager loading with Include to fetch profile data in a single query.</remarks>
     public async Task<User?> GetWithProfileAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -113,8 +107,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <remarks>Uses eager loading with Include to fetch security data in a single query.</remarks>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetWithSecurityAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -132,8 +124,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <remarks>Uses eager loading with Include to fetch usage data in a single query.</remarks>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<User?> GetWithUsageAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -151,8 +141,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    /// <remarks>Loads all related entities in a single query - use carefully as this can be expensive for large datasets.</remarks>
     public async Task<User?> GetCompleteUserAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -172,19 +160,31 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<enSubscriptionPlan> GetSubscriptionPlanIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Users
+                .AsNoTracking()
+                .Where(u => u.Id == id && !u.IsDeleted)
+                .Select(u => u.SubscriptionPlanId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving user Subscription Plan: {UserId}", id);
+            throw new DatabaseException("Failed to retrieve user Subscription Plan", ex);
+        }
+    }
+
     /// <inheritdoc />
-    /// <exception cref="ValidationException">Thrown when user ID is empty.</exception>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    /// <remarks>
-    ///     Creates user and all related entities (UserProfile, UserSecurity, UserUsage) in a single transaction.
-    ///     Uses bulk insert with AddRangeAsync for optimal performance.
-    /// </remarks>
-    public async Task<User> CreateAsync(User user, CancellationToken cancellationToken = default)
+    public async Task<User> CreateAsync(User user)
     {
         if (user.Id == Guid.Empty)
             throw new ValidationException("UserId cannot be empty");
 
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
         try
         {
             // Bulk insert related entities
@@ -196,28 +196,27 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
                 new UserUsage { UserId = user.Id }
             };
 
-            await dbContext.AddRangeAsync(relatedEntities, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            await dbContext.AddRangeAsync(relatedEntities);
+            await dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return user;
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync(cancellationToken);
+            await transaction.RollbackAsync();
             logger.LogError(ex, "Error creating user: {Email}", user.Email);
             throw new DatabaseException("Failed to create user", ex);
         }
     }
 
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    public async Task<bool> UpdateAsync(User user, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(User user)
     {
         try
         {
             dbContext.Update(user);
-            return await dbContext.SaveChangesAsync(cancellationToken) > 0;
+            return await dbContext.SaveChangesAsync() > 0;
         }
         catch (Exception ex)
         {
@@ -227,14 +226,12 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    /// <remarks>Uses ExecuteUpdateAsync for high-performance bulk update without loading entity into memory.</remarks>
     public async Task<bool> DeleteAsync(Guid id, Guid deletedBy, CancellationToken cancellationToken = default)
     {
         try
         {
             var rawAffected = await dbContext.Users
-                .Where(u => u.Id == id)
+                .Where(u => u.Id == id && !u.IsDeleted)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.IsDeleted, true)
                         .SetProperty(u => u.DeletedAt, DateTime.UtcNow)
@@ -250,8 +247,47 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<bool> ActivateUserAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Users
+                .AsNoTracking()
+                .Where(u => u.Id == id && !u.IsDeleted)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(u => u.IsActive, true)
+                        .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error activate user: {UserId}", id);
+            throw new DatabaseException("Failed to activate user", ex);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> DeactivateUserAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Users
+                .AsNoTracking()
+                .Where(u => u.Id == id && !u.IsDeleted)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(u => u.IsActive, false)
+                        .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deactivate user: {UserId}", id);
+            throw new DatabaseException("Failed to deactivate user", ex);
+        }
+    }
+
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -268,7 +304,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
     {
         try
@@ -285,7 +320,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default)
     {
         try
@@ -302,7 +336,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     public async Task<bool> EmailOrUsernameExistsAsync(string email, string username,
         CancellationToken cancellationToken = default)
     {
@@ -322,9 +355,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-    /// <exception cref="ValidationException">Thrown when page or pageSize parameters are invalid.</exception>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    public async Task<IEnumerable<User>> GetPagedAsync(int page, int pageSize,
+  public async Task<IEnumerable<User>> GetPagedAsync(int page, int pageSize,
         CancellationToken cancellationToken = default)
     {
         if (page < 1)
@@ -351,11 +382,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Results are ordered by <c>CreatedAt</c> in ascending order.
-    /// </remarks>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    public async Task<IEnumerable<User>> GetUsersByCustomCriteriaAsync(Expression<Func<User, bool>> predicateint, int page = 1, int pageSize = 10,
+   public async Task<IEnumerable<User>> GetUsersByCustomCriteriaAsync(Expression<Func<User, bool>> predicateint, int page = 1, int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
         try
@@ -379,12 +406,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
 
 
     /// <inheritdoc />
-    /// <exception cref="ValidationException">
-    ///     Thrown when <paramref name="page" /> or <paramref name="pageSize" /> are outside
-    ///     valid bounds.
-    /// </exception>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    public async Task<(IEnumerable<IUserSearchResult> Users, int TotalCount)> SearchUsers(
+   public async Task<(IEnumerable<IUserSearchResult> Users, int TotalCount)> SearchUsers(
         string? searchTerm = null,
         enSubscriptionPlan? subscriptionPlan = null,
         bool? isActive = null,
@@ -473,7 +495,6 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
                             u.UserSecurity.UpdatedAt
                         ),
                         new UserUsageDto(
-                            u.UserUsage.UserId,
                             u.UserUsage.MonthlyLinksCreated,
                             u.UserUsage.MonthlyQrCodesCreated,
                             u.UserUsage.TotalLinksCreated,

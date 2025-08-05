@@ -1,4 +1,7 @@
+using Shortly.Core.DTOs.UsersDTOs.Usage;
+using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
+using Shortly.Domain.Enums;
 
 namespace Shortly.Core.RepositoryContract.UserManagement;
 
@@ -57,4 +60,26 @@ public interface IUserUsageRepository
     /// <returns>A collection of user usage records that need monthly reset processing.</returns>
     Task<IEnumerable<UserUsage>> GetUsersForMonthlyResetAsync(DateTime date, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Retrieves the user's subscription plan ID along with detailed usage statistics.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="cancellationToken">Optional <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains a <see cref="UserUsageWithPlan"/> object with:
+    /// <list type="bullet">
+    /// <item><description>The user's <see cref="enSubscriptionPlan"/> ID.</description></item>
+    /// <item><description>Monthly usage statistics including links and QR codes created.</description></item>
+    /// <item><description>Total usage statistics and the next quota reset date.</description></item>
+    /// </list>
+    /// Returns <c>null</c> if the user is not found, inactive, or marked as deleted.
+    /// </returns>
+    /// <exception cref="DatabaseException">
+    /// Thrown when an error occurs while querying the database.
+    /// </exception>
+    /// <remarks>
+    /// This method performs a read-only operation using <c>AsNoTracking</c>. It filters out users who are inactive or soft-deleted.
+    /// In the event of an error, it logs the exception and wraps it in a <see cref="DatabaseException"/>.
+    /// </remarks>
+    public Task<UserUsageWithPlan?> GetUserUsageWithPlanIdAsync(Guid userId, CancellationToken cancellationToken = default);
 }

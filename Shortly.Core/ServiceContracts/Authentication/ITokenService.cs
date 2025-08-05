@@ -29,16 +29,17 @@ public interface ITokenService
     /// <param name="validateLifetime">Whether to validate token expiration.</param>
     /// <returns>A <see cref="TokenValidationResultDto"/> indicating validation status.</returns>
     TokenValidationResultDto ValidateToken(string token, bool validateLifetime = true);
-    
+
     /// <summary>
     /// Revokes a specific refresh token if it is active.
     /// </summary>
     /// <param name="refreshToken">The refresh token to revoke.</param>
-    Task RevokeTokenAsync(string refreshToken);
+    /// <param name="cancellationToken"></param>
+    Task<bool> RevokeTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Revokes all active refresh tokens for a given user.
     /// </summary>
     /// <param name="userId">The ID of the user whose tokens should be revoked.</param>
-    Task RevokeAllUserTokensAsync(Guid userId);
+    Task<bool> RevokeAllUserTokensAsync(Guid userId);
 }

@@ -33,12 +33,13 @@ public static class DependencyInjection
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ITokenService, TokenService>();
         
-        services.AddScoped<IUserAccessControlService, UserAccessControlService>();
+        services.AddScoped<IUserSecurityService, UserSecurityService>();
         services.AddScoped<IUserAdministrationService, UserAdministrationService>();
-        services.AddScoped<IUserManagementService, UserManagementService>();
+        services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserProfileService, UserProfileService>();
         services.AddScoped<IUserQueryService, UserQueryService>();
-        services.AddScoped<IUserUsageTrackingService, UserUsageTrackingService>();
+        services.AddScoped<IUserUsageService, UserUsageService>();
+        services.AddScoped<IUserAuditLogService, UserAuditLogService>();
         
         services.AddScoped<IShortUrlsService, ShortUrlsService>();
         

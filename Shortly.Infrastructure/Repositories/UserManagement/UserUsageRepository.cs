@@ -1,8 +1,11 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Shortly.Core.DTOs.UsersDTOs.Usage;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Domain.Entities;
+using Shortly.Domain.Enums;
 using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.UserManagement;
@@ -137,4 +140,34 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
             throw new DatabaseException("Failed to retrieve users for monthly reset", ex);
         }
     }
+
+    /// <inheritdoc/>
+    public async Task<UserUsageWithPlan?> GetUserUsageWithPlanIdAsync(Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await dbContext.Users
+                .Where(u => u.Id == userId && u.IsActive && !u.IsDeleted)
+                .Select(u => new UserUsageWithPlan
+                (
+                    u.SubscriptionPlanId,
+                    u.UserUsage.MonthlyLinksCreated,
+                    u.UserUsage.MonthlyQrCodesCreated,
+                    u.UserUsage.MonthlyResetDate,
+                    u.UserUsage.TotalLinksCreated,
+                    u.UserUsage.TotalQrCodesCreated
+                ))
+                .AsNoTracking()
+                .FirstOrDefaultAsync(cancellationToken);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to retrieve usage and subscription plan for user: {UserId}", userId);
+            throw new DatabaseException("Error retrieving user usage and subscription plan.", ex);
+        }
+    }
+
 }

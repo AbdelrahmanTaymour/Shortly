@@ -83,6 +83,9 @@ public class ExceptionHandlingMiddleware
             ArgumentException argEx =>
                 CreateErrorResponse(argEx.Message, "ArgumentError", HttpStatusCode.BadRequest, traceId),
 
+            InvalidOperationException invalidOpEx =>
+                CreateErrorResponse(invalidOpEx.Message, "InvalidOperation", HttpStatusCode.BadRequest, traceId),
+            
             UnauthorizedAccessException => CreateErrorResponse(
                 "Access denied.", "AccessDenied", HttpStatusCode.Forbidden, traceId),
 

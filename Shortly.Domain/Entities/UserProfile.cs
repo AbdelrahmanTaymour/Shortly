@@ -2,7 +2,8 @@ namespace Shortly.Domain.Entities;
 
 public class UserProfile
 {
-    public Guid UserId { get; set; }
+    public required Guid UserId { get; set; }
+    public string? Name {get; set;}
     public string? Bio { get; set; }
     public string? PhoneNumber { get; set; } 
     public string? ProfilePictureUrl { get; set; } 

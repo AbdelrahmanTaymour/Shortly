@@ -1,6 +1,8 @@
 using System.Linq.Expressions;
 using Shortly.Core.DTOs.UsersDTOs.Search;
 using Shortly.Core.DTOs.UsersDTOs.User;
+using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 
@@ -17,6 +19,7 @@ public interface IUserRepository
     /// </summary>
     /// <param name="id">The unique identifier of the user.</param>
     /// <returns>The user if found; otherwise, null.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<User?> GetByIdAsync(Guid id);
     
     /// <summary>
@@ -25,6 +28,7 @@ public interface IUserRepository
     /// <param name="email">The email address to search for.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The user if found and not deleted; otherwise, null.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -33,6 +37,7 @@ public interface IUserRepository
     /// <param name="username">The username to search for.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The user if found and not deleted; otherwise, null.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -41,6 +46,7 @@ public interface IUserRepository
     /// <param name="emailOrUsername">The email or username to search for.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The user if found and not deleted; otherwise, null.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<User?> GetByEmailOrUsernameAsync(string emailOrUsername, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -49,6 +55,8 @@ public interface IUserRepository
     /// <param name="id">The unique identifier of the user.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The user with profile if found and not deleted; otherwise, null.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses eager loading with Include to fetch profile data in a single query.</remarks>
     Task<User?> GetWithProfileAsync(Guid id, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -57,6 +65,8 @@ public interface IUserRepository
     /// <param name="id">The unique identifier of the user.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The user with security information if found and not deleted; otherwise, null.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses eager loading with Include to fetch security data in a single query.</remarks>
     Task<User?> GetWithSecurityAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -65,6 +75,8 @@ public interface IUserRepository
     /// <param name="id">The unique identifier of the user.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The user with usage information if found and not deleted; otherwise, null.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses eager loading with Include to fetch usage data in a single query.</remarks>
     Task<User?> GetWithUsageAsync(Guid id, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -73,23 +85,48 @@ public interface IUserRepository
     /// <param name="id">The unique identifier of the user.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The complete user with all related data if found and not deleted; otherwise, null.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Loads all related entities in a single query - use carefully as this can be expensive for large datasets.</remarks>
     Task<User?> GetCompleteUserAsync(Guid id, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Retrieves the <see cref="enSubscriptionPlan"/> identifier associated with the specified user.
+    /// </summary>
+    /// <param name="id">The unique identifier of the user.</param>
+    /// <param name="cancellationToken">Optional <see cref="CancellationToken"/> to cancel the operation.</param>
+    /// <returns>
+    /// A task representing the asynchronous operation. The task result contains the user's <see cref="enSubscriptionPlan"/> ID.
+    /// </returns>
+    /// <exception cref="DatabaseException">
+    /// Thrown when the subscription plan could not be retrieved due to a database error.
+    /// </exception>
+    /// <remarks>
+    /// This method performs a read-only query using <c>AsNoTracking()</c> and filters out soft-deleted users. 
+    /// It logs any unexpected exceptions and wraps them in a <see cref="DatabaseException"/> for higher-level handling.
+    /// </remarks>
+    Task<enSubscriptionPlan> GetSubscriptionPlanIdAsync(Guid id, CancellationToken cancellationToken = default);
+    
     
     /// <summary>
     /// Creates a new user along with their associated profile, security, and usage records in a single transaction.
     /// </summary>
     /// <param name="user">The user entity to create.</param>
-    /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The created user entity.</returns>
-    Task<User> CreateAsync(User user, CancellationToken cancellationToken = default);
+    /// <exception cref="ValidationException">Thrown when user ID is empty.</exception>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>
+    ///     Creates user and all related entities (UserProfile, UserSecurity, UserUsage) in a single transaction.
+    ///     Uses bulk insert with AddRangeAsync for optimal performance.
+    /// </remarks>
+    Task<User> CreateAsync(User user);
     
     /// <summary>
     /// Updates an existing user in the database.
     /// </summary>
     /// <param name="user">The user entity with updated information.</param>
-    /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the update was successful; otherwise, false.</returns>
-    Task<bool> UpdateAsync(User user, CancellationToken cancellationToken = default);
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    Task<bool> UpdateAsync(User user);
     
     /// <summary>
     /// Performs a soft delete on a user by marking them as deleted with audit information.
@@ -98,7 +135,35 @@ public interface IUserRepository
     /// <param name="deletedBy">The unique identifier of the user performing the deletion.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the deletion was successful; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>Uses ExecuteUpdateAsync for high-performance bulk update without loading entity into memory.</remarks>
     Task<bool> DeleteAsync(Guid id, Guid deletedBy, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Activates a user by setting <c>IsActive</c> to true and updating the <c>UpdatedAt</c> timestamp.
+    /// </summary>
+    /// <param name="id">The unique identifier of the user to activate.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>
+    /// A task representing the asynchronous operation. The result is <c>true</c> if the user was successfully activated; otherwise, <c>false</c>.
+    /// </returns>
+    /// <exception cref="DatabaseException">
+    /// Thrown if an error occurs during the activation process in the database.
+    /// </exception>
+    Task<bool> ActivateUserAsync(Guid id, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Deactivates a user by setting <c>IsActive</c> to false and updating the <c>UpdatedAt</c> timestamp.
+    /// </summary>
+    /// <param name="id">The unique identifier of the user to deactivate.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>
+    /// A task representing the asynchronous operation. The result is <c>true</c> if the user was successfully deactivated; otherwise, <c>false</c>.
+    /// </returns>
+    /// <exception cref="DatabaseException">
+    /// Thrown if an error occurs during the deactivation process in the database.
+    /// </exception>
+    Task<bool> DeactivateUserAsync(Guid id, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Checks if a user exists and is not deleted.
@@ -106,6 +171,7 @@ public interface IUserRepository
     /// <param name="id">The unique identifier of the user to check.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the user exists and is not deleted; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -114,6 +180,7 @@ public interface IUserRepository
     /// <param name="email">The email address to check for existence.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the email exists and belongs to a non-deleted user; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -122,6 +189,7 @@ public interface IUserRepository
     /// <param name="username">The username address to check for existence.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the username exists and belongs to a non-deleted user; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -131,6 +199,7 @@ public interface IUserRepository
     /// <param name="username">The username to check for existence.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if either the email or username exists and belongs to a non-deleted user; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> EmailOrUsernameExistsAsync(string email, string username, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -140,6 +209,8 @@ public interface IUserRepository
     /// <param name="pageSize">The number of users per page (1-1000).</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>A collection of users for the specified page.</returns>
+    /// <exception cref="ValidationException">Thrown when page or pageSize parameters are invalid.</exception>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<IEnumerable<User>> GetPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -153,6 +224,10 @@ public interface IUserRepository
     /// A task that represents the asynchronous operation. The task result contains an <see cref="IEnumerable{User}"/>
     /// of users that match the specified criteria and fall within the specified page.
     /// </returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>
+    /// Results are ordered by <c>CreatedAt</c> in ascending order.
+    /// </remarks>
     Task<IEnumerable<User>> GetUsersByCustomCriteriaAsync(Expression<Func<User, bool>> predicateint, int page = 1,
         int pageSize = 10, CancellationToken cancellationToken = default);
     
@@ -194,6 +269,11 @@ public interface IUserRepository
     ///         <item><description>The total number of matching users</description></item>
     ///     </list>
     /// </returns>
+    /// <exception cref="ValidationException">
+    ///     Thrown when <paramref name="page" /> or <paramref name="pageSize" /> are outside
+    ///     valid bounds.
+    /// </exception>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<(IEnumerable<IUserSearchResult> Users, int TotalCount)> SearchUsers(
         string? searchTerm = null,
         enSubscriptionPlan? subscriptionPlan = null,
