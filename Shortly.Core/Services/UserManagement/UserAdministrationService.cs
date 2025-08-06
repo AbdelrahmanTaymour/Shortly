@@ -1,39 +1,76 @@
-using Shortly.Core.DTOs.UsersDTOs.Search;
+using Microsoft.Extensions.Logging;
+using Shortly.Core.DTOs;
 using Shortly.Core.DTOs.UsersDTOs.User;
+using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.RepositoryContract.OrganizationManagement;
+using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Core.ServiceContracts.UserManagement;
-using Shortly.Domain.Enums;
 
 namespace Shortly.Core.Services.UserManagement;
 
-public class UserAdministrationService: IUserAdministrationService
+/// <inheritdoc />
+/// <param name="adminRepository">Repository for administrative user operations</param>
+/// <param name="userRepository">Repository for standard user operations</param>
+/// <param name="orgRepository">Repository for organization-related operations</param>
+/// <param name="logger">Logger instance for the service</param>
+public class UserAdministrationService(
+    IUserAdministrationRepository adminRepository,
+    IUserRepository userRepository,
+    IOrganizationRepository orgRepository,
+    ILogger<UserAdministrationService> logger) : IUserAdministrationService
 {
-    public Task<UserDto> ForceUpdateUserAsync(Guid userId, UpdateUserDto dto)
+    /// <inheritdoc />
+    public async Task<ForceUpdateUserResponse> ForceUpdateUserAsync(Guid userId, ForceUpdateUserRequest request)
     {
-        throw new NotImplementedException();
+        return await adminRepository.ForceUpdateUserAsync(userId, request);
     }
 
-    public Task<bool> HardDeleteUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    public async Task<bool> HardDeleteUserAsync(Guid userId, bool deleteOwnedShortUrls,
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        if (await orgRepository.IsUserOwnerOfAnyOrganization(userId))
+            throw new BusinessRuleException("Cannot delete user with active organization membership.");
+
+        return await adminRepository.HardDeleteUserAsync(userId, deleteOwnedShortUrls, cancellationToken);
     }
 
-    public Task<BulkOperationResult> BulkActivateUsersAsync(IEnumerable<Guid> userIds)
+    /// <inheritdoc />
+    public async Task<BulkOperationResult> BulkActivateUsersAsync(ICollection<Guid> userIds,
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(userIds);
+
+        if (userIds.Count == 0)
+            throw new ArgumentException("User IDs collection cannot be empty.", nameof(userIds));
+
+        return await adminRepository.BulkActivateUsersAsync(userIds, cancellationToken);
     }
 
-    public Task<BulkOperationResult> BulkDeactivateUsersAsync(IEnumerable<Guid> userIds)
+    /// <inheritdoc />
+    public async Task<BulkOperationResult> BulkDeactivateUsersAsync(ICollection<Guid> userIds,
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(userIds);
+
+        if (userIds.Count == 0)
+            throw new ArgumentException("User IDs collection cannot be empty.", nameof(userIds));
+
+        return await adminRepository.BulkDeactivateUsersAsync(userIds, cancellationToken);
     }
 
-    public Task<BulkOperationResult> BulkUpdateRoleAsync(IEnumerable<Guid> userIds, enUserRole role)
+    /// <inheritdoc />
+    public async Task<BulkOperationResult> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy,
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
-    }
+        ArgumentNullException.ThrowIfNull(userIds);
 
-    public Task<BulkOperationResult> BulkDeleteUsersAsync(IEnumerable<Guid> userIds, Guid deletedBy, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
+        if (deletedBy == Guid.Empty)
+            throw new ArgumentException("DeletedBy user ID cannot be empty.", nameof(deletedBy));
+
+        if (userIds.Count == 0)
+            throw new ArgumentException("User IDs collection cannot be empty.", nameof(userIds));
+
+        return await adminRepository.BulkDeleteUsersAsync(userIds, deletedBy, cancellationToken);
     }
 }
