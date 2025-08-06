@@ -10,5 +10,5 @@ public class UserUsage
     public DateTime MonthlyResetDate { get; set; } = DateTime.UtcNow.AddMonths(1);
     
     // Navigation properties
-    public User User { get; set; }
+    public User? User { get; set; }
 }

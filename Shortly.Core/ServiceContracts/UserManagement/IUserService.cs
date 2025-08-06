@@ -53,7 +53,7 @@ public interface IUserService
     /// <param name="dto">The updated user data.</param>
     /// <returns>The updated user's details as a <see cref="UserDto"/>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
-    /// <exception cref="ConflictException">Thrown if the new email or username is already taken.</exception>
+    /// <exception cref="ConflictException">Thrown if the new username is already taken.</exception>
     /// <exception cref="ServiceUnavailableException">Thrown if the update operation fails.</exception>
     Task<UserDto> UpdateAsync(Guid userId, UpdateUserDto dto);
 

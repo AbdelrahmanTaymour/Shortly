@@ -11,12 +11,12 @@ using Shortly.Domain.Enums;
 namespace Shortly.Core.Services.UserManagement;
 
 /// <summary>
-/// Provides core business logic for managing user accounts, including creation, updates,
-/// activation/deactivation, availability checks, and soft deletion.
+///     Provides core business logic for managing user accounts, including creation, updates,
+///     activation/deactivation, availability checks, and soft deletion.
 /// </summary>
 public class UserService(IUserRepository userRepository, ILogger<UserService> logger) : IUserService
 {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<UserDto> GetByIdAsync(Guid userId)
     {
         var user = await userRepository.GetByIdAsync(userId);
@@ -25,7 +25,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         return user.MapToUserDto();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<UserDto> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByEmailAsync(email, cancellationToken);
@@ -34,7 +34,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         return user.MapToUserDto();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<UserDto> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByUsernameAsync(username, cancellationToken);
@@ -43,7 +43,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         return user.MapToUserDto();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<CreateUserResponse> CreateAsync(CreateUserRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -72,7 +72,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         return user.MapToCreateUserResponse();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<UserDto> UpdateAsync(Guid userId, UpdateUserDto dto)
     {
         var user = await userRepository.GetByIdAsync(userId);
@@ -80,21 +80,18 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
             throw new NotFoundException("User", userId);
 
         var isEmailOrUsernameTaken = await userRepository
-            .EmailOrUsernameExistsAsync(dto.Email, dto.Username);
+            .UsernameExistsAsync(dto.Username);
 
         if (isEmailOrUsernameTaken)
-            throw new ConflictException("Email or username is already taken.");
+            throw new ConflictException("Username is already taken.");
 
         // Update user properties
-        user.Email = dto.Email;
         user.Username = dto.Username;
         user.SubscriptionPlanId = dto.SubscriptionPlanId;
         user.Permissions = dto.Permissions;
         user.IsActive = dto.IsActive;
         user.IsEmailConfirmed = dto.IsEmailConfirmed;
         user.UpdatedAt = DateTime.UtcNow;
-        user.IsDeleted = dto.IsDeleted;
-        user.DeletedBy = dto.DeletedBy;
 
         var updated = await userRepository.UpdateAsync(user);
         if (!updated)
@@ -105,8 +102,8 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
 
         return user.MapToUserDto();
     }
-    
-    /// <inheritdoc/>
+
+    /// <inheritdoc />
     public async Task<bool> SoftDeleteAsync(Guid userId, Guid deletedBy, CancellationToken cancellationToken = default)
     {
         var deleted = await userRepository.DeleteAsync(userId, deletedBy, cancellationToken);
@@ -117,7 +114,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         return true;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<bool> ActivateUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var activated = await userRepository.ActivateUserAsync(userId, cancellationToken);
@@ -128,7 +125,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         return activated;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<bool> DeactivateUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var deactivated = await userRepository.DeactivateUserAsync(userId, cancellationToken);
@@ -138,20 +135,20 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         logger.LogInformation("User deactivated. UserId: {UserId}", userId);
         return deactivated;
     }
-    
-    /// <inheritdoc/>
+
+    /// <inheritdoc />
     public async Task<bool> ExistsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await userRepository.ExistsAsync(userId, cancellationToken);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<bool> IsUsernameAvailableAsync(string username, CancellationToken cancellationToken = default)
     {
         return !await userRepository.UsernameExistsAsync(username, cancellationToken);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<bool> IsEmailAvailableAsync(string email, CancellationToken cancellationToken = default)
     {
         return !await userRepository.EmailExistsAsync(email, cancellationToken);

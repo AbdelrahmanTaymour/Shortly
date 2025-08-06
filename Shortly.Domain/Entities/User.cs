@@ -15,9 +15,9 @@ public class User
     public bool IsEmailConfirmed { get; set; } = false;
     public DateTime? LastLoginAt { get; set; } = null;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsDeleted { get; set; } = false;
-    public DateTime? DeletedAt { get; init; } = null;
+    public DateTime? DeletedAt { get; set; } = null;
     public Guid? DeletedBy { get; set; } = null;
     
     // Navigation properties

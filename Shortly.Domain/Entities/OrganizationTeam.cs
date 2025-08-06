@@ -12,5 +12,5 @@ public class OrganizationTeam
     // Navigation properties
     public Organization? Organization { get; set; }
     public OrganizationMember? TeamManager { get; set; }
-    public ICollection<OrganizationTeamMember> TeamMembers { get; set; }
+    public ICollection<OrganizationTeamMember>? TeamMembers { get; set; }
 }

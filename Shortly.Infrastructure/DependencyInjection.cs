@@ -3,9 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.RepositoryContract;
+using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Infrastructure.DbContexts;
 using Shortly.Infrastructure.Repositories;
+using Shortly.Infrastructure.Repositories.OrganizationManagement;
 using Shortly.Infrastructure.Repositories.UserManagement;
 
 namespace Shortly.Infrastructure;
@@ -30,15 +32,19 @@ public static class DependencyInjection
     {
 
         // Register infrastructure-related services.
-
         services.AddDbContext<SQLServerDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("ConnectionString")));
 
+        // User Management
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
         services.AddScoped<IUserSecurityRepository, UserSecurityRepository>();
         services.AddScoped<IUserUsageRepository, UserUsageRepository>();
         services.AddScoped<IUserAuditLogRepository, UserAuditLogRepository>();
+        services.AddScoped<IUserAdministrationRepository, UserAdministrationRepository>();
+        
+        // Organization Management
+        services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         
         services.AddScoped<IShortUrlRepository, ShortUrlRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();

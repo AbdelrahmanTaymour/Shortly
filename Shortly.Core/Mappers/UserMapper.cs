@@ -1,4 +1,5 @@
 using Shortly.Core.DTOs.UsersDTOs.Profile;
+using Shortly.Core.DTOs.UsersDTOs.Security;
 using Shortly.Core.DTOs.UsersDTOs.Usage;
 using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Domain.Entities;
@@ -36,10 +37,13 @@ public static class UserMapper
             user.IsActive, user.CreatedAt);
     }
 
+
     // Profiles
     public static UserProfileDto MapToUserProfile(this UserProfile profile)
     {
-        return new UserProfileDto(profile.Name,
+        return new UserProfileDto
+        (
+            profile.Name,
             profile.Bio,
             profile.PhoneNumber,
             profile.ProfilePictureUrl,
@@ -48,21 +52,40 @@ public static class UserMapper
             profile.Location,
             profile.Country,
             profile.TimeZone,
-            profile.UpdatedAt);
+            profile.UpdatedAt
+        );
     }
-    
-    
+
+    // Security
+    public static UserSecurityDto MapToUserSecurityDto(this UserSecurity security)
+    {
+        return new UserSecurityDto
+        (
+            security.FailedLoginAttempts, 
+            security.LockedUntil,
+            security.TwoFactorEnabled, 
+            security.TwoFactorSecret, 
+            security.PasswordResetToken, 
+            security.TokenExpiresAt,
+            security.UpdatedAt
+        );
+    }
+
     // Usage
     public static UserUsageDto MapToUserUsageDto(this UserUsage usage)
     {
-        return new UserUsageDto(usage.MonthlyLinksCreated, usage.MonthlyQrCodesCreated, usage.TotalLinksCreated,
-            usage.TotalQrCodesCreated, usage.MonthlyResetDate);
+        return new UserUsageDto
+        (
+            usage.MonthlyLinksCreated, 
+            usage.MonthlyQrCodesCreated, 
+            usage.TotalLinksCreated,
+            usage.TotalQrCodesCreated, 
+            usage.MonthlyResetDate
+        );
     }
 
     public static IEnumerable<UserUsageDto> MapToUserUsageDtoList(this IEnumerable<UserUsage> usages)
     {
         return usages.Select(MapToUserUsageDto);
     }
-    
-    
 }
