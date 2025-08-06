@@ -18,5 +18,5 @@ public class OrganizationMember
     public User? User { get; set; }
     public Role? Role { get; set; }
     public ICollection<ShortUrl>? CreatedShortUrls { get; set; }
-    public ICollection<OrganizationTeamMember> JoinedTeams { get; set; }
+    public ICollection<OrganizationTeamMember>? JoinedTeams { get; set; }
 }
