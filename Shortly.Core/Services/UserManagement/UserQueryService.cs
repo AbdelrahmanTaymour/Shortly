@@ -15,14 +15,8 @@ namespace Shortly.Core.Services.UserManagement;
 public class UserQueryService(IUserRepository userRepository, IUserSecurityRepository securityRepository)
     : IUserQueryService
 {
-    
-    /// <summary>
-    /// Performs a search for users and returns basic user information only.
-    /// </summary>
-    /// <param name="request">The search request containing filter criteria and pagination parameters.</param>
-    /// <param name="cancellationToken">Token to cancel the asynchronous operation.</param>
-    /// <returns>A response containing basic user information with pagination metadata.</returns>
-    public async Task<BasicUserSearchResponse> SearchBasicUsersAsync(
+    /// <inheritdoc />
+     public async Task<BasicUserSearchResponse> SearchBasicUsersAsync(
         UserSearchRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -35,14 +29,8 @@ public class UserQueryService(IUserRepository userRepository, IUserSecurityRepos
         return new BasicUserSearchResponse(basicUsers, totalCount, request.Page, request.PageSize, totalPages);
     }
 
-
-    /// <summary>
-    /// Performs a search for users and returns complete user information with all related data.
-    /// </summary>
-    /// <param name="request">The search request containing filter criteria and pagination parameters.</param>
-    /// <param name="cancellationToken">Token to cancel the asynchronous operation.</param>
-    /// <returns>A response containing complete user information with pagination metadata.</returns>
-    public async Task<CompleteUserSearchResponse> SearchCompleteUsersAsync(
+    /// <inheritdoc />
+     public async Task<CompleteUserSearchResponse> SearchCompleteUsersAsync(
         UserSearchRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -54,7 +42,6 @@ public class UserQueryService(IUserRepository userRepository, IUserSecurityRepos
 
         return new CompleteUserSearchResponse(completeUsers, totalCount, request.Page, request.PageSize, totalPages);
     }
-
 
     /// <inheritdoc />
     public async Task<IEnumerable<UserDto>> GetUsersBySubscriptionPlanAsync(enSubscriptionPlan plan, int page,
