@@ -5,9 +5,10 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories;
 
-public class RefreshTokenRepository(SQLServerDbContext dbContext):IRefreshTokenRepository
+public class RefreshTokenRepository(SQLServerDbContext dbContext) : IRefreshTokenRepository
 {
     private readonly SQLServerDbContext _dbContext = dbContext;
+
     public async Task<RefreshToken?> AddRefreshTokenAsync(RefreshToken refreshToken)
     {
         var refreshTokenEntity = await _dbContext.RefreshTokens.AddAsync(refreshToken);
@@ -38,7 +39,7 @@ public class RefreshTokenRepository(SQLServerDbContext dbContext):IRefreshTokenR
             .Where(r => r.UserId == userId && !r.IsRevoked && r.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(rt => rt.CreatedAt)
             .ToListAsync();
-        
+
         return refreshTokens;
     }
 

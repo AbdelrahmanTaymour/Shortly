@@ -16,7 +16,7 @@ public class UserController() : ControllerBase
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return Guid.TryParse(userIdClaim, out var userId) ? userId : Guid.Empty;
     }
-    
+
     private string GetCurrentEmail()
     {
         var userEmailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
@@ -28,5 +28,4 @@ public class UserController() : ControllerBase
         var permissionsClaim = User.FindFirst("Permissions")?.Value;
         return long.TryParse(permissionsClaim, out var permissions) ? permissions : 0;
     }
-    
 }

@@ -54,10 +54,10 @@ public class UpdateUserProfileRequestValidator : AbstractValidator<UpdateUserPro
             .WithMessage("TimeZone must be a valid timezone identifier")
             .When(x => !string.IsNullOrEmpty(x.TimeZone));
     }
-    
+
     private bool BeAValidUrl(string? url)
     {
-        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult) 
+        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult)
                && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 

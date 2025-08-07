@@ -26,6 +26,5 @@ public class ForceUpdateUserRequestValidator : AbstractValidator<ForceUpdateUser
             .NotNull()
             .WithMessage("Usage data is required")
             .SetValidator(new UserUsageDtoValidator());
-
     }
 }

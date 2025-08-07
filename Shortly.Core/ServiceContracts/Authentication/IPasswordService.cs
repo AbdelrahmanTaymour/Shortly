@@ -5,7 +5,9 @@ namespace Shortly.Core.ServiceContracts.Authentication;
 
 public interface IPasswordService
 {
-    Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken = default);
+    Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<bool> ForgotPasswordAsync(ForgotPasswordRequest request);
     Task<bool> ResetPasswordAsync(ResetPasswordRequest request);
     Task<bool> ValidatePasswordStrengthAsync(string password);

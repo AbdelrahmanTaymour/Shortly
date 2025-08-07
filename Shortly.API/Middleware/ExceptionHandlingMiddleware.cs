@@ -85,7 +85,7 @@ public class ExceptionHandlingMiddleware
 
             InvalidOperationException invalidOpEx =>
                 CreateErrorResponse(invalidOpEx.Message, "InvalidOperation", HttpStatusCode.BadRequest, traceId),
-            
+
             UnauthorizedAccessException => CreateErrorResponse(
                 "Access denied.", "AccessDenied", HttpStatusCode.Forbidden, traceId),
 
@@ -141,7 +141,7 @@ public class ExceptionHandlingMiddleware
 
             // Log based on severity
             if ((int)exception.StatusCode >= 500)
-                _logger.LogError(exception, "Server error occurred: {Message} | TraceId: {TraceId}", 
+                _logger.LogError(exception, "Server error occurred: {Message} | TraceId: {TraceId}",
                     exception.Message, traceId);
             else
                 _logger.LogWarning("Client error occurred: {Message} | TraceId: {TraceId} | StatusCode: {StatusCode}",

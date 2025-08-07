@@ -14,13 +14,11 @@ public class LoginRequestValidator : AbstractValidator<LoginRequest>
             .MaximumLength(254)
             .WithMessage("Email or username cannot exceed 254 characters")
             .Must(BeValidEmailOrUsername)
-            .WithMessage("Must be a valid email address or username (3-50 characters, letters, numbers, hyphens, and underscores only)");
+            .WithMessage(
+                "Must be a valid email address or username (3-50 characters, letters, numbers, hyphens, and underscores only)");
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.")
-            .Length(8, 128).WithMessage("Password must be between 8 and 128 characters.")
-            .Must(password => password.HasPasswordComplexity()).WithMessage(
-                "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.");
+            .NotEmpty().WithMessage("Password is required.");
     }
 
     private bool BeValidEmailOrUsername(string emailOrUsername)
@@ -52,8 +50,8 @@ public class LoginRequestValidator : AbstractValidator<LoginRequest>
     private bool IsValidUsername(string username)
     {
         // Username rules: 3-50 characters, letters, numbers, hyphens, and underscores only
-        return username.Length >= 3 && 
-               username.Length <= 50 && 
+        return username.Length >= 3 &&
+               username.Length <= 50 &&
                System.Text.RegularExpressions.Regex.IsMatch(username, @"^[a-zA-Z0-9_-]+$");
     }
 }

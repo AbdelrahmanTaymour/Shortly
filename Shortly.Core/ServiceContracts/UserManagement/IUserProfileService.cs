@@ -20,7 +20,7 @@ public interface IUserProfileService
     /// <returns>A <see cref="UserProfileDto"/> containing profile data.</returns>
     /// <exception cref="NotFoundException">Thrown if the profile is not found.</exception>
     Task<UserProfileDto> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default);
-   
+
     /// <summary>
     /// Updates the profile information for the specified user.
     /// </summary>
@@ -30,8 +30,9 @@ public interface IUserProfileService
     /// <returns><c>true</c> if the profile was updated successfully; otherwise, <c>false</c>.</returns>
     /// <exception cref="NotFoundException">Thrown if the profile is not found.</exception>
     /// <exception cref="ServiceUnavailableException">Thrown if the update operation fails unexpectedly.</exception>
-    Task<bool> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest request, CancellationToken cancellationToken = default);
-    
+    Task<bool> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest request,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Initiates an account deletion request for the specified user.
     /// </summary>
@@ -39,7 +40,7 @@ public interface IUserProfileService
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns><c>true</c> if the deletion request was successful; otherwise, <c>false</c>.</returns>
     Task<bool> RequestAccountDeletionAsync(Guid userId, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Retrieves the current monthly quota usage and limits for the specified user.
     /// </summary>

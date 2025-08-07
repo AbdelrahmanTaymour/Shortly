@@ -31,5 +31,4 @@ public class UserUsageDtoValidator : AbstractValidator<UserUsageDto>
             .LessThanOrEqualTo(DateTime.UtcNow)
             .WithMessage("Monthly reset date cannot be in the future");
     }
-
 }

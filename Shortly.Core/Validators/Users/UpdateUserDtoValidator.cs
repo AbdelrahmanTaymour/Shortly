@@ -20,10 +20,9 @@ public class UpdateUserDtoValidator : AbstractValidator<UpdateUserDto>
         RuleFor(x => x.SubscriptionPlanId)
             .IsInEnum()
             .WithMessage("Invalid subscription plan");
-        
+
         RuleFor(x => x.Permissions)
             .GreaterThanOrEqualTo(0)
             .WithMessage("Permissions cannot be negative");
-        
     }
 }

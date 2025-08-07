@@ -17,10 +17,11 @@ namespace Shortly.Infrastructure.Repositories.UserManagement;
 /// Uses bulk update operations (ExecuteUpdateAsync) for optimal performance when incrementing usage counters.
 /// Designed for high-frequency operations like tracking link and QR code creation.
 /// </remarks>
-public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsageRepository> logger) : IUserUsageRepository
+public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsageRepository> logger)
+    : IUserUsageRepository
 {
     /// <inheritdoc/>
-     public async Task<UserUsage?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<UserUsage?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -91,7 +92,7 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
     }
 
     /// <inheritdoc/>
-   public async Task<bool> ResetMonthlyUsageAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<bool> ResetMonthlyUsageAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -111,7 +112,8 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
     }
 
     /// <inheritdoc/>
-   public async Task<int> ResetMonthlyUsageForAllAsync(DateTime resetDate, CancellationToken cancellationToken = default)
+    public async Task<int> ResetMonthlyUsageForAllAsync(DateTime resetDate,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -126,7 +128,8 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
                         .SetProperty(u => u.MonthlyQrCodesCreated, 0),
                     cancellationToken);
 
-            logger.LogInformation("Monthly usage reset for {Count} users on {ResetDate}.", affectedRows, resetDate.Date);
+            logger.LogInformation("Monthly usage reset for {Count} users on {ResetDate}.", affectedRows,
+                resetDate.Date);
             return affectedRows;
         }
         catch (Exception ex)
@@ -136,9 +139,9 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
         }
     }
 
-
     /// <inheritdoc/>
-   public async Task<IEnumerable<UserUsage>> GetUsersWithResetDateInRangeAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<UserUsage>> GetUsersWithResetDateInRangeAsync(DateTime from, DateTime to,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -184,5 +187,4 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
             throw new DatabaseException("Error retrieving user usage and subscription plan.", ex);
         }
     }
-
 }

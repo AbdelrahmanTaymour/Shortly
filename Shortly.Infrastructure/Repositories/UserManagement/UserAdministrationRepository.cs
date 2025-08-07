@@ -17,7 +17,6 @@ namespace Shortly.Infrastructure.Repositories.UserManagement;
 public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<UserAdministrationRepository> logger)
     : IUserAdministrationRepository
 {
-    
     /// <inheritdoc />
     public async Task<ForceUpdateUserResponse> ForceUpdateUserAsync(Guid userId, ForceUpdateUserRequest request)
     {
@@ -55,7 +54,8 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
 
 
     /// <inheritdoc />
-    public async Task<bool> HardDeleteUserAsync(Guid userId, bool deleteOwnedShortUrls = false, CancellationToken cancellationToken = default)
+    public async Task<bool> HardDeleteUserAsync(Guid userId, bool deleteOwnedShortUrls = false,
+        CancellationToken cancellationToken = default)
     {
         logger.LogWarning("Starting hard delete for user {UserId}", userId);
 
@@ -98,11 +98,12 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
 
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkActivateUsersAsync(ICollection<Guid> userIds, CancellationToken cancellationToken = default)
+    public async Task<BulkOperationResult> BulkActivateUsersAsync(ICollection<Guid> userIds,
+        CancellationToken cancellationToken = default)
     {
         var idsCount = userIds.Count();
         logger.LogInformation("Starting bulk activation for {Count} users", idsCount);
-        
+
         try
         {
             var successCount = await dbContext.Users
@@ -111,11 +112,12 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
                         .SetProperty(u => u.IsActive, true)
                         .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
                     , cancellationToken);
-            
+
             var skippedCount = idsCount - successCount;
-            logger.LogInformation("Bulk activation completed. {SuccessCount} users activated, {SkippedCount} users were already active or don't exist.", 
+            logger.LogInformation(
+                "Bulk activation completed. {SuccessCount} users activated, {SkippedCount} users were already active or don't exist.",
                 successCount, skippedCount);
-            
+
             return new BulkOperationResult(idsCount, successCount, skippedCount);
         }
         catch (Exception ex)
@@ -126,7 +128,8 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkDeactivateUsersAsync(ICollection<Guid> userIds, CancellationToken cancellationToken)
+    public async Task<BulkOperationResult> BulkDeactivateUsersAsync(ICollection<Guid> userIds,
+        CancellationToken cancellationToken)
     {
         var idsCount = userIds.Count;
         logger.LogInformation("Starting bulk deactivation for {Count} users", idsCount);
@@ -139,9 +142,9 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
                         .SetProperty(u => u.IsActive, false)
                         .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
                     , cancellationToken);
-            
+
             var skippedCount = idsCount - successCount;
-            
+
             return new BulkOperationResult(idsCount, successCount, skippedCount);
         }
         catch (Exception ex)
@@ -152,7 +155,8 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy, CancellationToken cancellationToken = default)
+    public async Task<BulkOperationResult> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy,
+        CancellationToken cancellationToken = default)
     {
         var idsCount = userIds.Count;
         logger.LogWarning("Starting bulk soft deletion for {Count} users by user {DeletedBy}", idsCount, deletedBy);
@@ -163,14 +167,14 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
                 .Where(u => userIds.Contains(u.Id) && !u.IsDeleted)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.IsDeleted, true)
-                        .SetProperty(u => u.IsActive, false)  // Also deactivate during deletion
+                        .SetProperty(u => u.IsActive, false) // Also deactivate during deletion
                         .SetProperty(u => u.DeletedAt, DateTime.UtcNow)
                         .SetProperty(u => u.DeletedBy, deletedBy)
                         .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
                     , cancellationToken);
-            
+
             var skippedCount = idsCount - successCount;
-            
+
             return new BulkOperationResult(idsCount, successCount, skippedCount);
         }
         catch (Exception ex)
@@ -179,8 +183,8 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
             throw new DatabaseException("Bulk user soft deletion failed.", ex);
         }
     }
-   
-    
+
+
     #region Private Helper Methods
 
     /// <summary>

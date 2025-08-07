@@ -3,12 +3,12 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.API.Authorization;
 
-[AttributeUsage(AttributeTargets.Method)]
-public class RequirePermissionAttribute: AuthorizeAttribute
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+public class RequirePermissionAttribute : AuthorizeAttribute
 {
     public enPermissions Permission { get; }
 
-    public RequirePermissionAttribute(enPermissions permission): base(permission.ToString())
+    public RequirePermissionAttribute(enPermissions permission) : base(permission.ToString())
     {
         Permission = permission;
     }

@@ -52,7 +52,7 @@ public class RoleConfiguration
         [enUserRole.Admin] = new RoleConfiguration
         {
             Role = enUserRole.Admin,
-            DefaultPermissions = enPermissions.AllPermissions & ~enPermissions.SystemAdmin,
+            DefaultPermissions = enPermissions.AllPermissions & ~enPermissions.SystemAdmin
         },
         [enUserRole.SuperAdmin] = new RoleConfiguration
         {

@@ -17,7 +17,7 @@ public interface IUserService
     /// <returns>The user's details as a <see cref="UserDto"/>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
     Task<UserDto> GetByIdAsync(Guid userId);
-    
+
     /// <summary>
     /// Retrieves a user by their email address.
     /// </summary>
@@ -26,7 +26,7 @@ public interface IUserService
     /// <returns>The user's details as a <see cref="UserDto"/>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
     Task<UserDto> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Retrieves a user by their username.
     /// </summary>
@@ -35,7 +35,7 @@ public interface IUserService
     /// <returns>The user's details as a <see cref="UserDto"/>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
     Task<UserDto> GetByUsernameAsync(string username, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Creates a new user based on the provided request.
     /// </summary>
@@ -45,7 +45,7 @@ public interface IUserService
     /// <exception cref="ConflictException">Thrown if the email or username is already taken.</exception>
     /// <exception cref="DatabaseException">Thrown if the user could not be created due to internal error.</exception>
     Task<CreateUserResponse> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken = default);
-   
+
     /// <summary>
     /// Updates an existing user's details.
     /// </summary>
@@ -57,7 +57,7 @@ public interface IUserService
     /// <exception cref="ServiceUnavailableException">Thrown if the update operation fails.</exception>
     Task<UserDto> UpdateAsync(Guid userId, UpdateUserDto dto);
 
-   
+
     /// <summary>
     /// Performs a soft delete on a user by marking them as deleted.
     /// </summary>
@@ -67,8 +67,8 @@ public interface IUserService
     /// <returns><c>true</c> if the user was successfully soft deleted; otherwise, <c>false</c>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
     Task<bool> SoftDeleteAsync(Guid userId, Guid deletedBy, CancellationToken cancellationToken = default);
-    
-    
+
+
     /// <summary>
     /// Activates a user account by setting the <c>IsActive</c> flag to true.
     /// </summary>
@@ -77,7 +77,7 @@ public interface IUserService
     /// <returns><c>true</c> if the user was successfully activated; otherwise, <c>false</c>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
     Task<bool> ActivateUserAsync(Guid userId, CancellationToken cancellationToken = default);
-   
+
     /// <summary>
     /// Deactivates a user account by setting the <c>IsActive</c> flag to false.
     /// </summary>
@@ -86,8 +86,8 @@ public interface IUserService
     /// <returns><c>true</c> if the user was successfully deactivated; otherwise, <c>false</c>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
     Task<bool> DeactivateUserAsync(Guid userId, CancellationToken cancellationToken = default);
-    
-    
+
+
     /// <summary>
     /// Checks whether a user with the given ID exists.
     /// </summary>
@@ -95,7 +95,7 @@ public interface IUserService
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns><c>true</c> if the user exists; otherwise, <c>false</c>.</returns>
     Task<bool> ExistsAsync(Guid userId, CancellationToken cancellationToken = default);
-  
+
     /// <summary>
     /// Checks whether a username is available (i.e., not already taken).
     /// </summary>
@@ -103,7 +103,7 @@ public interface IUserService
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns><c>true</c> if the username is available; otherwise, <c>false</c>.</returns>
     Task<bool> IsUsernameAvailableAsync(string username, CancellationToken cancellationToken = default);
-   
+
     /// <summary>
     /// Checks whether an email is available (i.e., not already taken).
     /// </summary>

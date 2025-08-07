@@ -14,25 +14,25 @@ internal class ShortUrlRepository(SQLServerDbContext dbContext) : IShortUrlRepos
 {
     private readonly SQLServerDbContext _dbContext = dbContext;
 
-    
+
     public async Task<List<ShortUrl>> GetAllAsync()
     {
         return await _dbContext.ShortUrls.AsNoTracking().ToListAsync();
     }
 
-    
+
     public async Task<ShortUrl?> GetShortUrlByIdAsync(Guid id)
     {
         return await _dbContext.ShortUrls.FindAsync(id);
     }
 
-    
+
     public async Task<ShortUrl?> GetShortUrlByShortCodeAsync(string shortCode)
     {
         return await _dbContext.ShortUrls.FirstOrDefaultAsync(url => url.ShortCode == shortCode);
     }
 
-    
+
     public async Task<ShortUrl?> CreateShortUrlAsync(ShortUrl shortUrl)
     {
         var entity = await _dbContext.ShortUrls.AddAsync(shortUrl);
@@ -56,42 +56,36 @@ internal class ShortUrlRepository(SQLServerDbContext dbContext) : IShortUrlRepos
         return await _dbContext.SaveChangesAsync() > 0;
     }
 
-    
+
     public async Task<ShortUrl?> DeleteByIdAsync(Guid id)
     {
         var existingUrl = await _dbContext.ShortUrls.FindAsync(id);
-        if (existingUrl is null)
-        {
-            return null;
-        }
-        
+        if (existingUrl is null) return null;
+
         _dbContext.ShortUrls.Remove(existingUrl);
         await _dbContext.SaveChangesAsync();
-        
+
         return existingUrl;
     }
 
-   
+
     public async Task<ShortUrl?> DeleteByShortCodeAsync(string shortCode)
     {
         var existingUrl = await _dbContext.ShortUrls.FirstOrDefaultAsync(url => url.ShortCode == shortCode);
-        if (existingUrl is null)
-        {
-            return null;
-        }
-        
+        if (existingUrl is null) return null;
+
         _dbContext.ShortUrls.Remove(existingUrl);
         await _dbContext.SaveChangesAsync();
-        
+
         return existingUrl;
     }
 
-    
+
     public async Task SaveChangesAsync()
     {
         await _dbContext.SaveChangesAsync();
     }
-    
+
     public async Task IncrementAccessCountAsync(string shortCode)
     {
         await _dbContext.ShortUrls
@@ -109,6 +103,4 @@ internal class ShortUrlRepository(SQLServerDbContext dbContext) : IShortUrlRepos
     {
         return await _dbContext.ShortUrls.CountAsync();
     }
-
-    
 }

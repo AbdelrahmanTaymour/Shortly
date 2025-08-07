@@ -61,11 +61,11 @@ public static class UserMapper
     {
         return new UserSecurityDto
         (
-            security.FailedLoginAttempts, 
+            security.FailedLoginAttempts,
             security.LockedUntil,
-            security.TwoFactorEnabled, 
-            security.TwoFactorSecret, 
-            security.PasswordResetToken, 
+            security.TwoFactorEnabled,
+            security.TwoFactorSecret,
+            security.PasswordResetToken,
             security.TokenExpiresAt,
             security.UpdatedAt
         );
@@ -76,10 +76,10 @@ public static class UserMapper
     {
         return new UserUsageDto
         (
-            usage.MonthlyLinksCreated, 
-            usage.MonthlyQrCodesCreated, 
+            usage.MonthlyLinksCreated,
+            usage.MonthlyQrCodesCreated,
             usage.TotalLinksCreated,
-            usage.TotalQrCodesCreated, 
+            usage.TotalQrCodesCreated,
             usage.MonthlyResetDate
         );
     }

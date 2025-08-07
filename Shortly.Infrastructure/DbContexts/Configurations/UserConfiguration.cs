@@ -12,17 +12,17 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     {
         // Primary key
         builder.HasKey(u => u.Id);
-        
+
         builder.Property(u => u.Email)
             .IsRequired()
             .HasMaxLength(320)
             .IsUnicode(false);
-        
+
         builder.Property(user => user.Username)
             .IsRequired()
             .HasMaxLength(50)
             .IsUnicode(false);
-        
+
         builder.Property(user => user.PasswordHash)
             .IsRequired()
             .HasMaxLength(256)
@@ -33,10 +33,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(user => user.Permissions)
             .HasDefaultValue(enPermissions.BasicUrlOperations);
-        
+
         builder.Property(user => user.IsActive)
             .HasDefaultValue(true);
-        
+
         builder.Property(user => user.IsEmailConfirmed)
             .HasDefaultValue(false);
 
@@ -45,33 +45,33 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(user => user.LastLoginAt)
             .HasColumnType("datetime2(0)");
-        
+
         builder.Property(user => user.UpdatedAt)
             .HasDefaultValueSql("GETUTCDATE()")
             .HasColumnType("datetime2(0)");
-        
+
         builder.Property(user => user.CreatedAt)
             .HasDefaultValueSql("GETUTCDATE()")
             .HasColumnType("datetime2(0)");
-        
+
         builder.Property(user => user.DeletedAt)
             .HasColumnType("datetime2(0)");
-        
+
         builder.Property(user => user.DeletedBy)
             .HasColumnType("uniqueidentifier");
-        
+
         // Indexes
         builder.HasIndex(user => user.Email).IsUnique();
         builder.HasIndex(user => user.Username).IsUnique();
         builder.HasIndex(u => u.IsDeleted);
         builder.HasIndex(u => new { u.IsDeleted, u.IsActive });
-        
+
         // Relationship
         builder.HasOne(u => u.SubscriptionPlan)
             .WithMany()
             .HasForeignKey(u => u.SubscriptionPlanId)
             .OnDelete(DeleteBehavior.Restrict);
-        
+
         builder.HasOne(u => u.Profile)
             .WithOne(p => p.User)
             .HasForeignKey<UserProfile>(p => p.UserId)
@@ -86,7 +86,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .WithOne(uu => uu.User)
             .HasForeignKey<UserUsage>(uu => uu.UserId)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         builder.HasMany(u => u.OwnedShortUrls)
             .WithOne(s => s.User)
             .HasForeignKey(s => s.UserId)
@@ -106,6 +106,5 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .WithOne(om => om.User)
             .HasForeignKey(om => om.UserId)
             .OnDelete(DeleteBehavior.Cascade);
-
     }
 }

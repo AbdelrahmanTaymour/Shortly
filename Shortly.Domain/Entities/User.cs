@@ -19,7 +19,7 @@ public class User
     public bool IsDeleted { get; set; } = false;
     public DateTime? DeletedAt { get; set; } = null;
     public Guid? DeletedBy { get; set; } = null;
-    
+
     // Navigation properties
     public SubscriptionPlan? SubscriptionPlan { get; set; }
     public UserProfile? Profile { get; set; }

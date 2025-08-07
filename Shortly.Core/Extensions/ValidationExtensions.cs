@@ -15,7 +15,7 @@ public static partial class ValidationExtensions
         ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-    
+
     // Cached time zones with lazy initialization
     private static readonly Lazy<FrozenSet<string>> ValidTimeZones = new(() =>
         TimeZoneInfo.GetSystemTimeZones()
@@ -25,15 +25,19 @@ public static partial class ValidationExtensions
     /// <summary>
     /// Validates if the name contains only allowed characters (letters, spaces, hyphens, apostrophes, and periods).
     /// </summary>
-    public static bool IsValidName(this string name) => 
-        !string.IsNullOrWhiteSpace(name) && NamePattern.IsMatch(name);
+    public static bool IsValidName(this string name)
+    {
+        return !string.IsNullOrWhiteSpace(name) && NamePattern.IsMatch(name);
+    }
 
-    
+
     /// <summary>
     /// Validates if the username contains only allowed characters (letters, numbers, underscores, hyphens, and periods).
     /// </summary>
-    public static bool IsValidUsername(this string username) => 
-        !string.IsNullOrWhiteSpace(username) && UsernamePattern.IsMatch(username);
+    public static bool IsValidUsername(this string username)
+    {
+        return !string.IsNullOrWhiteSpace(username) && UsernamePattern.IsMatch(username);
+    }
 
     /// <summary>
     /// Validates if the URL is a valid image URL with supported extensions.
@@ -46,26 +50,26 @@ public static partial class ValidationExtensions
         // Fast URI validation
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-        {
             return false;
-        }
 
         // Fast extension check using ReadOnlySpan to avoid string allocations
-        ReadOnlySpan<char> urlSpan = url.AsSpan();
-        int lastDotIndex = urlSpan.LastIndexOf('.');
-        
+        var urlSpan = url.AsSpan();
+        var lastDotIndex = urlSpan.LastIndexOf('.');
+
         if (lastDotIndex == -1 || lastDotIndex == urlSpan.Length - 1)
             return false;
 
-        ReadOnlySpan<char> extension = urlSpan.Slice(lastDotIndex);
+        var extension = urlSpan.Slice(lastDotIndex);
         return ValidImageExtensions.Contains(extension.ToString());
     }
-    
+
     /// <summary>
     /// Validates if the time zone identifier is valid.
     /// </summary>
-    public static bool IsValidTimeZone(this string? timeZone) =>
-        string.IsNullOrWhiteSpace(timeZone) || ValidTimeZones.Value.Contains(timeZone);
+    public static bool IsValidTimeZone(this string? timeZone)
+    {
+        return string.IsNullOrWhiteSpace(timeZone) || ValidTimeZones.Value.Contains(timeZone);
+    }
 
     /// <summary>
     /// Validates password complexity (at least one uppercase, lowercase, digit, and special character).
@@ -77,7 +81,7 @@ public static partial class ValidationExtensions
 
         bool hasUpper = false, hasLower = false, hasDigit = false, hasSpecial = false;
 
-        foreach (char c in password)
+        foreach (var c in password)
         {
             if (char.IsUpper(c)) hasUpper = true;
             else if (char.IsLower(c)) hasLower = true;
@@ -95,20 +99,23 @@ public static partial class ValidationExtensions
     /// <summary>
     /// Checks if a DateTime is in the future.
     /// </summary>
-    public static bool IsInFuture(this DateTime? dateTime) => 
-        dateTime > DateTime.UtcNow;
+    public static bool IsInFuture(this DateTime? dateTime)
+    {
+        return dateTime > DateTime.UtcNow;
+    }
 
     /// <summary>
     /// Checks if a DateTime is in the future.
     /// </summary>
-    public static bool IsInFuture(this DateTime dateTime) => 
-        dateTime > DateTime.UtcNow;
-    
-    
+    public static bool IsInFuture(this DateTime dateTime)
+    {
+        return dateTime > DateTime.UtcNow;
+    }
+
+
     [GeneratedRegex(@"^[a-zA-Z\s\-'\.]+$", RegexOptions.Compiled)]
     private static partial Regex MyNameRegex();
-    
+
     [GeneratedRegex(@"^[a-zA-Z0-9_\-\.]+$", RegexOptions.Compiled)]
     private static partial Regex MyUsernameRegex();
-    
 }

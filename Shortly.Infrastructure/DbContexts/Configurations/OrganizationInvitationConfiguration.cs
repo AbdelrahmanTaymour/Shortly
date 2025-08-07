@@ -5,13 +5,13 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Infrastructure.DbContexts.Configurations;
 
-public class OrganizationInvitationConfiguration:IEntityTypeConfiguration<OrganizationInvitation>
+public class OrganizationInvitationConfiguration : IEntityTypeConfiguration<OrganizationInvitation>
 {
     public void Configure(EntityTypeBuilder<OrganizationInvitation> builder)
     {
         // Primary key
         builder.HasKey(oi => oi.Id);
-        
+
         // Properties configuration
         builder.Property(oi => oi.InvitedUserEmail).HasMaxLength(320);
         builder.Property(oi => oi.InvitationToken).HasMaxLength(256).IsUnicode(false);
@@ -21,7 +21,7 @@ public class OrganizationInvitationConfiguration:IEntityTypeConfiguration<Organi
             .HasColumnType("datetime2(0)")
             .HasDefaultValueSql("DATEADD(day, 5, GETUTCDATE())"); // Set expiry in database
         builder.Property(oi => oi.CreatedAt).HasDefaultValueSql("GETUTCDATE()").HasColumnType("datetime2(0)");
-        
+
         // Computed column for IsExpired
         builder.Property(oi => oi.IsExpired)
             .HasComputedColumnSql("CASE WHEN [ExpiresAt] < GETUTCDATE() THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END");

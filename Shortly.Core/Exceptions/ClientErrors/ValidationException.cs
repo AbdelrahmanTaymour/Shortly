@@ -34,7 +34,7 @@ public sealed class ValidationException : ClientErrorException
         })
     {
         // TODO: Debug this this ctor
-        ValidationErrors = Details as Dictionary<string, string[]> 
+        ValidationErrors = Details as Dictionary<string, string[]>
                            ?? new Dictionary<string, string[]>();
     }
 
@@ -44,7 +44,7 @@ public sealed class ValidationException : ClientErrorException
     public ValidationException(FluentValidation.Results.ValidationResult validationResult)
         : base(DefaultMessage, ToDictionary(validationResult.Errors))
     {
-        ValidationErrors = Details as Dictionary<string, string[]> 
+        ValidationErrors = Details as Dictionary<string, string[]>
                            ?? new Dictionary<string, string[]>();
     }
 
@@ -54,7 +54,7 @@ public sealed class ValidationException : ClientErrorException
     public ValidationException(FluentValidation.ValidationException fluentValidationException)
         : base(DefaultMessage, ToDictionary(fluentValidationException.Errors))
     {
-        ValidationErrors = Details as Dictionary<string, string[]> 
+        ValidationErrors = Details as Dictionary<string, string[]>
                            ?? new Dictionary<string, string[]>();
     }
 
@@ -64,7 +64,8 @@ public sealed class ValidationException : ClientErrorException
     /// </summary>
     /// <param name="errors">The collection of validation errors to convert.</param>
     /// <returns>A dictionary containing property names as keys and arrays of corresponding error messages as values.</returns>
-    private static Dictionary<string, string[]> ToDictionary(IEnumerable<FluentValidation.Results.ValidationFailure> errors)
+    private static Dictionary<string, string[]> ToDictionary(
+        IEnumerable<FluentValidation.Results.ValidationFailure> errors)
     {
         return errors
             .GroupBy(x => x.PropertyName)

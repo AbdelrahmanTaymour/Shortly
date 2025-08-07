@@ -12,7 +12,8 @@ namespace Shortly.Infrastructure.Repositories.UserManagement;
 /// <remarks>
 /// Uses Entity Framework Core with SQL Server for data access.
 /// </remarks>
-public class UserAuditLogRepository(SQLServerDbContext dbContext, ILogger<UserAuditLogRepository> logger) : IUserAuditLogRepository
+public class UserAuditLogRepository(SQLServerDbContext dbContext, ILogger<UserAuditLogRepository> logger)
+    : IUserAuditLogRepository
 {
     /// <inheritdoc/>
     public async Task AddAsync(UserAuditLog log)
@@ -22,7 +23,8 @@ public class UserAuditLogRepository(SQLServerDbContext dbContext, ILogger<UserAu
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<UserAuditLog>> GetByUserIdAsync(Guid userId, int limit = 50, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<UserAuditLog>> GetByUserIdAsync(Guid userId, int limit = 50,
+        CancellationToken cancellationToken = default)
     {
         return await dbContext.UserAuditLogs
             .AsNoTracking()
@@ -41,7 +43,8 @@ public class UserAuditLogRepository(SQLServerDbContext dbContext, ILogger<UserAu
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<UserAuditLog>> SearchAsync(Guid? userId = null, string? action = null, DateTime? from = null, DateTime? to = null, int page = 1,
+    public async Task<IEnumerable<UserAuditLog>> SearchAsync(Guid? userId = null, string? action = null,
+        DateTime? from = null, DateTime? to = null, int page = 1,
         int pageSize = 100, CancellationToken cancellationToken = default)
     {
         var query = dbContext.UserAuditLogs.AsNoTracking().AsQueryable();
@@ -63,6 +66,5 @@ public class UserAuditLogRepository(SQLServerDbContext dbContext, ILogger<UserAu
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
-
     }
 }

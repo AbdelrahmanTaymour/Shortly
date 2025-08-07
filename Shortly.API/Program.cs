@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using FluentValidation.AspNetCore;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
 using Shortly.API.Authorization;
 using Shortly.API.Middleware;
+using Shortly.Core.Exceptions.ServerErrors;
 
 namespace Shortly.API;
 
@@ -21,11 +23,12 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Basic Services
-        builder.Services.AddControllers().AddJsonOptions(options => {
-                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-            });
+        builder.Services.AddControllers().AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
         builder.Services.AddEndpointsApiExplorer();
-        
+
         // Logging Configuration
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole(options =>
@@ -33,20 +36,39 @@ public class Program
             options.TimestampFormat = "[yyyy-MM-dd HH:mm:ss] ";
             options.IncludeScopes = false;
         });
-        
+
         // FluentValidations
         builder.Services.AddFluentValidationAutoValidation();
-        
+
         // Swagger/OpenAPI Configuration
         builder.Services.AddSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title = "Shortly API", 
+                Title = "Shortly API",
                 Version = "v1",
-                Description = "API documentation for the Link Management System",
+                Description = "API documentation for the Link Management System"
             });
             
+            // Include XML comments
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            if (File.Exists(xmlPath))
+            {
+                options.IncludeXmlComments(xmlPath);
+            }
+
+            // XML Comments for other referenced projects
+            var additionalXmlFiles = new[] { "Shortly.Core.xml", "Shortly.Domain.xml" };
+            foreach (var xml in additionalXmlFiles)
+            {
+                var fullPath = Path.Combine(AppContext.BaseDirectory, xml);
+                if (File.Exists(fullPath))
+                {
+                    options.IncludeXmlComments(fullPath);
+                }
+            }
+
             // JWT Authentication for Swagger
             options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
             {
@@ -54,11 +76,11 @@ public class Program
                     "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
                 Name = "Authorization",
                 In = ParameterLocation.Header,
-                Type = SecuritySchemeType.ApiKey,
+                Type = SecuritySchemeType.Http,
                 Scheme = JwtBearerDefaults.AuthenticationScheme,
                 BearerFormat = "JWT"
             });
-            
+
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
                 {
@@ -77,7 +99,7 @@ public class Program
                 }
             });
         });
-        
+
         // CORS Configuration
         builder.Services.AddCors(options =>
         {
@@ -106,14 +128,15 @@ public class Program
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidAudience = builder.Configuration["Jwt:Audience"],
                     IssuerSigningKey =
-                        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+                        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] 
+                                                                        ?? throw new ConfigurationException("JWT signing key is missing in configuration."))),
                     ClockSkew = TimeSpan.Zero
                 });
 
         // Authorization
-        builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        //builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         builder.Services.AddUrlShortenerAuthorization();
-        
+
         // Custom Services
         builder.Services.AddInfrastructure(builder.Configuration);
         builder.Services.AddCore();
@@ -121,13 +144,13 @@ public class Program
         var app = builder.Build();
 
         // ===== MIDDLEWARE PIPELINE (ORDER IS CRITICAL) =====
-        
+
         // 1. Exception Handling
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         // 2. CORS
         app.UseCors("AllowFrontend");
-        
+
         // 3. Development-only middleware
         if (app.Environment.IsDevelopment())
         {
@@ -137,19 +160,19 @@ public class Program
 
         // 4. HTTPS Redirection
         app.UseHttpsRedirection();
-        
+
         // 5. Routing
         app.UseRouting();
-        
+
         // 6. Authentication
         app.UseAuthentication();
-        
+
         // 7. Authorization
         app.UseAuthorization();
-        
+
         // 8. Controller mapping
         app.MapControllers();
-        
+
         app.Run();
     }
 }

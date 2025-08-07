@@ -3,7 +3,7 @@ using Shortly.Core.DTOs.UsersDTOs.Security;
 
 namespace Shortly.Core.Validators.Users;
 
-public class UserSecurityDtoValidator:AbstractValidator<UserSecurityDto>
+public class UserSecurityDtoValidator : AbstractValidator<UserSecurityDto>
 {
     public UserSecurityDtoValidator()
     {
@@ -61,5 +61,4 @@ public class UserSecurityDtoValidator:AbstractValidator<UserSecurityDto>
             .LessThanOrEqualTo(DateTime.UtcNow)
             .WithMessage("Updated date cannot be in the future");
     }
-
 }

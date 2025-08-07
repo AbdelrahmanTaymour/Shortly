@@ -10,10 +10,10 @@ public class RefreshToken
     public DateTime? RevokedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
-    
+
     // Navigation properties
     public User? User { get; set; }
-    
+
     // Computed properties
     public bool IsExpired => DateTime.UtcNow >= ExpiresAt;
     public bool IsActive => !IsRevoked && !IsExpired;

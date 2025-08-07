@@ -9,7 +9,7 @@ public abstract class ServerErrorException : BaseApplicationException
     {
     }
 
-    protected ServerErrorException(string message, Exception innerException, object? details = null) 
+    protected ServerErrorException(string message, Exception innerException, object? details = null)
         : base(message, innerException, details)
     {
     }

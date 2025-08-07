@@ -21,7 +21,7 @@ public interface IUserRepository
     /// <returns>The user if found; otherwise, null.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<User?> GetByIdAsync(Guid id);
-    
+
     /// <summary>
     /// Retrieves a user by their email address, excluding deleted users.
     /// </summary>
@@ -30,7 +30,7 @@ public interface IUserRepository
     /// <returns>The user if found and not deleted; otherwise, null.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Retrieves a user by their username, excluding deleted users.
     /// </summary>
@@ -39,7 +39,7 @@ public interface IUserRepository
     /// <returns>The user if found and not deleted; otherwise, null.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Retrieves a user by either their email address or username, excluding deleted users.
     /// </summary>
@@ -48,7 +48,7 @@ public interface IUserRepository
     /// <returns>The user if found and not deleted; otherwise, null.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<User?> GetByEmailOrUsernameAsync(string emailOrUsername, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Retrieves a user with their associated profile information, excluding deleted users.
     /// </summary>
@@ -58,7 +58,7 @@ public interface IUserRepository
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     /// <remarks>Uses eager loading with Include to fetch profile data in a single query.</remarks>
     Task<User?> GetWithProfileAsync(Guid id, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Retrieves a user with their associated security information, excluding deleted users.
     /// </summary>
@@ -78,7 +78,7 @@ public interface IUserRepository
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     /// <remarks>Uses eager loading with Include to fetch usage data in a single query.</remarks>
     Task<User?> GetWithUsageAsync(Guid id, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Retrieves a complete user with all associated entities (profile, security, usage, subscription), excluding deleted users.
     /// </summary>
@@ -88,7 +88,7 @@ public interface IUserRepository
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     /// <remarks>Loads all related entities in a single query - use carefully as this can be expensive for large datasets.</remarks>
     Task<User?> GetCompleteUserAsync(Guid id, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Retrieves the <see cref="enSubscriptionPlan"/> identifier associated with the specified user.
     /// </summary>
@@ -105,8 +105,8 @@ public interface IUserRepository
     /// It logs any unexpected exceptions and wraps them in a <see cref="DatabaseException"/> for higher-level handling.
     /// </remarks>
     Task<enSubscriptionPlan> GetSubscriptionPlanIdAsync(Guid id, CancellationToken cancellationToken = default);
-    
-    
+
+
     /// <summary>
     /// Creates a new user along with their associated profile, security, and usage records in a single transaction.
     /// </summary>
@@ -119,7 +119,7 @@ public interface IUserRepository
     ///     Uses bulk insert with AddRangeAsync for optimal performance.
     /// </remarks>
     Task<User> CreateAsync(User user);
-    
+
     /// <summary>
     /// Updates an existing user in the database.
     /// </summary>
@@ -127,7 +127,7 @@ public interface IUserRepository
     /// <returns>True if the update was successful; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> UpdateAsync(User user);
-    
+
     /// <summary>
     /// Performs a soft delete on a user by marking them as deleted with audit information.
     /// </summary>
@@ -138,7 +138,7 @@ public interface IUserRepository
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     /// <remarks>Uses ExecuteUpdateAsync for high-performance bulk update without loading entity into memory.</remarks>
     Task<bool> DeleteAsync(Guid id, Guid deletedBy, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Activates a user by setting <c>IsActive</c> to true and updating the <c>UpdatedAt</c> timestamp.
     /// </summary>
@@ -151,7 +151,7 @@ public interface IUserRepository
     /// Thrown if an error occurs during the activation process in the database.
     /// </exception>
     Task<bool> ActivateUserAsync(Guid id, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Deactivates a user by setting <c>IsActive</c> to false and updating the <c>UpdatedAt</c> timestamp.
     /// </summary>
@@ -164,7 +164,7 @@ public interface IUserRepository
     /// Thrown if an error occurs during the deactivation process in the database.
     /// </exception>
     Task<bool> DeactivateUserAsync(Guid id, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Checks if a user exists and is not deleted.
     /// </summary>
@@ -173,7 +173,7 @@ public interface IUserRepository
     /// <returns>True if the user exists and is not deleted; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Checks if an email address is already in use by a non-deleted user.
     /// </summary>
@@ -182,7 +182,7 @@ public interface IUserRepository
     /// <returns>True if the email exists and belongs to a non-deleted user; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Checks if an username address is already in use by a non-deleted user.
     /// </summary>
@@ -191,7 +191,7 @@ public interface IUserRepository
     /// <returns>True if the username exists and belongs to a non-deleted user; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Checks if either an email address or username is already in use by a non-deleted user.
     /// </summary>
@@ -201,7 +201,7 @@ public interface IUserRepository
     /// <returns>True if either the email or username exists and belongs to a non-deleted user; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> EmailOrUsernameExistsAsync(string email, string username, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Retrieves a paginated list of non-deleted users ordered by creation date.
     /// </summary>
@@ -230,38 +230,14 @@ public interface IUserRepository
     /// </remarks>
     Task<IEnumerable<User>> GetUsersByCustomCriteriaAsync(Expression<Func<User, bool>> predicateint, int page = 1,
         int pageSize = 10, CancellationToken cancellationToken = default);
-    
-    
+
+
     /// <summary>
-    /// Searches for users based on optional filtering criteria with support for pagination.
-    /// Allows returning either basic or complete user information.
+    /// Performs a paginated search for users based on the specified criteria.
     /// </summary>
-    /// <param name="searchTerm">
-    ///     Optional term to search by email or username. Case-insensitive partial matches are supported.
-    /// </param>
-    /// <param name="subscriptionPlan">
-    ///     Optional subscription plan filter. If specified, limits results to users with the given plan.
-    /// </param>
-    /// <param name="isActive">
-    ///     Optional filter to include only active or inactive users.
-    /// </param>
-    /// <param name="isDeleted">
-    ///     Optional filter to include only deleted or non-deleted users.
-    /// </param>
-    /// <param name="isEmailConfirmed">
-    ///     Optional filter to include only confirmed or not-confirmed emails.
-    /// </param>
-    /// <param name="page">
-    ///     The 1-based page number. Must be greater than 0.
-    /// </param>
-    /// <param name="pageSize">
-    ///     The number of users to return per page. Must be between 1 and 1000.
-    /// </param>
-    /// <param name="retrieveCompleteUser">
-    ///     If true, includes detailed related data (profile, security, usage) per user. 
-    ///     If false, returns only basic user information.
-    /// </param>
-    ///  /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
+    /// <param name="request">The search request containing filter criteria and pagination parameters.</param>
+    /// <param name="retrieveCompleteUser">If true, includes related entities (Profile, UserSecurity, UserUsage); otherwise returns basic user information only.</param>
+    /// <param name="cancellationToken">Token to cancel the asynchronous operation.</param>
     /// <returns>
     ///     A tuple containing:
     ///     <list type="bullet">
@@ -274,14 +250,7 @@ public interface IUserRepository
     ///     valid bounds.
     /// </exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<(IEnumerable<IUserSearchResult> Users, int TotalCount)> SearchUsers(
-        string? searchTerm = null,
-        enSubscriptionPlan? subscriptionPlan = null,
-        bool? isActive = null,
-        bool? isDeleted = null,
-        bool? isEmailConfirmed = null,
-        int page = 1,
-        int pageSize = 10,
+    Task<(IEnumerable<IUserSearchResult> Users, int TotalCount)> SearchUsers(UserSearchRequest request,
         bool retrieveCompleteUser = false,
         CancellationToken cancellationToken = default);
 }

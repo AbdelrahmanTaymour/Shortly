@@ -20,7 +20,8 @@ public interface IUserAuditLogRepository
     /// <param name="limit">The maximum number of logs to retrieve. Default is 50.</param>
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>A list of <see cref="UserAuditLog"/> entries.</returns>
-    Task<IEnumerable<UserAuditLog>> GetByUserIdAsync(Guid userId, int limit = 50, CancellationToken cancellationToken = default);
+    Task<IEnumerable<UserAuditLog>> GetByUserIdAsync(Guid userId, int limit = 50,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves a specific audit log by its unique ID.

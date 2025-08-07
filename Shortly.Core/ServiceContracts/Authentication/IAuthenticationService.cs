@@ -15,7 +15,7 @@ public interface IAuthenticationService
     /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
     /// <returns>An <see cref="AuthenticationResponse"/> if successful; otherwise, null.</returns>
     Task<AuthenticationResponse?> Login(LoginRequest loginRequest, CancellationToken cancellationToken);
-    
+
     /// <summary>
     /// Registers a new user with the provided credentials.
     /// </summary>
@@ -23,7 +23,7 @@ public interface IAuthenticationService
     /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
     /// <returns>An <see cref="AuthenticationResponse"/> if successful; otherwise, null.</returns>
     Task<AuthenticationResponse?> Register(RegisterRequest registerRequest, CancellationToken cancellationToken);
-    
+
     /// <summary>
     /// Validates the provided user credentials by verifying the email or username and password.
     /// </summary>
@@ -33,5 +33,6 @@ public interface IAuthenticationService
     /// <returns>
     /// The <see cref="User"/> object if credentials are valid.
     /// </returns>
-    Task<User> ValidateCredentialsAsync(string emailOrUsername, string password, CancellationToken cancellationToken = default);
+    Task<User> ValidateCredentialsAsync(string emailOrUsername, string password,
+        CancellationToken cancellationToken = default);
 }

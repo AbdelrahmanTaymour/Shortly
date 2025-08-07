@@ -17,7 +17,8 @@ public interface IUserAuditLogService
     /// <param name="details">Optional detailed description of the action (e.g., slug or entity affected).</param>
     /// <param name="ipAddress">Optional IP address where the action originated.</param>
     /// <param name="userAgent">Optional user-agent header string.</param>
-    Task LogAsync(Guid userId, string action, string? details = null, string? ipAddress = null, string? userAgent = null);
+    Task LogAsync(Guid userId, string action, string? details = null, string? ipAddress = null,
+        string? userAgent = null);
 
     /// <summary>
     /// Retrieves the most recent audit logs for a specific user.
@@ -26,7 +27,8 @@ public interface IUserAuditLogService
     /// <param name="limit">Maximum number of logs to return. Default is 50.</param>
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>A list of <see cref="UserAuditLog"/> entries.</returns>
-    Task<IEnumerable<UserAuditLog>> GetRecentLogsAsync(Guid userId, int limit = 50, CancellationToken cancellationToken = default);
+    Task<IEnumerable<UserAuditLog>> GetRecentLogsAsync(Guid userId, int limit = 50,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves a specific audit log entry by its ID.

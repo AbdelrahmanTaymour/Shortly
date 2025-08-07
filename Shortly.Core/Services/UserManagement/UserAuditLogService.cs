@@ -5,7 +5,6 @@ using Shortly.Domain.Entities;
 
 namespace Shortly.Core.Services.UserManagement;
 
-
 public class UserAuditLogService(IUserAuditLogRepository auditLogRepository, ILogger<UserAuditLogService> logger)
     : IUserAuditLogService
 {
@@ -34,7 +33,7 @@ public class UserAuditLogService(IUserAuditLogRepository auditLogRepository, ILo
     {
         return await auditLogRepository.GetByUserIdAsync(userId, limit, cancellationToken);
     }
-    
+
     /// <inheritdoc/>
     public async Task<UserAuditLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

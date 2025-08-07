@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Core.ServiceContracts;
 using Shortly.Core.ServiceContracts.Authentication;
 using Shortly.Core.ServiceContracts.UserManagement;
@@ -30,9 +31,12 @@ public static class DependencyInjection
     public static IServiceCollection AddCore(this IServiceCollection services)
     {
         // Register Core-related services.
+
+        // Auth
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ITokenService, TokenService>();
-        
+
+        // User Management
         services.AddScoped<IUserSecurityService, UserSecurityService>();
         services.AddScoped<IUserAdministrationService, UserAdministrationService>();
         services.AddScoped<IUserService, UserService>();
@@ -40,12 +44,14 @@ public static class DependencyInjection
         services.AddScoped<IUserQueryService, UserQueryService>();
         services.AddScoped<IUserUsageService, UserUsageService>();
         services.AddScoped<IUserAuditLogService, UserAuditLogService>();
-        
+
+        // Organization Management
+
         services.AddScoped<IShortUrlsService, ShortUrlsService>();
-        
-        
+
+
         services.AddValidatorsFromAssemblyContaining<ShortUrlRequestValidator>();
-        
+
         return services;
     }
 }

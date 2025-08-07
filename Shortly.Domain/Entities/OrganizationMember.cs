@@ -12,7 +12,7 @@ public class OrganizationMember
     public bool IsActive { get; set; } = true;
     public Guid InvitedBy { get; set; }
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
-    
+
     // Navigation properties
     public Organization? Organization { get; set; }
     public User? User { get; set; }

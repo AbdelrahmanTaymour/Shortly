@@ -5,13 +5,13 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Infrastructure.DbContexts.Configurations;
 
-public class OrganizationConfiguration: IEntityTypeConfiguration<Organization>
+public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
 {
     public void Configure(EntityTypeBuilder<Organization> builder)
     {
         // Primary key
         builder.HasKey(x => x.Id);
-        
+
         // Properties configuration
         builder.Property(e => e.Name).HasMaxLength(100);
         builder.Property(o => o.Description).HasMaxLength(500);
@@ -23,7 +23,7 @@ public class OrganizationConfiguration: IEntityTypeConfiguration<Organization>
         builder.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()").HasColumnType("datetime2(0)");
         builder.Property(o => o.UpdatedAt).HasDefaultValueSql("GETUTCDATE()").HasColumnType("datetime2(0)");
         builder.Property(o => o.DeletedAt).HasColumnType("datetime2(0)");
-        
+
         // Indexes
         builder.HasIndex(o => o.OwnerId);
         builder.HasIndex(o => o.IsActive);
@@ -54,6 +54,5 @@ public class OrganizationConfiguration: IEntityTypeConfiguration<Organization>
             .WithOne(a => a.Organization)
             .HasForeignKey(a => a.OrganizationId)
             .OnDelete(DeleteBehavior.NoAction);
-
     }
 }

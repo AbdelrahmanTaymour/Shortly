@@ -5,7 +5,7 @@ using Shortly.Core.RepositoryContract.UserManagement;
 
 namespace Shortly.Core.Validators.Auth;
 
-public class RegisterRequestValidator: AbstractValidator<RegisterRequest>
+public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
 {
     public RegisterRequestValidator(IUserRepository userRepository)
     {

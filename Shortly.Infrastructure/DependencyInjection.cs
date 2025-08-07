@@ -30,7 +30,6 @@ public static class DependencyInjection
     /// </returns>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-
         // Register infrastructure-related services.
         services.AddDbContext<SQLServerDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("ConnectionString")));
@@ -42,13 +41,13 @@ public static class DependencyInjection
         services.AddScoped<IUserUsageRepository, UserUsageRepository>();
         services.AddScoped<IUserAuditLogRepository, UserAuditLogRepository>();
         services.AddScoped<IUserAdministrationRepository, UserAdministrationRepository>();
-        
+
         // Organization Management
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
-        
+
         services.AddScoped<IShortUrlRepository, ShortUrlRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-        
+
         return services;
     }
 }

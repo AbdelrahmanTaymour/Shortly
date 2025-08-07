@@ -9,7 +9,7 @@ namespace Shortly.Core.RepositoryContract.UserManagement;
 public interface IUserAdministrationRepository
 {
     // Admin-specific user management
-    
+
     /// <summary>
     /// Forcefully updates a user and all their related entities (profile, security, and usage) 
     /// bypassing normal validation rules. This is typically used for administrative operations.
@@ -50,8 +50,8 @@ public interface IUserAdministrationRepository
     /// </para>
     /// </remarks>
     Task<ForceUpdateUserResponse> ForceUpdateUserAsync(Guid userId, ForceUpdateUserRequest request);
-    
-    
+
+
     /// <summary>
     /// Permanently deletes a user and optionally their owned short URLs from the database.
     /// This operation cannot be undone.
@@ -79,9 +79,10 @@ public interface IUserAdministrationRepository
     /// To delete such users, the organizations must first be transferred to another owner or deleted.
     /// </para>
     /// </remarks>
-    Task<bool> HardDeleteUserAsync(Guid userId,bool deleteOwnedShortUrls, CancellationToken cancellationToken = default);
-    
-    
+    Task<bool> HardDeleteUserAsync(Guid userId, bool deleteOwnedShortUrls,
+        CancellationToken cancellationToken = default);
+
+
     /// <summary>
     /// Performs bulk activation of users by setting their IsActive property to true.
     /// Only affects users that are currently inactive and exist in the database.
@@ -99,7 +100,7 @@ public interface IUserAdministrationRepository
     /// The operation is performed as a bulk update for better performance.
     /// </remarks>
     Task<BulkOperationResult> BulkActivateUsersAsync(ICollection<Guid> userIds, CancellationToken cancellationToken);
-    
+
     /// <summary>
     /// Performs bulk deactivation of users by setting their IsActive property to false.
     /// Only affects users that are currently active and exist in the database.
@@ -117,7 +118,7 @@ public interface IUserAdministrationRepository
     /// The operation is performed as a bulk update for better performance.
     /// </remarks>
     Task<BulkOperationResult> BulkDeactivateUsersAsync(ICollection<Guid> userIds, CancellationToken cancellationToken);
-    
+
     /// <summary>
     /// Performs bulk soft deletion of users by marking them as deleted and inactive.
     /// Only affects users that are not already deleted and exist in the database.
@@ -137,5 +138,6 @@ public interface IUserAdministrationRepository
     /// The operation is performed as a bulk update for better performance.
     /// This operation generates a warning-level log entry due to the nature of user deletion.
     /// </remarks>
-    Task<BulkOperationResult> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy, CancellationToken cancellationToken = default);
+    Task<BulkOperationResult> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy,
+        CancellationToken cancellationToken = default);
 }

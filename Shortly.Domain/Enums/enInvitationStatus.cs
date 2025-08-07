@@ -13,6 +13,5 @@ public enum enInvitationStatus
     EmailSent,
     Failure,
     UserClicked,
-    Registered,
+    Registered
 }
-

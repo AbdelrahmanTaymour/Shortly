@@ -9,12 +9,12 @@ namespace Shortly.Infrastructure.DbContexts;
 /// Represents the Entity Framework Core DbContext for managing Shortly application database operations.
 /// Provides DbSet properties for entity mapping and implements custom model configurations.
 /// </summary>
-public class SQLServerDbContext: DbContext
+public class SQLServerDbContext : DbContext
 {
     public SQLServerDbContext(DbContextOptions<SQLServerDbContext> dbContextOptions) : base(dbContextOptions)
     {
     }
-    
+
     public DbSet<ShortUrl> ShortUrls { get; set; }
     public DbSet<ClickEvent> ClickEvents { get; set; }
     public DbSet<User> Users { get; set; }
@@ -39,7 +39,7 @@ public class SQLServerDbContext: DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new UserProfileConfiguration());
         modelBuilder.ApplyConfiguration(new UserSecurityConfiguration());
@@ -56,8 +56,8 @@ public class SQLServerDbContext: DbContext
         modelBuilder.ApplyConfiguration(new OrganizationAuditLogConfiguration());
         modelBuilder.ApplyConfiguration(new SubscriptionPlanConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
-        
-        
+
+
         modelBuilder.Entity<SubscriptionPlan>().HasData(
             new SubscriptionPlan
             {
@@ -124,79 +124,75 @@ public class SQLServerDbContext: DbContext
                 GeoDeviceTracking = true
             }
         );
-        
+
         modelBuilder.Entity<Role>().HasData(
-        new Role
-        {
-            Id = (byte)enUserRole.Viewer,
-            RoleName = "Viewer",
-            Description = "Read-only access to resources.",
-            DefaultPermissions = (long)(
-                enPermissions.ViewBasicAnalytics |
-                enPermissions.ViewOwnProfile |
-                enPermissions.ViewOwnUsageStats)
-        },
-        new Role
-        {
-            Id = (byte)enUserRole.Member,
-            RoleName = "Member",
-            Description = "Can manage and track their own content.",
-            DefaultPermissions = (long)(
-                enPermissions.FullUrlManagement |
-                enPermissions.GenerateQrCodes |
-                enPermissions.BasicAnalytics |
-                enPermissions.SelfManagement)
-        },
-        new Role
-        {
-            Id = (byte)enUserRole.TeamManager,
-            RoleName = "TeamManager",
-            Description = "Can manage their team and content.",
-            DefaultPermissions = (long)(
-                enPermissions.FullUrlManagement |
-                enPermissions.CustomizationFeatures |
-                enPermissions.FullAnalytics |
-                enPermissions.TeamManagement |
-                enPermissions.SelfManagement)
-        },
-        new Role
-        {
-            Id = (byte)enUserRole.OrgAdmin,
-            RoleName = "OrgAdmin",
-            Description = "Can manage users and settings for the organization.",
-            DefaultPermissions = (long)(
-                enPermissions.FullUrlManagement |
-                enPermissions.FullAnalytics |
-                enPermissions.CustomizationFeatures |
-                enPermissions.FullTeamAndOrg |
-                enPermissions.SelfManagement |
-                enPermissions.UserAdministration)
-        },
-        new Role
-        {
-            Id = (byte)enUserRole.OrgOwner,
-            RoleName = "OrgOwner",
-            Description = "Owns the organization with full control.",
-            DefaultPermissions = (long)(enPermissions.AllPermissions & ~(enPermissions.SystemAdmin))
-        },
-        new Role
-        {
-            Id = (byte)enUserRole.Admin,
-            RoleName = "PlatformAdmin",
-            Description = "Platform-wide admin access.",
-            DefaultPermissions = (long)(enPermissions.AllPermissions & ~(enPermissions.SystemAdmin))
-        },
-        new Role
-        {
-            Id = (byte)enUserRole.SuperAdmin,
-            RoleName = "SuperAdmin",
-            Description = "System-wide root access.",
-            DefaultPermissions = (long)enPermissions.AllPermissions
-        }
-    );
-
-
-
-
+            new Role
+            {
+                Id = (byte)enUserRole.Viewer,
+                RoleName = "Viewer",
+                Description = "Read-only access to resources.",
+                DefaultPermissions = (long)(
+                    enPermissions.ViewBasicAnalytics |
+                    enPermissions.ViewOwnProfile |
+                    enPermissions.ViewOwnUsageStats)
+            },
+            new Role
+            {
+                Id = (byte)enUserRole.Member,
+                RoleName = "Member",
+                Description = "Can manage and track their own content.",
+                DefaultPermissions = (long)(
+                    enPermissions.FullUrlManagement |
+                    enPermissions.GenerateQrCodes |
+                    enPermissions.BasicAnalytics |
+                    enPermissions.SelfManagement)
+            },
+            new Role
+            {
+                Id = (byte)enUserRole.TeamManager,
+                RoleName = "TeamManager",
+                Description = "Can manage their team and content.",
+                DefaultPermissions = (long)(
+                    enPermissions.FullUrlManagement |
+                    enPermissions.CustomizationFeatures |
+                    enPermissions.FullAnalytics |
+                    enPermissions.TeamManagement |
+                    enPermissions.SelfManagement)
+            },
+            new Role
+            {
+                Id = (byte)enUserRole.OrgAdmin,
+                RoleName = "OrgAdmin",
+                Description = "Can manage users and settings for the organization.",
+                DefaultPermissions = (long)(
+                    enPermissions.FullUrlManagement |
+                    enPermissions.FullAnalytics |
+                    enPermissions.CustomizationFeatures |
+                    enPermissions.FullTeamAndOrg |
+                    enPermissions.SelfManagement |
+                    enPermissions.UserAdministration)
+            },
+            new Role
+            {
+                Id = (byte)enUserRole.OrgOwner,
+                RoleName = "OrgOwner",
+                Description = "Owns the organization with full control.",
+                DefaultPermissions = (long)(enPermissions.AllPermissions & ~enPermissions.SystemAdmin)
+            },
+            new Role
+            {
+                Id = (byte)enUserRole.Admin,
+                RoleName = "PlatformAdmin",
+                Description = "Platform-wide admin access.",
+                DefaultPermissions = (long)(enPermissions.AllPermissions & ~enPermissions.SystemAdmin)
+            },
+            new Role
+            {
+                Id = (byte)enUserRole.SuperAdmin,
+                RoleName = "SuperAdmin",
+                Description = "System-wide root access.",
+                DefaultPermissions = (long)enPermissions.AllPermissions
+            }
+        );
     }
 }

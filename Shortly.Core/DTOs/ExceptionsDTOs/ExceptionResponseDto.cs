@@ -11,9 +11,10 @@ public record ExceptionResponseDto
     public string ErrorCode { get; init; }
     public string ExceptionType { get; init; }
     public int StatusCode { get; init; }
-    
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public object? Details { get; init; }
+
     public string TraceId { get; init; }
     public DateTime Timestamp { get; init; }
 

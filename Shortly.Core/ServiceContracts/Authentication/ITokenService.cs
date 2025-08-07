@@ -15,7 +15,7 @@ public interface ITokenService
     /// <param name="user">The user to generate tokens for.</param>
     /// <returns>A <see cref="TokenResponse"/> containing token data.</returns>
     Task<TokenResponse> GenerateTokensAsync(User user);
-    
+
     /// <summary>
     /// Refreshes the token pair using a valid refresh token.
     /// </summary>
@@ -23,7 +23,7 @@ public interface ITokenService
     /// <returns>A new <see cref="TokenResponse"/> if successful; otherwise, null.</returns>
     /// <exception cref="UnauthorizedException">Thrown if the token is invalid, expired, or inactive.</exception>
     Task<TokenResponse?> RefreshTokenAsync(string refreshToken);
-    
+
     /// <summary>
     /// Validates a given JWT token and returns the result.
     /// </summary>
@@ -38,7 +38,7 @@ public interface ITokenService
     /// <param name="refreshToken">The refresh token to revoke.</param>
     /// <param name="cancellationToken"></param>
     Task<bool> RevokeTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
-   
+
     /// <summary>
     /// Revokes all active refresh tokens for a given user.
     /// </summary>

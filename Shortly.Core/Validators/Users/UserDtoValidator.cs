@@ -26,7 +26,7 @@ public class UserDtoValidator : AbstractValidator<UserDto>
         RuleFor(x => x.SubscriptionPlanId)
             .IsInEnum()
             .WithMessage("Invalid subscription plan");
-        
+
         RuleFor(x => x.CreatedAt)
             .LessThanOrEqualTo(DateTime.UtcNow)
             .WithMessage("Created date cannot be in the future");
@@ -63,5 +63,4 @@ public class UserDtoValidator : AbstractValidator<UserDto>
                 .WithMessage("DeletedBy must be null when user is not deleted");
         });
     }
-
 }

@@ -9,4 +9,4 @@ public record ForceUpdateUserResponse(
     UserProfileDto Profile,
     UserSecurityDto Security,
     UserUsageDto Usage
-    );
+);

@@ -12,5 +12,4 @@ public interface IEmailVerificationService
     Task<bool> ResendEmailVerificationAsync(ResendEmailVerificationRequest request);
     Task<bool> IsEmailVerifiedAsync(Guid userId);
     Task<bool> GenerateEmailVerificationTokenAsync(Guid userId);
-
 }

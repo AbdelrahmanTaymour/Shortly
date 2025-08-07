@@ -5,28 +5,28 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Infrastructure.DbContexts.Configurations;
 
-public class OrganizationMemberConfiguration: IEntityTypeConfiguration<OrganizationMember>
+public class OrganizationMemberConfiguration : IEntityTypeConfiguration<OrganizationMember>
 {
     public void Configure(EntityTypeBuilder<OrganizationMember> builder)
     {
         // Primary key
         builder.HasKey(x => x.Id);
-        
+
         // Properties configuration
         builder.Property(e => e.RoleId)
             .HasConversion<byte>()
             .HasDefaultValue((byte)enUserRole.Member);
-            
+
         builder.Property(e => e.CustomPermissions)
             .HasConversion<long>().HasDefaultValue(enPermissions.None);
-            
+
         builder.Property(e => e.JoinedAt)
             .HasDefaultValueSql("GETUTCDATE()")
             .HasColumnType("datetime2(0)");
-            
+
         builder.Property(e => e.IsActive)
             .HasDefaultValue(true);
-        
+
         // Indexes
         builder.HasIndex(om => new { om.OrganizationId, om.UserId }).IsUnique();
         builder.HasIndex(om => om.UserId);

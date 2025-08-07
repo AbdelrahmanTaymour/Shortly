@@ -3,9 +3,9 @@ using Shortly.Core.DTOs.UsersDTOs.Profile;
 
 namespace Shortly.Core.Validators.Users;
 
-public class UserProfileDtoValidator:AbstractValidator<UserProfileDto>
+public class UserProfileDtoValidator : AbstractValidator<UserProfileDto>
 {
-   public UserProfileDtoValidator()
+    public UserProfileDtoValidator()
     {
         RuleFor(x => x.Name)
             .MaximumLength(100)
@@ -61,7 +61,7 @@ public class UserProfileDtoValidator:AbstractValidator<UserProfileDto>
 
     private bool BeAValidUrl(string? url)
     {
-        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult) 
+        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult)
                && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 
@@ -77,5 +77,4 @@ public class UserProfileDtoValidator:AbstractValidator<UserProfileDto>
             return false;
         }
     }
-
 }

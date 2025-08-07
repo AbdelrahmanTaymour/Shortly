@@ -17,18 +17,17 @@ namespace Shortly.Core.Services.UserManagement;
 /// <param name="userRepository">The repository for user accounts.</param>
 /// <param name="usageRepository">The repository for tracking user usage statistics.</param>
 /// <param name="logger">Logger instance for logging operations and exceptions.</param>
-public class UserProfileService(IUserProfileRepository profileRepository, IUserRepository userRepository,
-    IUserUsageRepository usageRepository, ILogger<UserProfileService> logger) : IUserProfileService
+public class UserProfileService(
+    IUserProfileRepository profileRepository,
+    IUserRepository userRepository,
+    IUserUsageRepository usageRepository,
+    ILogger<UserProfileService> logger) : IUserProfileService
 {
-    
     /// <inheritdoc />
     public async Task<UserProfileDto> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var profile = await profileRepository.GetByUserIdAsync(userId, cancellationToken);
-        if (profile is null)
-        {
-            throw new NotFoundException("User Profile", userId);
-        }
+        if (profile is null) throw new NotFoundException("User Profile", userId);
         return profile.MapToUserProfile();
     }
 
@@ -37,11 +36,8 @@ public class UserProfileService(IUserProfileRepository profileRepository, IUserR
         CancellationToken cancellationToken = default)
     {
         var profile = await profileRepository.GetByUserIdAsync(userId, cancellationToken);
-        if (profile is null)
-        {
-            throw new NotFoundException("User Profile", userId);
-        }
-        
+        if (profile is null) throw new NotFoundException("User Profile", userId);
+
         profile.Name = request.Name;
         profile.Bio = request.Bio;
         profile.PhoneNumber = request.PhoneNumber;
@@ -52,18 +48,18 @@ public class UserProfileService(IUserProfileRepository profileRepository, IUserR
         profile.Country = request.Country;
         profile.TimeZone = request.TimeZone;
         profile.UpdatedAt = DateTime.UtcNow;
-        
+
         var updated = await profileRepository.UpdateAsync(profile, cancellationToken);
         if (!updated)
         {
             logger.LogError("Fail updating profile; UserId: {UserId}", userId);
             throw new ServiceUnavailableException("Update Profile");
         }
-        
+
         logger.LogInformation("Profile updated successfully. UserId: {UserId}", userId);
         return updated;
     }
-    
+
     /// <inheritdoc />
     public async Task<bool> RequestAccountDeletionAsync(Guid userId, CancellationToken cancellationToken = default)
     {
@@ -71,18 +67,17 @@ public class UserProfileService(IUserProfileRepository profileRepository, IUserR
     }
 
     /// <inheritdoc />
-    public async Task<MonthlyQuotaStatusDto> GetMonthlyQuotaStatusAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<MonthlyQuotaStatusDto> GetMonthlyQuotaStatusAsync(Guid userId,
+        CancellationToken cancellationToken = default)
     {
         var userUsageWithPlan = await usageRepository.GetUserUsageWithPlanIdAsync(userId, cancellationToken);
-    
+
         if (userUsageWithPlan == null)
             throw new NotFoundException($"Usage statistics for user '{userId}' not found.");
-    
+
         // Get plan limits from static configuration (no database hit!)
         if (!PlanConfiguration.Plans.TryGetValue(userUsageWithPlan.SubscriptionPlanId, out var planConfig))
-        {
             throw new InvalidOperationException($"Invalid subscription plan: {userUsageWithPlan.SubscriptionPlanId}");
-        }
 
         var monthlyQuotaStatusDto = CalculateQuotaStatus(userUsageWithPlan, planConfig);
         return monthlyQuotaStatusDto;
@@ -116,18 +111,18 @@ public class UserProfileService(IUserProfileRepository profileRepository, IUserR
 
         var maxLinks = planConfig.Limits[PlanConfiguration.enPlanLimits.UrlsPerMonth];
         var maxQrCodes = planConfig.Limits[PlanConfiguration.enPlanLimits.QrCodesPerMonth];
-        
+
         // Calculate remaining quotas
         var remainingLinks = Math.Max(maxLinks - usage.MonthlyLinksCreated, 0);
         var remainingQrCodes = Math.Max(maxQrCodes - usage.MonthlyQrCodesCreated, 0);
-        
+
         // Calculate usage percentages (avoid division by zero)
         var linksUsagePercentage = maxLinks > 0 ? (double)usage.MonthlyLinksCreated / maxLinks * 100.0 : 0.0;
         var qrCodesUsagePercentage = maxQrCodes > 0 ? (double)usage.MonthlyQrCodesCreated / maxQrCodes * 100.0 : 0.0;
-        
+
         // Calculate days until reset
         var daysUntilReset = Math.Max((usage.MonthlyResetDate.Date - DateTime.UtcNow.Date).Days, 0);
-        
+
         // Boolean flags
         var isLinksQuotaExhausted = remainingLinks <= 0;
         var isQrCodesQuotaExhausted = remainingQrCodes <= 0;
@@ -152,7 +147,6 @@ public class UserProfileService(IUserProfileRepository profileRepository, IUserR
             isNearQrCodesQuotaLimit
         );
     }
-
 
     #endregion
 }

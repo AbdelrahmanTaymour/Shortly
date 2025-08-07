@@ -10,7 +10,7 @@ public class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
     {
         // Primary Key
         builder.HasKey(up => up.UserId);
-        
+
         // Properties configuration
         builder.Property(u => u.Name).HasMaxLength(100);
         builder.Property(up => up.Bio).HasMaxLength(500);

@@ -3,8 +3,7 @@ using Shortly.Core.DTOs.AuthDTOs;
 
 namespace Shortly.Core.Validators.Auth;
 
-
-public class RefreshTokenValidator: AbstractValidator<RefreshTokenRequest>
+public class RefreshTokenValidator : AbstractValidator<RefreshTokenRequest>
 {
     public RefreshTokenValidator()
     {
@@ -13,6 +12,7 @@ public class RefreshTokenValidator: AbstractValidator<RefreshTokenRequest>
             .MinimumLength(44).WithMessage("Refresh token is too short.")
             .Must(BeValidBase64).WithMessage("Invalid refresh token format.");
     }
+
     private bool BeValidBase64(string token)
     {
         var bytes = Convert.FromBase64String(token);

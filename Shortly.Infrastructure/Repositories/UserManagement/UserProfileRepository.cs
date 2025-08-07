@@ -14,7 +14,8 @@ namespace Shortly.Infrastructure.Repositories.UserManagement;
 /// <remarks>
 /// Uses Entity Framework Core with SQL Server for data access.
 /// </remarks>
-public class UserProfileRepository(SQLServerDbContext dbContext, ILogger<UserProfileRepository> logger) : IUserProfileRepository
+public class UserProfileRepository(SQLServerDbContext dbContext, ILogger<UserProfileRepository> logger)
+    : IUserProfileRepository
 {
     /// <inheritdoc/>
     public async Task<UserProfile?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -31,7 +32,7 @@ public class UserProfileRepository(SQLServerDbContext dbContext, ILogger<UserPro
             throw new DatabaseException("Failed to retrieve user profile", ex);
         }
     }
-    
+
     /// <inheritdoc/>
     public async Task<bool> UpdateAsync(UserProfile profile, CancellationToken cancellationToken = default)
     {
@@ -46,5 +47,4 @@ public class UserProfileRepository(SQLServerDbContext dbContext, ILogger<UserPro
             throw new DatabaseException("Failed to update user profile", ex);
         }
     }
-
 }

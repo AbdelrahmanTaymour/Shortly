@@ -8,7 +8,7 @@ public class UserUsage
     public int TotalLinksCreated { get; set; }
     public int TotalQrCodesCreated { get; set; }
     public DateTime MonthlyResetDate { get; set; } = DateTime.UtcNow.AddMonths(1);
-    
+
     // Navigation properties
     public User? User { get; set; }
 }

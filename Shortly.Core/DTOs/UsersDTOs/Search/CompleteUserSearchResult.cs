@@ -18,7 +18,7 @@ public sealed record CompleteUserSearchResult(
     bool IsDeleted,
     DateTime? DeletedAt,
     Guid? DeletedBy,
-    
+
     // Related entities dto
     UserProfileDto UserProfile,
     UserSecurityDto UserSecurityDto,

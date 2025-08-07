@@ -14,27 +14,26 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShort
 
     public async Task<IEnumerable<ShortUrlResponse>> GetAllAsync()
     {
-        var allShortedUrls = await _shortUrlRepository.GetAllAsync();
-        return allShortedUrls.MapToShortUrlResponseList();
+        // var allShortedUrls = await _shortUrlRepository.GetAllAsync();
+        // return allShortedUrls.MapToShortUrlResponseList();
+        throw new NotImplementedException();
     }
 
     public async Task<ShortUrlResponse?> GetByShortCodeAsync(string shortCode)
     {
         var shortUrl = await _shortUrlRepository.GetShortUrlByShortCodeAsync(shortCode);
         if (shortUrl is not null)
-        {
             //TODO: Apply Event-Based Tracking for
             // increment the access count in the database
             await _shortUrlRepository.IncrementAccessCountAsync(shortCode);
-
-        }
-        return shortUrl?.MapToShortUrlResponse();
+        //return shortUrl?.MapToShortUrlResponse();
+        throw new NotImplementedException();
     }
 
     public async Task<ShortUrlResponse> CreateShortUrlAsync(ShortUrlRequest shortUrlRequest)
     {
-        var shortUrlDomain = shortUrlRequest.MapToShortUrl();
-        
+        /*var shortUrlDomain = shortUrlRequest.MapToShortUrl();
+
         // Check if a custom short code is provided
         if (!string.IsNullOrEmpty(shortUrlRequest.CustomShortCode))
         {
@@ -42,13 +41,13 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShort
             var (isValid, errorMessage) = UrlCodeExtensions.ValidateCustomCode(shortUrlRequest.CustomShortCode);
             if (!isValid)
                 throw new ValidationException($"Invalid custom short code: {errorMessage}");
-                
+
             // Check if custom code already exists
             if (await _shortUrlRepository.ShortCodeExistsAsync(shortUrlRequest.CustomShortCode))
                 throw new ConflictException("Custom short code already exists.");
-                
+
             shortUrlDomain.ShortCode = shortUrlRequest.CustomShortCode;
-            
+
             // Create entity
             shortUrlDomain = await _shortUrlRepository.CreateShortUrlAsync(shortUrlDomain);
             if (shortUrlDomain is null)
@@ -60,21 +59,22 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShort
             shortUrlDomain = await _shortUrlRepository.CreateShortUrlAsync(shortUrlDomain);
             if (shortUrlDomain is null)
                 throw new DatabaseException("Failed to create short URL.");
-            
-            // Generate optimized short code 
+
+            // Generate optimized short code
             var shortCode = await UrlCodeExtensions.GenerateCodeAsync(
-                shortUrlDomain.Id, 
+                shortUrlDomain.Id,
                 _shortUrlRepository,
                 await GetOptimalCodeLength()
             );
-            
+
             // Update the entity with the generated/custom short code
             shortUrlDomain.ShortCode = shortCode;
             await _shortUrlRepository.SaveChangesAsync();
         }
-        
-        
-        return shortUrlDomain.MapToShortUrlResponse();
+
+
+        return shortUrlDomain.MapToShortUrlResponse();*/
+        throw new NotImplementedException();
     }
 
     public async Task<ShortUrlResponse?> UpdateShortUrlAsync(string shortCode, ShortUrlRequest updatedShortUrlRequest)
@@ -82,15 +82,16 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShort
         var existingUrl = await _shortUrlRepository.GetShortUrlByShortCodeAsync(shortCode);
         if (existingUrl is null)
             throw new NotFoundException($"Short URL with code '{shortCode}' not found.");
-        
+
         existingUrl.OriginalUrl = updatedShortUrlRequest.OriginalUrl;
         existingUrl.UpdatedAt = DateTime.UtcNow;
-        
-        var success = await _shortUrlRepository.UpdateShortUrlByIdAsync(existingUrl.Id, existingUrl);
-        if (!success)
-            throw new DatabaseException("Failed to update short URL.");
-        
-        return existingUrl.MapToShortUrlResponse();
+
+        // var success = await _shortUrlRepository.UpdateShortUrlByIdAsync(existingUrl.Id, existingUrl);
+        // if (!success)
+        //     throw new DatabaseException("Failed to update short URL.");
+
+        //return existingUrl.MapToShortUrlResponse();
+        throw new NotImplementedException();
     }
 
     public async Task<bool> DeleteShortUrlAsync(string shortCode)
@@ -98,7 +99,7 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShort
         var deletedUrl = await _shortUrlRepository.DeleteByShortCodeAsync(shortCode);
         if (deletedUrl is null)
             throw new NotFoundException($"Short URL with code '{shortCode}' not found or already deleted.");
-        
+
         return true;
     }
 
@@ -108,17 +109,18 @@ internal class ShortUrlsService(IShortUrlRepository shortUrlRepository) : IShort
         if (existingUrl is null)
             throw new NotFoundException($"Short URL with code '{shortCode}' not found.");
 
-        return existingUrl.MapToStatusShortUrlResponse();
+        //return existingUrl.MapToStatusShortUrlResponse();
+        throw new NotImplementedException();
     }
-    
+
     /// <summary>
     /// Determines optimal code length based on current URL count and growth projections
     /// </summary>
     private async Task<int> GetOptimalCodeLength()
     {
         var projectedUrls = await _shortUrlRepository.GetShortUrlCountAsync();
-        double maxCollisionProbability = UrlCodeExtensions.GetCollisionProbability(6, projectedUrls);
-        
+        var maxCollisionProbability = UrlCodeExtensions.GetCollisionProbability(6, projectedUrls);
+
         return UrlCodeExtensions.RecommendCodeLength(projectedUrls, maxCollisionProbability);
     }
 }

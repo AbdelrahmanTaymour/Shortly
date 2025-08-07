@@ -33,7 +33,7 @@ public interface IUserAdministrationService
     /// The operation logs information about the update process for auditing purposes.
     /// </remarks>
     Task<ForceUpdateUserResponse> ForceUpdateUserAsync(Guid userId, ForceUpdateUserRequest request);
-    
+
     /// <summary>
     /// Permanently deletes a user from the system with optional cleanup of associated data.
     /// This operation cannot be undone and will completely remove the user and optionally their short URLs.
@@ -64,9 +64,10 @@ public interface IUserAdministrationService
     /// The operation is performed within a database transaction and generates warning-level logs due to its destructive nature.
     /// Foreign key constraint violations will result in detailed error messages suggesting remediation steps.
     /// </remarks>
-    Task<bool> HardDeleteUserAsync(Guid userId, bool deleteOwnedShortUrls, CancellationToken cancellationToken = default);
-    
-    
+    Task<bool> HardDeleteUserAsync(Guid userId, bool deleteOwnedShortUrls,
+        CancellationToken cancellationToken = default);
+
+
     /// <summary>
     /// Performs bulk activation of users by setting their IsActive property to true.
     /// Only affects users that are currently inactive and exist in the database.
@@ -88,8 +89,9 @@ public interface IUserAdministrationService
     /// The actual bulk update operation sets IsActive to true and UpdatedAt to the current UTC time.
     /// Users that are already active or don't exist will be skipped and counted in the result.
     /// </remarks>
-    Task<BulkOperationResult> BulkActivateUsersAsync(ICollection<Guid> userIds, CancellationToken cancellationToken = default);
-   
+    Task<BulkOperationResult> BulkActivateUsersAsync(ICollection<Guid> userIds,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Performs bulk deactivation of users by setting their IsActive property to false.
     /// Only affects users that are currently active and exist in the database.
@@ -111,8 +113,9 @@ public interface IUserAdministrationService
     /// The actual bulk update operation sets IsActive to false and UpdatedAt to the current UTC time.
     /// Users that are already inactive or don't exist will be skipped and counted in the result.
     /// </remarks>
-    Task<BulkOperationResult> BulkDeactivateUsersAsync(ICollection<Guid> userIds, CancellationToken cancellationToken = default);
-    
+    Task<BulkOperationResult> BulkDeactivateUsersAsync(ICollection<Guid> userIds,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Performs bulk soft deletion of users by marking them as deleted and inactive with audit information.
     /// Only affects users that are not already deleted and exist in the database.
@@ -144,5 +147,6 @@ public interface IUserAdministrationService
     /// Users that are already deleted or don't exist will be skipped and counted in the result.
     /// This operation generates warning-level log entries due to the nature of user deletion.
     /// </remarks>
-    Task<BulkOperationResult> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy, CancellationToken cancellationToken = default);
+    Task<BulkOperationResult> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy,
+        CancellationToken cancellationToken = default);
 }

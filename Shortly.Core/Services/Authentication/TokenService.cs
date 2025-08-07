@@ -18,40 +18,43 @@ namespace Shortly.Core.Services.Authentication;
 /// <summary>
 /// Provides methods for generating, validating, and revoking JWT access and refresh tokens.
 /// </summary>
-public class TokenService(IConfiguration configuration, ILogger<TokenService> logger,
+public class TokenService(
+    IConfiguration configuration,
+    ILogger<TokenService> logger,
     IRefreshTokenRepository refreshTokenRepository) : ITokenService
 {
     private readonly IConfigurationSection _jwtSection = configuration.GetSection("Jwt");
-    
+
     /// <inheritdoc />
     public async Task<TokenResponse> GenerateTokensAsync(User user)
     {
         // Revoke any existing active refresh tokens for this user
         await RevokeAllUserTokensAsync(user.Id);
-            
+
         // Generate an access token
         var accessToken = GenerateAccessToken(user);
-        var accessTokenExpiry = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"]));
+        var accessTokenExpiry =
+            DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"]));
 
         // Generate refresh token
         var refreshToken = await CreateRefreshTokenAsync(user.Id);
-        
+
         logger.LogInformation("Tokens generated successfully for user {UserId}", user.Id);
         return new TokenResponse
         (
-            AccessToken: accessToken,
-            RefreshToken: refreshToken.TokenHash,
-            AccessTokenExpiry: accessTokenExpiry,
-            RefreshTokenExpiry: refreshToken.ExpiresAt
+            accessToken,
+            refreshToken.TokenHash,
+            accessTokenExpiry,
+            refreshToken.ExpiresAt
         );
     }
-    
+
     /// <inheritdoc />
     public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken)
     {
         var storedRefreshToken = await refreshTokenRepository
             .GetRefreshTokenAsync(Sha256Extensions.ComputeHash(refreshToken));
-            
+
         // Validate refresh token
         if (storedRefreshToken == null)
         {
@@ -69,7 +72,7 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
 
         // Generate new refresh token string
         var newRefreshToken = GenerateRefreshTokenString();
-            
+
         // Update Refresh Token entity
         storedRefreshToken.TokenHash = Sha256Extensions.ComputeHash(newRefreshToken);
         await refreshTokenRepository.SaveChangesAsync();
@@ -80,13 +83,13 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
         logger.LogInformation("Tokens refreshed successfully for user {UserId}", storedRefreshToken.User.Id);
         return new TokenResponse
         (
-            AccessToken: newAccessToken,
-            RefreshToken: newRefreshToken,
-            AccessTokenExpiry: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"])),
-            RefreshTokenExpiry: storedRefreshToken.ExpiresAt
+            newAccessToken,
+            newRefreshToken,
+            DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"])),
+            storedRefreshToken.ExpiresAt
         );
     }
-    
+
     /// <inheritdoc />
     public TokenValidationResultDto ValidateToken(string token, bool validateLifetime = true)
     {
@@ -96,8 +99,8 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
 
             return new TokenValidationResultDto
             (
-                IsValid: true,
-                Principal: principal
+                true,
+                principal
             );
         }
         catch (Exception ex)
@@ -105,7 +108,7 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
             logger.LogWarning(ex, "Token validation failed");
             return new TokenValidationResultDto
             (
-                IsValid: false,
+                false,
                 ErrorMessage: ex.Message
             );
         }
@@ -116,11 +119,11 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
     {
         var result = await refreshTokenRepository.RevokeRefreshTokenAsync(Sha256Extensions.ComputeHash(refreshToken),
             cancellationToken);
-        
-        if(result) logger.LogInformation("Refresh token revoked: {Token}", refreshToken);
+
+        if (result) logger.LogInformation("Refresh token revoked: {Token}", refreshToken);
         return result;
     }
-    
+
     /// <inheritdoc />
     public async Task<bool> RevokeAllUserTokensAsync(Guid userId)
     {
@@ -131,12 +134,12 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
             token.IsRevoked = true;
             await refreshTokenRepository.UpdateRefreshTokenAsync(token);
         }
+
         logger.LogInformation("All refresh tokens revoked for user {UserId}", userId);
         return true;
     }
 
-    
-    
+
     #region Private Methods
 
     /// <summary>
@@ -159,8 +162,9 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
     /// <exception cref="ConfigurationException">Thrown when the JWT signing key is missing in the configuration.</exception>
     private SigningCredentials GetSigningCredentials()
     {
-        var key = Encoding.UTF8.GetBytes(_jwtSection["Key"] 
-                                         ?? throw new ConfigurationException("JWT signing key is missing in configuration."));
+        var key = Encoding.UTF8.GetBytes(_jwtSection["Key"]
+                                         ?? throw new ConfigurationException(
+                                             "JWT signing key is missing in configuration."));
         var secret = new SymmetricSecurityKey(key);
         return new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
     }
@@ -174,11 +178,11 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
     {
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim("Permissions", user.Permissions.ToString()),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Username),
+            new(ClaimTypes.Email, user.Email),
+            new("Permissions", ((long)user.Permissions).ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
         return claims;
     }
@@ -192,9 +196,10 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
     private JwtSecurityToken GenerateTokenOptions(SigningCredentials signingCredentials, List<Claim> claims)
     {
         return new JwtSecurityToken(
-            issuer: _jwtSection["Issuer"],
-            audience: _jwtSection["Audience"],
-            expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"])), // Token expiration
+            _jwtSection["Issuer"],
+            _jwtSection["Audience"],
+            expires: DateTime.UtcNow.AddMinutes(
+                Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"])), // Token expiration
             claims: claims,
             signingCredentials: signingCredentials
         );
@@ -211,7 +216,7 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
         rng.GetBytes(randomNumber);
         return Convert.ToBase64String(randomNumber);
     }
-    
+
     /// <summary>
     /// Creates and stores a hashed refresh token for the given user ID.
     /// </summary>
@@ -222,13 +227,14 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
     private async Task<RefreshToken> CreateRefreshTokenAsync(Guid userId)
     {
         var refreshTokenString = GenerateRefreshTokenString();
-        
+
         var refreshToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
             TokenHash = Sha256Extensions.ComputeHash(refreshTokenString), // Hash to store in the database
-            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(configuration["Jwt:RefreshTokenExpirationDays"] 
-                                                             ?? throw new ConfigurationException("JWT:RefreshTokenExpirationDays config is missing."))),
+            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(configuration["Jwt:RefreshTokenExpirationDays"]
+                                                             ?? throw new ConfigurationException(
+                                                                 "JWT:RefreshTokenExpirationDays config is missing."))),
             CreatedAt = DateTime.UtcNow,
             UserId = userId,
             IsRevoked = false
@@ -237,7 +243,7 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
         var savedToken = await refreshTokenRepository.AddRefreshTokenAsync(refreshToken);
         if (savedToken == null)
             throw new DatabaseException("Failed to persist refresh token.");
-        
+
         savedToken.TokenHash = refreshTokenString; // Re-assign the token with unhashed token
         return savedToken;
     }
@@ -261,23 +267,21 @@ public class TokenService(IConfiguration configuration, ILogger<TokenService> lo
             ValidateIssuerSigningKey = true,
             ValidIssuer = _jwtSection["Issuer"],
             ValidAudience = _jwtSection["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSection["Key"] 
-                                                                               ?? throw new ConfigurationException("JWT signing key is missing in configuration."))),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSection["Key"]
+                                                                               ?? throw new ConfigurationException(
+                                                                                   "JWT signing key is missing in configuration."))),
             ClockSkew = TimeSpan.Zero // Remove default 5-minute clock skew
         };
-        
+
         var tokenHandler = new JwtSecurityTokenHandler();
         var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
         var jwtSecurityToken = securityToken as JwtSecurityToken;
-        
+
         if (jwtSecurityToken is null || !jwtSecurityToken.Header.Alg
                 .Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-        {
             throw new ValidationException("JWT token algorithm is invalid.");
-        }
         return principal;
     }
-    
-    #endregion
 
+    #endregion
 }

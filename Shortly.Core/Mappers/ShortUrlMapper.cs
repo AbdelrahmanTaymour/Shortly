@@ -6,7 +6,7 @@ namespace Shortly.Core.Mappers;
 /// <summary>
 /// Provides extension methods for mapping between ShortUrl domain entities and their corresponding DTOs.
 /// </summary>
-public static class ShortUrlMapper
+/*public static class ShortUrlMapper
 {
     /// <summary>
     /// Maps a ShortUrl domain entity to a ShortUrlResponse DTO.
@@ -39,7 +39,7 @@ public static class ShortUrlMapper
         return shortUrls.Select(MapToShortUrlResponse);
     }
 
-    
+
     /// <summary>
     /// Maps a ShortUrlRequest DTO to a ShortUrl domain entity.
     /// </summary>
@@ -64,14 +64,14 @@ public static class ShortUrlMapper
     {
         if (shortUrl.ShortCode == null)
             throw new InvalidOperationException($"ShortUrl with ID '{shortUrl.Id}' cannot be mapped because the ShortCode is null.");
-        
+
         return new StatusShortUrlResponse(
             shortUrl.Id,
             shortUrl.OriginalUrl,
             shortUrl.ShortCode,
             shortUrl.CreatedAt,
             shortUrl.UpdatedAt,
-            shortUrl.AccessCount
+            shortUrl.TotalClicks
         );
     }
-}
+}*/

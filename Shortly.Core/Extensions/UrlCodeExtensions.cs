@@ -30,9 +30,7 @@ public static class UrlCodeExtensions
 
         // Strategy 2: If collision detected, use a hybrid approach
         if (repository != null && await repository.ShortCodeExistsAsync(code))
-        {
             code = await GenerateCollisionResistantCodeAsync(id, repository, minLength);
-        }
 
         return code;
     }
@@ -72,9 +70,8 @@ public static class UrlCodeExtensions
         long result = 0;
         long multiplier = 1;
 
-        for (int i = encoded.Length - 1; i >= 0; i--)
-        {
-            if (CharToIndex.TryGetValue(encoded[i], out int index))
+        for (var i = encoded.Length - 1; i >= 0; i--)
+            if (CharToIndex.TryGetValue(encoded[i], out var index))
             {
                 result += index * multiplier;
                 multiplier *= Base;
@@ -83,7 +80,6 @@ public static class UrlCodeExtensions
             {
                 throw new ArgumentException($"Invalid character '{encoded[i]}' in encoded string");
             }
-        }
 
         return result;
     }
@@ -96,9 +92,9 @@ public static class UrlCodeExtensions
     {
         const int maxAttempts = 5;
 
-        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
-            string code = attempt switch
+            var code = attempt switch
             {
                 0 => GenerateTimeBasedCode(id, minLength),
                 1 => GenerateHashBasedCode(id, minLength),
@@ -107,10 +103,7 @@ public static class UrlCodeExtensions
                 _ => GenerateSecureRandomCode(minLength + 2) // Cryptographically secure
             };
 
-            if (!await repository.ShortCodeExistsAsync(code))
-            {
-                return code;
-            }
+            if (!await repository.ShortCodeExistsAsync(code)) return code;
         }
 
         // Fallback: Use timestamp + random for guaranteed uniqueness
@@ -148,10 +141,7 @@ public static class UrlCodeExtensions
         var random = ThreadSafeRandom.Value!;
         var result = new StringBuilder(length);
 
-        for (int i = 0; i < length; i++)
-        {
-            result.Append(SafeCharacters[random.Next(Base)]);
-        }
+        for (var i = 0; i < length; i++) result.Append(SafeCharacters[random.Next(Base)]);
 
         return result.ToString();
     }
@@ -176,7 +166,7 @@ public static class UrlCodeExtensions
         rng.GetBytes(randomBytes);
 
         var result = new StringBuilder(length);
-        for (int i = 0; i < length; i++)
+        for (var i = 0; i < length; i++)
         {
             var index = BitConverter.ToUInt16(randomBytes, i * 2) % Base;
             result.Append(SafeCharacters[index]);
@@ -219,13 +209,9 @@ public static class UrlCodeExtensions
     /// </summary>
     public static int RecommendCodeLength(long expectedUrls, double maxCollisionProbability = 0.01)
     {
-        for (int length = 4; length <= 12; length++)
-        {
+        for (var length = 4; length <= 12; length++)
             if (GetCollisionProbability(length, expectedUrls) <= maxCollisionProbability)
-            {
                 return length;
-            }
-        }
 
         return 12; // Maximum reasonable length
     }
@@ -236,10 +222,7 @@ public static class UrlCodeExtensions
     private static Dictionary<char, int> CreateCharacterMap()
     {
         var map = new Dictionary<char, int>();
-        for (int i = 0; i < SafeCharacters.Length; i++)
-        {
-            map[SafeCharacters[i]] = i;
-        }
+        for (var i = 0; i < SafeCharacters.Length; i++) map[SafeCharacters[i]] = i;
 
         return map;
     }
