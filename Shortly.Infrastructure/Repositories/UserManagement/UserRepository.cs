@@ -1,12 +1,10 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Shortly.Core.DTOs.UsersDTOs.Profile;
 using Shortly.Core.DTOs.UsersDTOs.Search;
-using Shortly.Core.DTOs.UsersDTOs.Security;
-using Shortly.Core.DTOs.UsersDTOs.Usage;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
+using Shortly.Core.Mappers;
 using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
@@ -161,7 +159,8 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc/>
-    public async Task<enSubscriptionPlan> GetSubscriptionPlanIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<enSubscriptionPlan> GetSubscriptionPlanIdAsync(Guid id,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -355,7 +354,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
-  public async Task<IEnumerable<User>> GetPagedAsync(int page, int pageSize,
+    public async Task<IEnumerable<User>> GetPagedAsync(int page, int pageSize,
         CancellationToken cancellationToken = default)
     {
         if (page < 1)
@@ -382,7 +381,8 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc/>
-   public async Task<IEnumerable<User>> GetUsersByCustomCriteriaAsync(Expression<Func<User, bool>> predicateint, int page = 1, int pageSize = 10,
+    public async Task<IEnumerable<User>> GetUsersByCustomCriteriaAsync(Expression<Func<User, bool>> predicateint,
+        int page = 1, int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
         try
@@ -406,131 +406,212 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
 
 
     /// <inheritdoc />
-   public async Task<(IEnumerable<IUserSearchResult> Users, int TotalCount)> SearchUsers(
-        string? searchTerm = null,
-        enSubscriptionPlan? subscriptionPlan = null,
-        bool? isActive = null,
-        bool? isDeleted = null,
-        bool? isEmailConfirmed = null, 
-        int page = 1,
-        int pageSize = 10,
-        bool retrieveCompleteUser = false,
-        CancellationToken cancellationToken = default)
+    public async Task<(IEnumerable<IUserSearchResult> Users, int TotalCount)> SearchUsers(
+        UserSearchRequest request, bool retrieveCompleteUser = false, CancellationToken cancellationToken = default)
     {
-        if (page < 1)
-            throw new ValidationException("Page must be greater than 0");
-
-        if (pageSize is < 1 or > 1000)
-            throw new ValidationException("Page size must be between 1 and 1000");
+        ValidateRequest(request);
 
         try
         {
-            var query = dbContext.Users
-                .AsNoTracking()
-                .AsQueryable();
-
-            // Filters
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-                query = query.Where(u =>
-                    u.Email.Contains(searchTerm) ||
-                    u.Username.Contains(searchTerm));
-
-            if (subscriptionPlan.HasValue)
-                query = query.Where(u => u.SubscriptionPlanId == subscriptionPlan.Value);
-
-            if (isActive.HasValue)
-                query = query.Where(u => u.IsActive == isActive.Value);
-
-            if (isDeleted.HasValue)
-                query = query.Where(u => u.IsDeleted == isDeleted.Value);
-
-            if (isEmailConfirmed.HasValue)
-                query = query.Where(u => u.IsEmailConfirmed == isEmailConfirmed.Value);
-
-            // Get total count
+            var query = BuildUserQuery(request);
             var totalCount = await query.CountAsync(cancellationToken);
 
-            // Include related data if full details are requested
-            if (retrieveCompleteUser)
-            {
-                var detailedUsers = await query
-                    .Include(u => u.Profile)
-                    .Include(u => u.UserSecurity)
-                    .Include(u => u.UserUsage)
-                    .OrderBy(u => u.Username)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(u => new CompleteUserSearchResult(
-                        u.Id,
-                        u.Email,
-                        u.Username,
-                        u.SubscriptionPlanId,
-                        u.Permissions,
-                        u.IsActive,
-                        u.IsEmailConfirmed,
-                        u.UpdatedAt,
-                        u.CreatedAt,
-                        u.IsDeleted,
-                        u.DeletedAt,
-                        u.DeletedBy,
-                        new UserProfileDto(
-                            u.Profile.Name,
-                            u.Profile.Bio,
-                            u.Profile.PhoneNumber,
-                            u.Profile.ProfilePictureUrl,
-                            u.Profile.Website,
-                            u.Profile.Company,
-                            u.Profile.Location,
-                            u.Profile.Country,
-                            u.Profile.TimeZone,
-                            u.Profile.UpdatedAt
-                        ),
-                        new UserSecurityDto(
-                            u.UserSecurity.FailedLoginAttempts,
-                            u.UserSecurity.LockedUntil,
-                            u.UserSecurity.TwoFactorEnabled,
-                            u.UserSecurity.TwoFactorSecret,
-                            u.UserSecurity.PasswordResetToken,
-                            u.UserSecurity.TokenExpiresAt,
-                            u.UserSecurity.UpdatedAt
-                        ),
-                        new UserUsageDto(
-                            u.UserUsage.MonthlyLinksCreated,
-                            u.UserUsage.MonthlyQrCodesCreated,
-                            u.UserUsage.TotalLinksCreated,
-                            u.UserUsage.TotalQrCodesCreated,
-                            u.UserUsage.MonthlyResetDate
-                        )
-                    ))
-                    .Cast<IUserSearchResult>()
-                    .ToListAsync(cancellationToken);
+            var users = retrieveCompleteUser
+                ? await GetCompleteUsers(query, request, cancellationToken)
+                : await GetBasicUsers(query, request, cancellationToken);
 
-                return (detailedUsers, detailedUsers.Count);
-            }
-            else
-            {
-                var basicUsers = await query
-                    .OrderBy(u => u.Username)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(u => new UserSearchResult(
-                        u.Id,
-                        u.Email,
-                        u.Username,
-                        u.SubscriptionPlanId,
-                        u.IsActive,
-                        u.Permissions
-                    ))
-                    .Cast<IUserSearchResult>()
-                    .ToListAsync(cancellationToken);
-
-                return (basicUsers, totalCount);
-            }
+            return (users, totalCount);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving paged users: Page {Page}, PageSize {PageSize}", page, pageSize);
+            logger.LogError(ex, "Error retrieving paged users: Page {Page}, PageSize {PageSize}", request.Page,
+                request.PageSize);
             throw new DatabaseException("Failed to retrieve paged users", ex);
         }
     }
+
+
+    #region Private Healper Method
+
+    /// <summary>
+    /// Validates the search request parameters to ensure they meet business requirements.
+    /// </summary>
+    /// <param name="request">The user search request to validate.</param>
+    /// <exception cref="ValidationException">Thrown when page is less than 1 or pageSize is not between 1 and 1000.</exception>
+    private static void ValidateRequest(UserSearchRequest request)
+    {
+        if (request.Page < 1)
+            throw new ValidationException("Page must be greater than 0");
+
+        if (request.PageSize is < 1 or > 1000)
+            throw new ValidationException("Page size must be between 1 and 1000");
+    }
+
+
+    /// <summary>
+    /// Builds a filtered and ordered query for users based on the search criteria.
+    /// </summary>
+    /// <param name="request">The search request containing filter criteria.</param>
+    /// <returns>An IQueryable of User entities with applied filters and ordering by username.</returns>
+    private IQueryable<User> BuildUserQuery(UserSearchRequest request)
+    {
+        var query = dbContext.Users
+            .AsNoTracking()
+            .AsQueryable();
+
+        query = ApplySearchTermFilter(query, request.SearchTerm);
+        query = ApplySubscriptionPlanFilter(query, request.SubscriptionPlan);
+        query = ApplyBooleanFilters(query, request);
+
+        return query.OrderBy(u => u.Username);
+    }
+
+
+    /// <summary>
+    /// Applies search term filtering to the user query, searching across email and username fields.
+    /// </summary>
+    /// <param name="query">The base user query to filter.</param>
+    /// <param name="searchTerm">The optional search term to match against user fields.</param>
+    /// <returns>The filtered query if searchTerm is provided; otherwise, the original query.</returns>
+    private static IQueryable<User> ApplySearchTermFilter(IQueryable<User> query, string? searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            return query;
+
+        return query.Where(u =>
+            u.Email.Contains(searchTerm) ||
+            u.Username.Contains(searchTerm));
+    }
+
+
+    /// <summary>
+    /// Applies subscription plan filtering to the user query.
+    /// </summary>
+    /// <param name="query">The base user query to filter.</param>
+    /// <param name="subscriptionPlan">The optional subscription plan to filter by.</param>
+    /// <returns>The filtered query if subscriptionPlan is provided; otherwise, the original query.</returns>
+    private static IQueryable<User> ApplySubscriptionPlanFilter(IQueryable<User> query,
+        enSubscriptionPlan? subscriptionPlan)
+    {
+        if (!subscriptionPlan.HasValue)
+            return query;
+
+        return query.Where(u => u.SubscriptionPlanId == subscriptionPlan.Value);
+    }
+
+
+    /// <summary>
+    /// Applies boolean filters (IsActive, IsDeleted, IsEmailConfirmed) to the user query.
+    /// </summary>
+    /// <param name="query">The base user query to filter.</param>
+    /// <param name="request">The search request containing boolean filter values.</param>
+    /// <returns>The query with applied boolean filters.</returns>
+    private static IQueryable<User> ApplyBooleanFilters(IQueryable<User> query, UserSearchRequest request)
+    {
+        if (request.IsActive.HasValue)
+            query = query.Where(u => u.IsActive == request.IsActive.Value);
+
+        if (request.IsDeleted.HasValue)
+            query = query.Where(u => u.IsDeleted == request.IsDeleted.Value);
+
+        if (request.IsEmailConfirmed.HasValue)
+            query = query.Where(u => u.IsEmailConfirmed == request.IsEmailConfirmed.Value);
+
+        return query;
+    }
+
+
+    /// <summary>
+    /// Retrieves complete user information including related entities (Profile, UserSecurity, UserUsage) with pagination.
+    /// </summary>
+    /// <param name="query">The pre-filtered and ordered user query.</param>
+    /// <param name="request">The search request containing pagination parameters.</param>
+    /// <param name="cancellationToken">Token to cancel the asynchronous operation.</param>
+    /// <returns>A collection of complete user search results with all related data.</returns>
+    private async Task<IEnumerable<IUserSearchResult>> GetCompleteUsers(
+        IQueryable<User> query,
+        UserSearchRequest request,
+        CancellationToken cancellationToken)
+    {
+        var users = await query
+            .Include(u => u.Profile)
+            .Include(u => u.UserSecurity)
+            .Include(u => u.UserUsage)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(u => CreateCompleteUserSearchResult(u))
+            .Cast<IUserSearchResult>()
+            .ToListAsync(cancellationToken);
+
+        return users;
+    }
+
+
+    /// <summary>
+    /// Retrieves basic user information without related entities, with pagination.
+    /// </summary>
+    /// <param name="query">The pre-filtered and ordered user query.</param>
+    /// <param name="request">The search request containing pagination parameters.</param>
+    /// <param name="cancellationToken">Token to cancel the asynchronous operation.</param>
+    /// <returns>A collection of basic user search results containing essential user data only.</returns>
+    private async Task<IEnumerable<IUserSearchResult>> GetBasicUsers(
+        IQueryable<User> query,
+        UserSearchRequest request,
+        CancellationToken cancellationToken)
+    {
+        var users = await query
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(u => CreateBasicUserSearchResult(u))
+            .Cast<IUserSearchResult>()
+            .ToListAsync(cancellationToken);
+
+        return users;
+    }
+
+
+    /// <summary>
+    /// Creates a complete user search result with all related entities populated.
+    /// </summary>
+    /// <param name="u">The user entity with related data loaded.</param>
+    /// <returns>A CompleteUserSearchResult containing user data and all related DTOs.</returns>
+    private static CompleteUserSearchResult CreateCompleteUserSearchResult(User u)
+    {
+        return new CompleteUserSearchResult(
+            u.Id,
+            u.Email,
+            u.Username,
+            u.SubscriptionPlanId,
+            u.Permissions,
+            u.IsActive,
+            u.IsEmailConfirmed,
+            u.UpdatedAt,
+            u.CreatedAt,
+            u.IsDeleted,
+            u.DeletedAt,
+            u.DeletedBy,
+            u.Profile.MapToUserProfile(),
+            u.UserSecurity.MapToUserSecurityDto(),
+            u.UserUsage.MapToUserUsageDto()
+        );
+    }
+
+    /// <summary>
+    /// Creates a basic user search result with essential user information only.
+    /// </summary>
+    /// <param name="u">The user entity.</param>
+    /// <returns>A UserSearchResult containing basic user data.</returns>
+    private static UserSearchResult CreateBasicUserSearchResult(User u)
+    {
+        return new UserSearchResult(
+            u.Id,
+            u.Email,
+            u.Username,
+            u.SubscriptionPlanId,
+            u.IsActive,
+            u.Permissions
+        );
+    }
+
+    #endregion
 }
