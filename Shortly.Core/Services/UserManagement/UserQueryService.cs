@@ -15,35 +15,46 @@ namespace Shortly.Core.Services.UserManagement;
 public class UserQueryService(IUserRepository userRepository, IUserSecurityRepository securityRepository)
     : IUserQueryService
 {
-    /// <inheritdoc />
-    public async Task<UserSearchResponse> AdvancedSearchUsersAsync(string? searchTerm,
-        enSubscriptionPlan? subscriptionPlan,
-        bool? isActive,
-        bool? isDeleted,
-        bool? isEmailConfirmed,
-        int page,
-        int pageSize,
-        bool retrieveCompleteUser = false,
+    
+    /// <summary>
+    /// Performs a search for users and returns basic user information only.
+    /// </summary>
+    /// <param name="request">The search request containing filter criteria and pagination parameters.</param>
+    /// <param name="cancellationToken">Token to cancel the asynchronous operation.</param>
+    /// <returns>A response containing basic user information with pagination metadata.</returns>
+    public async Task<BasicUserSearchResponse> SearchBasicUsersAsync(
+        UserSearchRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 10;
-
-
         var (users, totalCount) = await userRepository
-            .SearchUsers(searchTerm, subscriptionPlan, isActive, isDeleted, isEmailConfirmed, page, pageSize,
-                retrieveCompleteUser, cancellationToken);
+            .SearchUsers(request, false, cancellationToken);
 
+        var basicUsers = users.Cast<UserSearchResult>();
+        var totalPages = CalculateTotalPages(totalCount, request.PageSize);
 
-        return new UserSearchResponse
-        (
-            users,
-            totalCount,
-            page,
-            pageSize,
-            (int)Math.Ceiling(totalCount / (double)pageSize)
-        );
+        return new BasicUserSearchResponse(basicUsers, totalCount, request.Page, request.PageSize, totalPages);
     }
+
+
+    /// <summary>
+    /// Performs a search for users and returns complete user information with all related data.
+    /// </summary>
+    /// <param name="request">The search request containing filter criteria and pagination parameters.</param>
+    /// <param name="cancellationToken">Token to cancel the asynchronous operation.</param>
+    /// <returns>A response containing complete user information with pagination metadata.</returns>
+    public async Task<CompleteUserSearchResponse> SearchCompleteUsersAsync(
+        UserSearchRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var (users, totalCount) = await userRepository
+            .SearchUsers(request, true, cancellationToken);
+
+        var completeUsers = users.Cast<CompleteUserSearchResult>();
+        var totalPages = CalculateTotalPages(totalCount, request.PageSize);
+
+        return new CompleteUserSearchResponse(completeUsers, totalCount, request.Page, request.PageSize, totalPages);
+    }
+
 
     /// <inheritdoc />
     public async Task<IEnumerable<UserDto>> GetUsersBySubscriptionPlanAsync(enSubscriptionPlan plan, int page,
@@ -92,4 +103,20 @@ public class UserQueryService(IUserRepository userRepository, IUserSecurityRepos
         var users = await userRepository.GetUsersByCustomCriteriaAsync(predicateint, page, pageSize, cancellationToken);
         return users.MapToUserProfileDtoList();
     }
+
+
+    #region Private Helper Methods
+
+    /// <summary>
+    /// Calculates the total number of pages based on total count and page size.
+    /// </summary>
+    /// <param name="totalCount">Total number of items.</param>
+    /// <param name="pageSize">Number of items per page.</param>
+    /// <returns>Total number of pages.</returns>
+    private static int CalculateTotalPages(int totalCount, int pageSize)
+    {
+        return (int)Math.Ceiling(totalCount / (double)pageSize);
+    }
+
+    #endregion
 }
