@@ -21,38 +21,34 @@ public class RoleConfiguration
         {
             Role = enUserRole.Member,
             DefaultPermissions = enPermissions.FullUrlManagement | enPermissions.FullAnalytics |
-                                 enPermissions.CustomizationFeatures | enPermissions.ApiUser |
-                                 enPermissions.SetPasswordProtection | enPermissions.ManageCampaigns,
+                                 enPermissions.CustomizationFeatures |
+                                 enPermissions.SetPasswordProtection,
             Description = "Experienced user with extended capabilities including analytics, branding, and campaigns."
         },
         [enUserRole.TeamManager] = new RoleConfiguration
         {
             Role = enUserRole.TeamManager,
             DefaultPermissions = enPermissions.FullUrlManagement | enPermissions.FullAnalytics |
-                                 enPermissions.CustomizationFeatures | enPermissions.TeamManagement |
-                                 enPermissions.ApiFullAccess | enPermissions.ManageCampaigns |
-                                 enPermissions.ConfigureWebhooks,
+                                 enPermissions.CustomizationFeatures | enPermissions.TeamManagement,
             Description = "Leads a team. Manages team roles, URLs, and integrations."
         },
         [enUserRole.OrgAdmin] = new RoleConfiguration
         {
             Role = enUserRole.OrgAdmin,
             DefaultPermissions = enPermissions.FullUrlManagement | enPermissions.FullAnalytics |
-                                 enPermissions.CustomizationFeatures | enPermissions.FullTeamAndOrg |
-                                 enPermissions.ApiFullAccess | enPermissions.ManageCampaigns |
-                                 enPermissions.ConfigureWebhooks | enPermissions.ManageIntegrations,
+                                 enPermissions.CustomizationFeatures | enPermissions.FullTeamAndOrg,
             Description = "Admin-level access within the organization. Full team/org control and feature access."
         },
         [enUserRole.OrgOwner] = new RoleConfiguration
         {
             Role = enUserRole.OrgOwner,
-            DefaultPermissions = enPermissions.AllPermissions & ~enPermissions.SystemAdmin,
+            DefaultPermissions = enPermissions.AllPermissions,
             Description = "Organization owner with full organizational control"
         },
         [enUserRole.Admin] = new RoleConfiguration
         {
             Role = enUserRole.Admin,
-            DefaultPermissions = enPermissions.AllPermissions & ~enPermissions.SystemAdmin
+            DefaultPermissions = enPermissions.AllPermissions,
         },
         [enUserRole.SuperAdmin] = new RoleConfiguration
         {

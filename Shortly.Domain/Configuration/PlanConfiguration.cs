@@ -38,8 +38,7 @@ public class PlanConfiguration
             AllowedPermissions = enPermissions.BasicUrlOperations |
                                  enPermissions.BasicAnalytics |
                                  enPermissions.GenerateQrCodes |
-                                 enPermissions.CreateCustomAlias |
-                                 enPermissions.ApiUser,
+                                 enPermissions.CreateCustomAlias,
             Price = 10,
             Limits = new Dictionary<enPlanLimits, int>
             {
@@ -54,7 +53,6 @@ public class PlanConfiguration
             AllowedPermissions = enPermissions.FullUrlManagement |
                                  enPermissions.FullAnalytics |
                                  enPermissions.CustomizationFeatures |
-                                 enPermissions.ApiUser |
                                  enPermissions.BulkCreateUrl |
                                  enPermissions.SetPasswordProtection |
                                  enPermissions.SetLinkExpiration,
@@ -69,7 +67,7 @@ public class PlanConfiguration
         [enSubscriptionPlan.Enterprise] = new PlanConfiguration
         {
             Plan = enSubscriptionPlan.Enterprise,
-            AllowedPermissions = enPermissions.AllPermissions & ~enPermissions.SystemAdmin, // All except system admin
+            AllowedPermissions = enPermissions.AllPermissions, // All except system admin
             Price = 200,
             Limits = new Dictionary<enPlanLimits, int>
             {

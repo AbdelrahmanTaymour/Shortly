@@ -45,10 +45,7 @@ public static class AuthorizationServiceExtensions
             enPermissions.AdvancedUserAdministration,
             enPermissions.TeamManagement,
             enPermissions.OrganizationManagement,
-            enPermissions.FullTeamAndOrg,
-            enPermissions.ApiUser,
-            enPermissions.ApiFullAccess,
-            enPermissions.AdvancedFeatures
+            enPermissions.FullTeamAndOrg
         };
 
         return combinations.Contains(permission);
