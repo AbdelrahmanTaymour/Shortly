@@ -22,7 +22,7 @@ namespace Shortly.Infrastructure.Repositories.UserManagement;
 public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository> logger) : IUserRepository
 {
     /// <inheritdoc />
-    public async Task<User?> GetByIdAsync(Guid id)
+    public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {

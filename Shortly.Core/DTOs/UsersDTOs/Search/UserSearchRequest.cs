@@ -8,6 +8,6 @@ public sealed record UserSearchRequest(
     bool? IsActive,
     bool? IsDeleted,
     bool? IsEmailConfirmed,
-    int Page,
-    int PageSize
+    int Page = 1,
+    int PageSize = 10
 );
