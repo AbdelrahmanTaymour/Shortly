@@ -18,9 +18,10 @@ public interface IUserRepository
     /// Retrieves a user by their unique identifier.
     /// </summary>
     /// <param name="id">The unique identifier of the user.</param>
+    /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The user if found; otherwise, null.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<User?> GetByIdAsync(Guid id);
+    Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves a user by their email address, excluding deleted users.

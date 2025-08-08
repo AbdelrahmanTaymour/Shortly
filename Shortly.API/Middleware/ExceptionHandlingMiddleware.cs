@@ -86,8 +86,8 @@ public class ExceptionHandlingMiddleware
             InvalidOperationException invalidOpEx =>
                 CreateErrorResponse(invalidOpEx.Message, "InvalidOperation", HttpStatusCode.BadRequest, traceId),
 
-            UnauthorizedAccessException => CreateErrorResponse(
-                "Access denied.", "AccessDenied", HttpStatusCode.Forbidden, traceId),
+            UnauthorizedAccessException unauthenticEx => CreateErrorResponse(
+                unauthenticEx.Message, "AccessDenied", HttpStatusCode.Forbidden, traceId),
 
             TimeoutException => CreateErrorResponse(
                 "The operation timed out.", "Timeout", HttpStatusCode.RequestTimeout, traceId),

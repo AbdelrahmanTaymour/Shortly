@@ -7,7 +7,9 @@ using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Core.Services.Authentication;
 using Shortly.Core.Services;
 using Shortly.Core.Services.UserManagement;
+using Shortly.Core.Validators.Auth;
 using Shortly.Core.Validators.ShortUrl;
+using Shortly.Core.Validators.Users;
 
 namespace Shortly.Core;
 
@@ -50,7 +52,8 @@ public static class DependencyInjection
         services.AddScoped<IShortUrlsService, ShortUrlsService>();
 
 
-        services.AddValidatorsFromAssemblyContaining<ShortUrlRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
+
 
         return services;
     }

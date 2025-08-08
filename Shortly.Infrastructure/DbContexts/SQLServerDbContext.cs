@@ -177,14 +177,14 @@ public class SQLServerDbContext : DbContext
                 Id = (byte)enUserRole.OrgOwner,
                 RoleName = "OrgOwner",
                 Description = "Owns the organization with full control.",
-                DefaultPermissions = (long)(enPermissions.AllPermissions & ~enPermissions.SystemAdmin)
+                DefaultPermissions = (long)(enPermissions.AllPermissions)
             },
             new Role
             {
                 Id = (byte)enUserRole.Admin,
                 RoleName = "PlatformAdmin",
                 Description = "Platform-wide admin access.",
-                DefaultPermissions = (long)(enPermissions.AllPermissions & ~enPermissions.SystemAdmin)
+                DefaultPermissions = (long)(enPermissions.AllPermissions)
             },
             new Role
             {

@@ -10,7 +10,7 @@ public class ShortUrl
     public long Id { get; set; }
     public string OriginalUrl { get; set; }
     public string? ShortCode { get; set; }
-    
+
     // User Information
     public enShortUrlOwnerType OwnerType { get; set; }
     public Guid? UserId { get; set; }
@@ -20,7 +20,7 @@ public class ShortUrl
     // Anonymous-specific fields (only used when OwnerType = Anonymous)
     public string? AnonymousSessionId { get; set; }
     public string? AnonymousIpAddress { get; set; }
-    
+
     // Configuration
     public bool IsActive { get; set; } = true;
     public bool TrackingEnabled { get; set; } = true;
@@ -30,18 +30,18 @@ public class ShortUrl
     public string? PasswordHash { get; set; }
     public bool IsPrivate { get; set; } = false;
     public DateTime? ExpiresAt { get; set; }
-    
+
     // Metadata
     public string? Title { get; set; }
     public string? Description { get; set; }
-    
+
     // Timestamps
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; }
-    
+
     // Navigation properties
     public User? User { get; set; }
     public OrganizationMember? CreatedBy { get; set; }
     public Organization? Organization { get; set; }
-    public ICollection<ClickEvent> ClickEvents { get; set; }
+    public ICollection<ClickEvent>? ClickEvents { get; set; }
 }

@@ -17,9 +17,9 @@ namespace Shortly.Core.Services.UserManagement;
 public class UserService(IUserRepository userRepository, ILogger<UserService> logger) : IUserService
 {
     /// <inheritdoc />
-    public async Task<UserDto> GetByIdAsync(Guid userId)
+    public async Task<UserDto> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var user = await userRepository.GetByIdAsync(userId);
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
         if (user == null)
             throw new NotFoundException("User", userId);
         return user.MapToUserDto();

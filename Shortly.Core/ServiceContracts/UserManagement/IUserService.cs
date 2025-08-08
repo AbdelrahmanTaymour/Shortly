@@ -14,9 +14,10 @@ public interface IUserService
     /// Retrieves a user by their unique identifier.
     /// </summary>
     /// <param name="userId">The unique ID of the user.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>The user's details as a <see cref="UserDto"/>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
-    Task<UserDto> GetByIdAsync(Guid userId);
+    Task<UserDto> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves a user by their email address.
