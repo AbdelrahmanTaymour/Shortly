@@ -13,6 +13,7 @@ public class UserSecurityConfiguration : IEntityTypeConfiguration<UserSecurity>
 
         // Properties configuration
         builder.Property(us => us.FailedLoginAttempts).HasDefaultValue(0);
+        builder.Property(us => us.LockoutReason).HasMaxLength(100);
         builder.Property(us => us.TwoFactorEnabled).HasDefaultValue(false);
         builder.Property(us => us.TwoFactorSecret).HasMaxLength(150);
         builder.Property(us => us.PasswordResetToken).HasMaxLength(256);

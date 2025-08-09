@@ -108,7 +108,7 @@ public class UserSecurityRepository(SQLServerDbContext dbContext, ILogger<UserSe
     }
 
     /// <inheritdoc />
-    public async Task<bool> LockUserAsync(Guid userId, DateTime lockedUntil,
+    public async Task<bool> LockUserAsync(Guid userId, DateTime lockedUntil, string? lockoutReason,
         CancellationToken cancellationToken = default)
     {
         try
@@ -117,6 +117,7 @@ public class UserSecurityRepository(SQLServerDbContext dbContext, ILogger<UserSe
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.LockedUntil, lockedUntil)
+                        .SetProperty(u => u.LockoutReason, lockoutReason)
                         .SetProperty(u => u.UpdatedAt, u => DateTime.UtcNow)
                     , cancellationToken);
             return rowAffected > 0;
@@ -137,6 +138,7 @@ public class UserSecurityRepository(SQLServerDbContext dbContext, ILogger<UserSe
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.LockedUntil, (DateTime?)null)
+                        .SetProperty(u=>u.LockoutReason, (string?)null)
                         .SetProperty(u => u.FailedLoginAttempts, 0)
                         .SetProperty(u => u.UpdatedAt, u => DateTime.UtcNow)
                     , cancellationToken);
