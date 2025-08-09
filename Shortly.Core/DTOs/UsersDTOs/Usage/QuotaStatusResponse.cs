@@ -2,7 +2,7 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Core.DTOs.UsersDTOs.Usage;
 
-public record MonthlyQuotaStatusDto(
+public record QuotaStatusResponse(
     int RemainingLinksThisMonth,
     int RemainingQrCodesThisMonth,
     int DaysUntilQuotaReset,

@@ -10,6 +10,18 @@ namespace Shortly.Core.ServiceContracts.UserManagement;
 public interface IUserUsageService
 {
     /// <summary>
+    ///     Retrieves comprehensive usage statistics for a specific user.
+    ///     This method is functionally equivalent to <see cref="GetByUserIdAsync" /> but provides semantic clarity for usage
+    ///     reporting scenarios.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>A <see cref="UserUsageDto" /> containing the user's comprehensive usage statistics.</returns>
+    /// <exception cref="NotFoundException">Thrown when no usage record is found for the specified user ID.</exception>
+    Task<UserUsageDto> GetUsageStatsAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    
+    /// <summary>
     ///     Tracks the creation of a new link by incrementing the user's monthly link creation count.
     /// </summary>
     /// <param name="userId">The unique identifier of the user who created the link.</param>
@@ -60,17 +72,6 @@ public interface IUserUsageService
     /// <returns>The number of remaining QR codes the user can create. Returns 0 if the limit has been reached or exceeded.</returns>
     /// <exception cref="NotFoundException">Thrown when no usage record is found for the specified user ID.</exception>
     Task<int> GetRemainingQrCodesAsync(Guid userId, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    ///     Retrieves comprehensive usage statistics for a specific user.
-    ///     This method is functionally equivalent to <see cref="GetByUserIdAsync" /> but provides semantic clarity for usage
-    ///     reporting scenarios.
-    /// </summary>
-    /// <param name="userId">The unique identifier of the user.</param>
-    /// <param name="cancellationToken">Token to cancel the operation.</param>
-    /// <returns>A <see cref="UserUsageDto" /> containing the user's comprehensive usage statistics.</returns>
-    /// <exception cref="NotFoundException">Thrown when no usage record is found for the specified user ID.</exception>
-    Task<UserUsageDto> GetUsageStatsAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Checks whether a user has exceeded their monthly limits for either links or QR codes based on their subscription
