@@ -6,7 +6,7 @@ namespace Shortly.Core.DTOs.UsersDTOs.User;
 
 public record ForceUpdateUserRequest(
     UserDto User,
-    UserProfileDto Profile,
+    UserProfileResponse Profile,
     UserSecurityDto Security,
     UserUsageDto Usage
 );

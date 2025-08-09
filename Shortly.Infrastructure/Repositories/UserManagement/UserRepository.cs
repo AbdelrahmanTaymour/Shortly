@@ -233,6 +233,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
                 .Where(u => u.Id == id && !u.IsDeleted)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.IsDeleted, true)
+                        .SetProperty(u => u.IsActive, false)
                         .SetProperty(u => u.DeletedAt, DateTime.UtcNow)
                         .SetProperty(u => u.DeletedBy, deletedBy)
                         .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
@@ -253,7 +254,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         {
             return await dbContext.Users
                 .AsNoTracking()
-                .Where(u => u.Id == id && !u.IsDeleted)
+                .Where(u => u.Id == id && !u.IsDeleted && !u.IsActive)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.IsActive, true)
                         .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
@@ -273,7 +274,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         {
             return await dbContext.Users
                 .AsNoTracking()
-                .Where(u => u.Id == id && !u.IsDeleted)
+                .Where(u => u.Id == id && !u.IsDeleted && u.IsActive)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.IsActive, false)
                         .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
@@ -309,7 +310,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         {
             return await dbContext.Users
                 .AsNoTracking()
-                .AnyAsync(u => u.Email.Equals(email) && !u.IsDeleted, cancellationToken);
+                .AnyAsync(u => u.Email.Equals(email), cancellationToken);
         }
         catch (Exception ex)
         {
@@ -325,7 +326,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         {
             return await dbContext.Users
                 .AsNoTracking()
-                .AnyAsync(u => u.Username.Equals(username) && !u.IsDeleted, cancellationToken);
+                .AnyAsync(u => u.Username.Equals(username), cancellationToken);
         }
         catch (Exception ex)
         {
@@ -343,7 +344,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
             return await dbContext.Users
                 .AsNoTracking()
                 .AnyAsync(u => (u.Username.Equals(username) ||
-                                u.Email.Equals(email)) && !u.IsDeleted
+                                u.Email.Equals(email))
                     , cancellationToken);
         }
         catch (Exception ex)

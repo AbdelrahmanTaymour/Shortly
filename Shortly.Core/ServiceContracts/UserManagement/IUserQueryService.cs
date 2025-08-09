@@ -39,7 +39,7 @@ public interface IUserQueryService
     /// <summary>
     /// Retrieves users assigned to a specific subscription plan.
     /// </summary>
-    /// <param name="plan">The subscription plan to filter users by.</param>
+    /// <param name="plan">The subscription plans to filter users by.</param>
     /// <param name="page">Page number to retrieve.</param>
     /// <param name="pageSize">Number of results per page.</param>
     /// <param name="cancellationToken">Token to cancel the asynchronous operation.</param>

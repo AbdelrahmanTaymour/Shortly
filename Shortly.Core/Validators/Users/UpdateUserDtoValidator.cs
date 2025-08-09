@@ -5,7 +5,7 @@ using Shortly.Core.Extensions;
 
 namespace Shortly.Core.Validators.Users;
 
-public class UpdateUserDtoValidator : AbstractValidator<UpdateUserDto>
+public class UpdateUserDtoValidator : AbstractValidator<UpdateUserRequest>
 {
     public UpdateUserDtoValidator()
     {

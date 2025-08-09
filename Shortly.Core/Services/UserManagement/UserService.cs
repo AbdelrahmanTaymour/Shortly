@@ -4,6 +4,7 @@ using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Mappers;
 using Shortly.Core.RepositoryContract.UserManagement;
+using Shortly.Core.ServiceContracts.Authentication;
 using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
@@ -14,7 +15,7 @@ namespace Shortly.Core.Services.UserManagement;
 ///     Provides core business logic for managing user accounts, including creation, updates,
 ///     activation/deactivation, availability checks, and soft deletion.
 /// </summary>
-public class UserService(IUserRepository userRepository, ILogger<UserService> logger) : IUserService
+public class UserService(IUserRepository userRepository, ITokenService tokenService, ILogger<UserService> logger) : IUserService
 {
     /// <inheritdoc />
     public async Task<UserDto> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -73,24 +74,26 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
     }
 
     /// <inheritdoc />
-    public async Task<UserDto> UpdateAsync(Guid userId, UpdateUserDto dto)
+    public async Task<UserDto> UpdateAsync(Guid userId, UpdateUserRequest request)
     {
         var user = await userRepository.GetByIdAsync(userId);
         if (user == null)
             throw new NotFoundException("User", userId);
 
-        var isEmailOrUsernameTaken = await userRepository
-            .UsernameExistsAsync(dto.Username);
-
-        if (isEmailOrUsernameTaken)
+        
+        if (!user.Username.Equals(request.Username, StringComparison.OrdinalIgnoreCase) &&
+            await userRepository.UsernameExistsAsync(request.Username))
+        {
             throw new ConflictException("Username is already taken.");
+        }
+        
 
         // Update user properties
-        user.Username = dto.Username;
-        user.SubscriptionPlanId = dto.SubscriptionPlanId;
-        user.Permissions = dto.Permissions;
-        user.IsActive = dto.IsActive;
-        user.IsEmailConfirmed = dto.IsEmailConfirmed;
+        user.Username = request.Username;
+        user.SubscriptionPlanId = request.SubscriptionPlanId;
+        user.Permissions = request.Permissions;
+        user.IsActive = request.IsActive;
+        user.IsEmailConfirmed = request.IsEmailConfirmed;
         user.UpdatedAt = DateTime.UtcNow;
 
         var updated = await userRepository.UpdateAsync(user);
@@ -110,6 +113,8 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
         if (!deleted)
             throw new NotFoundException("User", userId);
 
+        await tokenService.RevokeAllUserTokensAsync(userId);
+        
         logger.LogInformation("User soft deleted. UserId: {UserId}, DeletedBy: {DeletedBy}", userId, deletedBy);
         return true;
     }
@@ -119,7 +124,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
     {
         var activated = await userRepository.ActivateUserAsync(userId, cancellationToken);
         if (!activated)
-            throw new NotFoundException("User", userId);
+            throw new NotFoundException("User not found or already activated");
 
         logger.LogInformation("User activated. UserId: {UserId}", userId);
         return activated;
@@ -130,7 +135,7 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
     {
         var deactivated = await userRepository.DeactivateUserAsync(userId, cancellationToken);
         if (!deactivated)
-            throw new NotFoundException("User", userId);
+            throw new NotFoundException("User not found or already deactivated.");
 
         logger.LogInformation("User deactivated. UserId: {UserId}", userId);
         return deactivated;
@@ -145,12 +150,12 @@ public class UserService(IUserRepository userRepository, ILogger<UserService> lo
     /// <inheritdoc />
     public async Task<bool> IsUsernameAvailableAsync(string username, CancellationToken cancellationToken = default)
     {
-        return !await userRepository.UsernameExistsAsync(username, cancellationToken);
+        return await userRepository.UsernameExistsAsync(username, cancellationToken) == false;
     }
 
     /// <inheritdoc />
     public async Task<bool> IsEmailAvailableAsync(string email, CancellationToken cancellationToken = default)
     {
-        return !await userRepository.EmailExistsAsync(email, cancellationToken);
+        return await userRepository.EmailExistsAsync(email, cancellationToken) == false;
     }
 }

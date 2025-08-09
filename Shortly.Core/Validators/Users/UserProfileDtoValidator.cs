@@ -3,7 +3,7 @@ using Shortly.Core.DTOs.UsersDTOs.Profile;
 
 namespace Shortly.Core.Validators.Users;
 
-public class UserProfileDtoValidator : AbstractValidator<UserProfileDto>
+public class UserProfileDtoValidator : AbstractValidator<UserProfileResponse>
 {
     public UserProfileDtoValidator()
     {

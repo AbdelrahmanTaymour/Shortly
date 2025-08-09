@@ -20,7 +20,7 @@ public sealed record CompleteUserSearchResult(
     Guid? DeletedBy,
 
     // Related entities dto
-    UserProfileDto UserProfile,
+    UserProfileResponse UserProfile,
     UserSecurityDto UserSecurityDto,
     UserUsageDto UserUsageDto
 ) : IUserSearchResult(Id, Email, Username, SubscriptionPlanId, IsActive, Permissions);

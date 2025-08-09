@@ -1,5 +1,3 @@
-using Shortly.Core.DTOs.UsersDTOs.Usage;
-using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Core.ServiceContracts.UserManagement;

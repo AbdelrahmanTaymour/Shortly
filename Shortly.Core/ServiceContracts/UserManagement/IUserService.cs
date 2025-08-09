@@ -51,12 +51,12 @@ public interface IUserService
     /// Updates an existing user's details.
     /// </summary>
     /// <param name="userId">The ID of the user to update.</param>
-    /// <param name="dto">The updated user data.</param>
+    /// <param name="request">The updated user data.</param>
     /// <returns>The updated user's details as a <see cref="UserDto"/>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
     /// <exception cref="ConflictException">Thrown if the new username is already taken.</exception>
     /// <exception cref="ServiceUnavailableException">Thrown if the update operation fails.</exception>
-    Task<UserDto> UpdateAsync(Guid userId, UpdateUserDto dto);
+    Task<UserDto> UpdateAsync(Guid userId, UpdateUserRequest request);
 
 
     /// <summary>
@@ -67,6 +67,7 @@ public interface IUserService
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns><c>true</c> if the user was successfully soft deleted; otherwise, <c>false</c>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> SoftDeleteAsync(Guid userId, Guid deletedBy, CancellationToken cancellationToken = default);
 
 
@@ -77,6 +78,7 @@ public interface IUserService
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns><c>true</c> if the user was successfully activated; otherwise, <c>false</c>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> ActivateUserAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -86,6 +88,7 @@ public interface IUserService
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns><c>true</c> if the user was successfully deactivated; otherwise, <c>false</c>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> DeactivateUserAsync(Guid userId, CancellationToken cancellationToken = default);
 
 
@@ -95,6 +98,7 @@ public interface IUserService
     /// <param name="userId">The ID of the user to check.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns><c>true</c> if the user exists; otherwise, <c>false</c>.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> ExistsAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -103,6 +107,7 @@ public interface IUserService
     /// <param name="username">The username to check for availability.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns><c>true</c> if the username is available; otherwise, <c>false</c>.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> IsUsernameAvailableAsync(string username, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -110,6 +115,7 @@ public interface IUserService
     /// </summary>
     /// <param name="email">The email to check for availability.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns><c>true</c> if the email is available; otherwise, <c>false</c>.</returns>
+    /// <returns><c>true</c> if the email is available and ready to use; otherwise, <c>false</c>.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> IsEmailAvailableAsync(string email, CancellationToken cancellationToken = default);
 }

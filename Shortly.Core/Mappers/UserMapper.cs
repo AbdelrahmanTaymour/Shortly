@@ -39,9 +39,9 @@ public static class UserMapper
 
 
     // Profiles
-    public static UserProfileDto MapToUserProfile(this UserProfile profile)
+    public static UserProfileResponse MapToUserProfile(this UserProfile profile)
     {
-        return new UserProfileDto
+        return new UserProfileResponse
         (
             profile.Name,
             profile.Bio,

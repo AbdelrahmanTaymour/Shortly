@@ -1,6 +1,6 @@
 namespace Shortly.Core.DTOs.UsersDTOs.Profile;
 
-public record UserProfileDto(
+public record UserProfileResponse(
     string? Name,
     string? Bio,
     string? PhoneNumber,

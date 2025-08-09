@@ -180,7 +180,7 @@ public interface IUserRepository
     /// </summary>
     /// <param name="email">The email address to check for existence.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
-    /// <returns>True if the email exists and belongs to a non-deleted user; otherwise, false.</returns>
+    /// <returns>True if the email exists or belongs to a deleted user; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
 
@@ -189,7 +189,7 @@ public interface IUserRepository
     /// </summary>
     /// <param name="username">The username address to check for existence.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
-    /// <returns>True if the username exists and belongs to a non-deleted user; otherwise, false.</returns>
+    /// <returns>True if the username exists or belongs to a deleted user; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
 
@@ -199,7 +199,7 @@ public interface IUserRepository
     /// <param name="email">The email address to check for existence.</param>
     /// <param name="username">The username to check for existence.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
-    /// <returns>True if either the email or username exists and belongs to a non-deleted user; otherwise, false.</returns>
+    /// <returns>True if either the email or username exists or belongs to a deleted user; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> EmailOrUsernameExistsAsync(string email, string username, CancellationToken cancellationToken = default);
 
