@@ -15,12 +15,6 @@ namespace Shortly.API.Controllers.Base;
 public abstract class ControllerApiBase : ControllerBase
 {
     /// <summary>
-    /// Parameterless constructor
-    /// </summary>
-    protected ControllerApiBase() { }
-    private readonly ILogger<ControllerApiBase> _logger;
-
-    /// <summary>
     ///     Cached current user ID to avoid repeated claim parsing within the same request.
     /// </summary>
     private Guid? _cachedUserId;
@@ -34,15 +28,6 @@ public abstract class ControllerApiBase : ControllerBase
     ///     Cached current user permissions to avoid repeated claim parsing within the same request.
     /// </summary>
     private long? _cachedUserPermissions;
-
-    /// <summary>
-    ///     Initializes a new instance of the <see cref="ControllerApiBase" /> class.
-    /// </summary>
-    /// <param name="logger">The logger instance for logging operations and errors.</param>
-    protected ControllerApiBase(ILogger<ControllerApiBase> logger)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     /// <summary>
     ///     Retrieves the current authenticated user's unique identifier from JWT claims.
@@ -81,27 +66,22 @@ public abstract class ControllerApiBase : ControllerBase
 
             if (string.IsNullOrWhiteSpace(nameIdentifierClaim))
             {
-                _logger.LogWarning("NameIdentifier claim is missing or empty for user: {UserIdentity}",
-                    User.Identity?.Name ?? "Unknown");
                 throw new UnauthorizedAccessException(
                     "User authentication is required. Unable to determine current user ID.");
             }
 
             if (!Guid.TryParse(nameIdentifierClaim, out var userId))
             {
-                _logger.LogError("Invalid user ID format in NameIdentifier claim: {ClaimValue}", nameIdentifierClaim);
                 throw new InvalidOperationException($"Invalid user ID format: {nameIdentifierClaim}");
             }
 
             // Cache the result
             _cachedUserId = userId;
-
-            _logger.LogDebug("Successfully retrieved user ID: {UserId}", userId);
+            
             return userId;
         }
         catch (Exception ex) when (!(ex is UnauthorizedAccessException || ex is InvalidOperationException))
         {
-            _logger.LogError(ex, "Unexpected error occurred while retrieving current user ID");
             throw new InvalidOperationException("An error occurred while processing user authentication", ex);
         }
     }
@@ -137,17 +117,10 @@ public abstract class ControllerApiBase : ControllerBase
             // Cache the result (even if it's null/empty)
             _cachedUserEmail = userEmailClaim ?? string.Empty;
 
-            _logger.LogDebug(
-                string.IsNullOrWhiteSpace(_cachedUserEmail)
-                    ? "Email claim is missing or empty for user: {UserId}"
-                    : "Successfully retrieved user email for user: {UserId}",
-                GetCurrentUserId().ToString());
-
             return _cachedUserEmail;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogWarning(ex, "Error occurred while retrieving current user email, returning empty string");
             return string.Empty;
         }
     }
@@ -199,26 +172,15 @@ public abstract class ControllerApiBase : ControllerBase
 
             if (!string.IsNullOrWhiteSpace(permissionsClaim))
             {
-                if (long.TryParse(permissionsClaim, out permissions))
-                    _logger.LogDebug("Successfully retrieved user permissions: {Permissions} for user: {UserId}",
-                        permissions, GetCurrentUserId().ToString());
-                else
-                    _logger.LogWarning("Invalid permissions claim format: {PermissionsClaim} for user: {UserId}",
-                        permissionsClaim, GetCurrentUserId().ToString());
-            }
-            else
-            {
-                _logger.LogDebug("Permissions claim is missing or empty for user: {UserId}",
-                    GetCurrentUserId().ToString());
+                long.TryParse(permissionsClaim, out permissions);
             }
 
             // Cache the result
             _cachedUserPermissions = permissions;
             return permissions;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogWarning(ex, "Error occurred while retrieving current user permissions, returning 0");
             return 0;
         }
     }
@@ -336,16 +298,10 @@ public abstract class ControllerApiBase : ControllerBase
         try
         {
             var claimValue = User.FindFirst(claimType)?.Value;
-            _logger.LogDebug("Retrieved claim {ClaimType}: {HasValue} for user: {UserId}",
-                claimType,
-                !string.IsNullOrEmpty(claimValue) ? "Present" : "Missing",
-                GetCurrentUserId().ToString());
-
             return claimValue;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogWarning(ex, "Error occurred while retrieving claim {ClaimType}", claimType);
             return null;
         }
     }

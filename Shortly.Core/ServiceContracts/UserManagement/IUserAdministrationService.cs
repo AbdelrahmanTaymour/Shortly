@@ -1,9 +1,7 @@
 using Shortly.Core.DTOs;
-using Shortly.Core.DTOs.UsersDTOs.Search;
 using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
-using Shortly.Domain.Enums;
 
 namespace Shortly.Core.ServiceContracts.UserManagement;
 
@@ -79,8 +77,8 @@ public interface IUserAdministrationService
     /// A task that represents the asynchronous operation. The task result contains a BulkOperationResult
     /// with details about the operation including total count, success count, and skipped count.
     /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when userIds parameter is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when userIds collection is empty.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when the userIds parameter is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when the userIds collection is empty.</exception>
     /// <exception cref="DatabaseException">Thrown when an unexpected database error occurs during the bulk operation.</exception>
     /// <remarks>
     /// This method performs input validation before delegating to the repository:
@@ -103,8 +101,8 @@ public interface IUserAdministrationService
     /// A task that represents the asynchronous operation. The task result contains a BulkOperationResult
     /// with details about the operation including total count, success count, and skipped count.
     /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when userIds parameter is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when userIds collection is empty.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when the userIds parameter is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when the userIds collection is empty.</exception>
     /// <exception cref="DatabaseException">Thrown when an unexpected database error occurs during the bulk operation.</exception>
     /// <remarks>
     /// This method performs input validation before delegating to the repository:
@@ -121,16 +119,16 @@ public interface IUserAdministrationService
     /// Only affects users that are not already deleted and exist in the database.
     /// This method includes comprehensive validation of input parameters and delegates to the repository for the actual operation.
     /// </summary>
-    /// <param name="userIds">Collection of user GUIDs to soft delete. Cannot be null or empty.</param>
+    /// <param name="userIds">Collection of user GUIDs to softly delete. Cannot be null or empty.</param>
     /// <param name="deletedBy">GUID of the user performing the deletion operation. Used for audit purposes. Cannot be empty.</param>
     /// <param name="cancellationToken">Optional cancellation token to cancel the operation. Defaults to CancellationToken.None.</param>
     /// <returns>
     /// A task that represents the asynchronous operation. The task result contains a BulkOperationResult
     /// with details about the operation including total count, success count, and skipped count.
     /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when userIds parameter is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when the userIds parameter is null.</exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when userIds collection is empty or when deletedBy is an empty GUID.
+    /// Thrown when the userIds collection is empty or when deletedBy is an empty GUID.
     /// </exception>
     /// <exception cref="DatabaseException">Thrown when an unexpected database error occurs during the bulk operation.</exception>
     /// <remarks>

@@ -266,18 +266,18 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
     ///     Updates an existing user profile with new data.
     /// </summary>
     /// <param name="profile">The existing user profile to update</param>
-    /// <param name="dto">The profile update data</param>
-    private static void UpdateUserProfile(UserProfile profile, UserProfileDto dto)
+    /// <param name="response">The profile update data</param>
+    private static void UpdateUserProfile(UserProfile profile, UserProfileResponse response)
     {
-        profile.Name = dto.Name;
-        profile.Bio = dto.Bio;
-        profile.PhoneNumber = dto.PhoneNumber;
-        profile.ProfilePictureUrl = dto.ProfilePictureUrl;
-        profile.Website = dto.Website;
-        profile.Company = dto.Company;
-        profile.Location = dto.Location;
-        profile.Country = dto.Country;
-        profile.TimeZone = dto.TimeZone;
+        profile.Name = response.Name;
+        profile.Bio = response.Bio;
+        profile.PhoneNumber = response.PhoneNumber;
+        profile.ProfilePictureUrl = response.ProfilePictureUrl;
+        profile.Website = response.Website;
+        profile.Company = response.Company;
+        profile.Location = response.Location;
+        profile.Country = response.Country;
+        profile.TimeZone = response.TimeZone;
         profile.UpdatedAt = DateTime.UtcNow;
     }
 
