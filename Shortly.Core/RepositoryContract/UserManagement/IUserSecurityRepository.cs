@@ -65,11 +65,12 @@ public interface IUserSecurityRepository
     /// </summary>
     /// <param name="userId">The unique identifier of the user to lock.</param>
     /// <param name="lockedUntil">The date and time until which the user should remain locked.</param>
+    /// <param name="lockoutReason">The reason of locking the user</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the lock was successful; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     /// <remarks>Uses ExecuteUpdateAsync for high-performance lock operation without loading entity into memory.</remarks>
-    Task<bool> LockUserAsync(Guid userId, DateTime lockedUntil, CancellationToken cancellationToken = default);
+    Task<bool> LockUserAsync(Guid userId, DateTime lockedUntil, string? lockoutReason, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Unlocks a user account by clearing the lock date, resetting failed login attempts, and updating the timestamp.
