@@ -43,5 +43,6 @@ public interface ITokenService
     /// Revokes all active refresh tokens for a given user.
     /// </summary>
     /// <param name="userId">The ID of the user whose tokens should be revoked.</param>
-    Task<bool> RevokeAllUserTokensAsync(Guid userId);
+    /// <param name="cancellationToken"></param>
+    Task<bool> RevokeAllUserTokensAsync(Guid userId, CancellationToken cancellationToken = default);
 }

@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Core.RepositoryContract;
 using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories;
 
-public class RefreshTokenRepository(SQLServerDbContext dbContext) : IRefreshTokenRepository
+public class RefreshTokenRepository(SQLServerDbContext dbContext, ILogger<RefreshTokenRepository> logger) : IRefreshTokenRepository
 {
     private readonly SQLServerDbContext _dbContext = dbContext;
 
@@ -64,6 +66,25 @@ public class RefreshTokenRepository(SQLServerDbContext dbContext) : IRefreshToke
                     .SetProperty(rt => rt.IsRevoked, true)
                     .SetProperty(rt => rt.RevokedAt, DateTime.UtcNow)
                 , cancellationToken) > 0;
+    }
+
+    public async Task<bool> RevokeAllRefreshTokensAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var rawAffected = await _dbContext.RefreshTokens
+                .Where(rt => rt.UserId == userId && !rt.IsRevoked)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(rt => rt.IsRevoked, true)
+                        .SetProperty(rt => rt.RevokedAt, DateTime.UtcNow)
+                    , cancellationToken);
+            return rawAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting all tokens for user: {UserId}", userId);
+            throw new DatabaseException("Failed to delete user", ex);
+        }
     }
 
     public async Task<User?> GetUserFromRefreshTokenAsync(Guid userId)

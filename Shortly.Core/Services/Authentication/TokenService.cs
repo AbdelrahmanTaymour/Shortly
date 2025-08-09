@@ -125,18 +125,9 @@ public class TokenService(
     }
 
     /// <inheritdoc />
-    public async Task<bool> RevokeAllUserTokensAsync(Guid userId)
+    public async Task<bool> RevokeAllUserTokensAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var activeTokens = await refreshTokenRepository.GetAllActiveRefreshTokensByUserIdAsync(userId);
-        if (activeTokens == null || activeTokens.Count == 0) return false; // No active tokens to revoke;
-        foreach (var token in activeTokens)
-        {
-            token.IsRevoked = true;
-            await refreshTokenRepository.UpdateRefreshTokenAsync(token);
-        }
-
-        logger.LogInformation("All refresh tokens revoked for user {UserId}", userId);
-        return true;
+        return await refreshTokenRepository.RevokeAllRefreshTokensAsync(userId, cancellationToken);
     }
 
 
