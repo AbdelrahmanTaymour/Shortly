@@ -17,9 +17,10 @@ public interface IUserProfileService
     /// </summary>
     /// <param name="userId">The unique identifier of the user.</param>
     /// <param name="cancellationToken">Optional cancellation token.</param>
-    /// <returns>A <see cref="UserProfileDto"/> containing profile data.</returns>
+    /// <returns>A <see cref="UserProfileResponse"/> containing profile data.</returns>
     /// <exception cref="NotFoundException">Thrown if the profile is not found.</exception>
-    Task<UserProfileDto> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default);
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    Task<UserProfileResponse> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Updates the profile information for the specified user.
@@ -39,6 +40,8 @@ public interface IUserProfileService
     /// <param name="userId">The unique identifier of the user.</param>
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns><c>true</c> if the deletion request was successful; otherwise, <c>false</c>.</returns>
+    /// <remarks>It will revoke all user tokens</remarks>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> RequestAccountDeletionAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -46,8 +49,8 @@ public interface IUserProfileService
     /// </summary>
     /// <param name="userId">The unique identifier of the user.</param>
     /// <param name="cancellationToken">Optional cancellation token.</param>
-    /// <returns>A <see cref="MonthlyQuotaStatusDto"/> containing quota usage and status details.</returns>
+    /// <returns>A <see cref="QuotaStatusResponse"/> containing quota usage and status details.</returns>
     /// <exception cref="NotFoundException">Thrown if the usage statistics are not found.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the subscription plan is invalid.</exception>
-    Task<MonthlyQuotaStatusDto> GetMonthlyQuotaStatusAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<QuotaStatusResponse> GetMonthlyQuotaStatusAsync(Guid userId, CancellationToken cancellationToken = default);
 }

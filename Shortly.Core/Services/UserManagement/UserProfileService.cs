@@ -5,6 +5,7 @@ using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Mappers;
 using Shortly.Core.RepositoryContract.UserManagement;
+using Shortly.Core.ServiceContracts.Authentication;
 using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Domain.Configuration;
 
@@ -21,10 +22,11 @@ public class UserProfileService(
     IUserProfileRepository profileRepository,
     IUserRepository userRepository,
     IUserUsageRepository usageRepository,
+    ITokenService tokenService,
     ILogger<UserProfileService> logger) : IUserProfileService
 {
     /// <inheritdoc />
-    public async Task<UserProfileDto> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<UserProfileResponse> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var profile = await profileRepository.GetByUserIdAsync(userId, cancellationToken);
         if (profile is null) throw new NotFoundException("User Profile", userId);
@@ -63,11 +65,12 @@ public class UserProfileService(
     /// <inheritdoc />
     public async Task<bool> RequestAccountDeletionAsync(Guid userId, CancellationToken cancellationToken = default)
     {
+        await tokenService.RevokeAllUserTokensAsync(userId);
         return await userRepository.DeleteAsync(userId, userId, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<MonthlyQuotaStatusDto> GetMonthlyQuotaStatusAsync(Guid userId,
+    public async Task<QuotaStatusResponse> GetMonthlyQuotaStatusAsync(Guid userId,
         CancellationToken cancellationToken = default)
     {
         var userUsageWithPlan = await usageRepository.GetUserUsageWithPlanIdAsync(userId, cancellationToken);
@@ -92,7 +95,7 @@ public class UserProfileService(
     /// <param name="usage">The user's usage data including links, QR codes, and reset date.</param>
     /// <param name="planConfig">The subscription plan configuration containing quota limits.</param>
     /// <returns>
-    /// A <see cref="MonthlyQuotaStatusDto"/> containing detailed usage statistics,
+    /// A <see cref="QuotaStatusResponse"/> containing detailed usage statistics,
     /// remaining quota values, usage percentages, and quota exhaustion flags.
     /// </returns>
     /// <remarks>
@@ -105,7 +108,7 @@ public class UserProfileService(
     /// </list>
     /// The quota warning threshold is fixed at 80%.
     /// </remarks>
-    private static MonthlyQuotaStatusDto CalculateQuotaStatus(UserUsageWithPlan usage, PlanConfiguration planConfig)
+    private static QuotaStatusResponse CalculateQuotaStatus(UserUsageWithPlan usage, PlanConfiguration planConfig)
     {
         const double quotaWarningThreshold = 80.0; // 80% usage threshold
 
@@ -129,7 +132,7 @@ public class UserProfileService(
         var isNearLinksQuotaLimit = linksUsagePercentage >= quotaWarningThreshold;
         var isNearQrCodesQuotaLimit = qrCodesUsagePercentage >= quotaWarningThreshold;
 
-        return new MonthlyQuotaStatusDto(
+        return new QuotaStatusResponse(
             remainingLinks,
             remainingQrCodes,
             daysUntilReset,
