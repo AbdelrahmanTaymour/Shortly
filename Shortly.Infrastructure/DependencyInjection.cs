@@ -1,13 +1,14 @@
-using System.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.RepositoryContract;
+using Shortly.Core.RepositoryContract.UrlManagement;
 using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Infrastructure.DbContexts;
 using Shortly.Infrastructure.Repositories;
 using Shortly.Infrastructure.Repositories.OrganizationManagement;
+using Shortly.Infrastructure.Repositories.UrlManagement;
 using Shortly.Infrastructure.Repositories.UserManagement;
 
 namespace Shortly.Infrastructure;
@@ -41,12 +42,19 @@ public static class DependencyInjection
         services.AddScoped<IUserUsageRepository, UserUsageRepository>();
         services.AddScoped<IUserAuditLogRepository, UserAuditLogRepository>();
         services.AddScoped<IUserAdministrationRepository, UserAdministrationRepository>();
+        
+        // Url Management
+        services.AddScoped<IShortUrlRepository, ShortUrlRepository>();
+        services.AddScoped<IUrlBulkOperationsRepository, UrlBulkOperationsRepository>();
+        services.AddScoped<IShortUrlQueryRepository, ShortUrlQueryRepository>();
+        services.AddScoped<IShortUrlRedirectRepository, ShortUrlRedirectRepository>();
+        services.AddScoped<IShortUrlAnalyticsRepository, ShortUrlAnalyticsRepository>();
 
         // Organization Management
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 
-        services.AddScoped<IShortUrlRepository, ShortUrlRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        
 
         return services;
     }
