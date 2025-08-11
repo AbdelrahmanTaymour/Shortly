@@ -11,8 +11,8 @@ public class LockUserRequestValidation : AbstractValidator<LockUserRequest>
         RuleFor(x => x.LockUntil)
             .NotNull()
             .WithMessage("LockUntil is required")
-            .LessThanOrEqualTo(DateTime.UtcNow)
-            .WithMessage("Monthly reset date cannot be in the future");
+            .GreaterThanOrEqualTo(DateTime.UtcNow)
+            .WithMessage("Monthly reset date cannot be in the past");
         
         
         RuleFor(x => x.Reason)

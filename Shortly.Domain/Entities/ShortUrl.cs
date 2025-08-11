@@ -16,10 +16,8 @@ public class ShortUrl
     public Guid? UserId { get; set; }
     public Guid? OrganizationId { get; set; }
     public Guid? CreatedByMemberId { get; set; } // Creator tracking (always populated for OrgMember)
-
-    // Anonymous-specific fields (only used when OwnerType = Anonymous)
-    public string? AnonymousSessionId { get; set; }
-    public string? AnonymousIpAddress { get; set; }
+    public string? AnonymousSessionId { get; set; } // Anonymous-specific fields (only used when OwnerType = Anonymous)
+    public string? IpAddress { get; set; }
 
     // Configuration
     public bool IsActive { get; set; } = true;
