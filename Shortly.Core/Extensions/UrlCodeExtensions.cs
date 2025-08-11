@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using Shortly.Core.RepositoryContract;
+using Shortly.Core.RepositoryContract.UrlManagement;
 
 namespace Shortly.Core.Extensions;
 
@@ -22,23 +22,16 @@ public static class UrlCodeExtensions
     /// <summary>
     /// Primary generation method with multiple fallback strategies
     /// </summary>
-    public static async Task<string> GenerateCodeAsync(long id, IShortUrlRepository? repository = null,
-        int minLength = 6)
+    public static string GenerateCodeAsync(long id, int minLength = 6)
     {
-        // Strategy 1: Try optimized Base54 encoding first
         var code = EncodeBase54(id, minLength);
-
-        // Strategy 2: If collision detected, use a hybrid approach
-        if (repository != null && await repository.ShortCodeExistsAsync(code))
-            code = await GenerateCollisionResistantCodeAsync(id, repository, minLength);
-
         return code;
     }
 
     /// <summary>
     /// High-performance Base54 encoding (no confusing characters)
     /// </summary>
-    public static string EncodeBase54(long number, int minLength = 6)
+    private static string EncodeBase54(long number, int minLength = 6)
     {
         if (number == 0) return new string(SafeCharacters[0], minLength);
 
@@ -128,7 +121,7 @@ public static class UrlCodeExtensions
         var input = $"{id}{DateTimeOffset.UtcNow.Ticks}";
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
 
-        // Convert first 8 bytes of hash to long
+        // Convert the first 8 bytes of hash to long
         var hashLong = BitConverter.ToInt64(hash, 0);
         return EncodeBase54(Math.Abs(hashLong), minLength);
     }
@@ -138,10 +131,11 @@ public static class UrlCodeExtensions
     /// </summary>
     private static string GenerateRandomCode(int length)
     {
-        var random = ThreadSafeRandom.Value!;
+        var random = ThreadSafeRandom.Value;
         var result = new StringBuilder(length);
 
-        for (var i = 0; i < length; i++) result.Append(SafeCharacters[random.Next(Base)]);
+        for (var i = 0; i < length; i++)
+            if (random != null) result.Append(SafeCharacters[random.Next(Base)]);
 
         return result.ToString();
     }
@@ -196,9 +190,9 @@ public static class UrlCodeExtensions
     }
 
     /// <summary>
-    /// Get estimated collision probability for given length
+    /// Get estimated collision probability for a given length
     /// </summary>
-    public static double GetCollisionProbability(int codeLength, long totalUrls)
+    private static double GetCollisionProbability(int codeLength, long totalUrls)
     {
         var totalPossible = Math.Pow(Base, codeLength);
         return 1.0 - Math.Exp(-Math.Pow(totalUrls, 2) / (2.0 * totalPossible));
@@ -227,25 +221,4 @@ public static class UrlCodeExtensions
         return map;
     }
 
-    /// <summary>
-    /// Custom code validation for user-provided short codes
-    /// </summary>
-    public static (bool IsValid, string ErrorMessage) ValidateCustomCode(string customCode, int minLength = 3,
-        int maxLength = 50)
-    {
-        if (string.IsNullOrWhiteSpace(customCode)) return (false, "Custom code cannot be empty");
-
-        if (customCode.Length < minLength) return (false, $"Custom code must be at least {minLength} characters long");
-
-        if (customCode.Length > maxLength) return (false, $"Custom code cannot exceed {maxLength} characters");
-
-        if (!IsValidCode(customCode)) return (false, "Custom code contains invalid characters");
-
-        // Check for reserved words/patterns
-        var reservedPatterns = new[] { "api", "admin", "www", "mail", "help", "support", "about" };
-        if (reservedPatterns.Any(pattern => customCode.ToLower().Contains(pattern)))
-            return (false, "Custom code contains reserved words");
-
-        return (true, string.Empty);
-    }
 }

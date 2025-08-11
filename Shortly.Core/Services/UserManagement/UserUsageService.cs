@@ -73,7 +73,7 @@ public class UserUsageService(IUserUsageRepository usageRepository, ILogger<User
         var usage = await usageRepository.GetUserUsageWithPlanIdAsync(userId, cancellationToken)
                     ?? throw new NotFoundException("UserUsage", userId);
 
-        var max = PlanConfiguration.Plans[usage.SubscriptionPlanId].Limits[PlanConfiguration.enPlanLimits.UrlsPerMonth];
+        var max = PlanConfiguration.Plans[usage.SubscriptionPlanId].Limits[PlanConfiguration.enPlanLimits.QrCodesPerMonth];
         return Math.Max(max - usage.MonthlyQrCodesCreated, 0);
     }
 

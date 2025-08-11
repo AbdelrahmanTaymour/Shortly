@@ -230,6 +230,7 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
         try
         {
             var rawAffected = await dbContext.Users
+                .AsNoTracking()
                 .Where(u => u.Id == id && !u.IsDeleted)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.IsDeleted, true)
