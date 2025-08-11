@@ -1,15 +1,12 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using Shortly.Core.RepositoryContract.OrganizationManagement;
-using Shortly.Core.ServiceContracts;
 using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.ServiceContracts.UrlManagement;
 using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Core.Services.Authentication;
-using Shortly.Core.Services;
+using Shortly.Core.Services.UrlManagement;
 using Shortly.Core.Services.UserManagement;
 using Shortly.Core.Validators.Auth;
-using Shortly.Core.Validators.ShortUrl;
-using Shortly.Core.Validators.Users;
 
 namespace Shortly.Core;
 

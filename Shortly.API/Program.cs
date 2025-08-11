@@ -4,14 +4,14 @@ using System.Text.Json.Serialization;
 using FluentValidation.AspNetCore;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core;
-using Shortly.Core.Mappers;
 using Shortly.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
+using Shortly.API.Authentication;
 using Shortly.API.Authorization;
 using Shortly.API.Middleware;
 using Shortly.Core.Exceptions.ServerErrors;
+using Shortly.Core.ServiceContracts.Authentication;
 
 namespace Shortly.API;
 
@@ -133,10 +133,12 @@ public class Program
                     ClockSkew = TimeSpan.Zero
                 });
 
-        // Authorization
-        //builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
-        builder.Services.AddUrlShortenerAuthorization();
 
+        // Authorization & Authentication
+        builder.Services.AddUrlShortenerAuthorization();
+        builder.Services.AddScoped<IAuthenticationContextProvider, AuthenticationContextProvider>();
+
+        
         // Custom Services
         builder.Services.AddInfrastructure(builder.Configuration);
         builder.Services.AddCore();
