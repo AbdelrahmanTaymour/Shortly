@@ -120,12 +120,13 @@ public class UserUsageRepository(SQLServerDbContext dbContext, ILogger<UserUsage
             var affectedRows = await (
                     from usage in dbContext.UserUsage
                     join user in dbContext.Users on usage.UserId equals user.Id
-                    where !user.IsDeleted && usage.MonthlyResetDate.Date <= resetDate.Date
+                    where !user.IsDeleted && usage.MonthlyResetDate < resetDate
                     select usage
                 )
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.MonthlyLinksCreated, 0)
-                        .SetProperty(u => u.MonthlyQrCodesCreated, 0),
+                        .SetProperty(u => u.MonthlyQrCodesCreated, 0)
+                        .SetProperty(u => u.MonthlyResetDate, DateTime.UtcNow.AddMonths(1)),
                     cancellationToken);
 
             logger.LogInformation("Monthly usage reset for {Count} users on {ResetDate}.", affectedRows,
