@@ -1,19 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs;
-using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
-using Shortly.Core.RepositoryContract;
 using Shortly.Core.RepositoryContract.UrlManagement;
 using Shortly.Domain.Entities;
-using Shortly.Domain.Enums;
 using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.UrlManagement;
 
 public class UrlBulkOperationsRepository(
     SQLServerDbContext dbContext,
-    IShortUrlRepository shortUrlRepository,
     ILogger<UrlBulkOperationsRepository> logger) : IUrlBulkOperationsRepository
 {
     /// <inheritdoc />
@@ -150,15 +146,9 @@ public class UrlBulkOperationsRepository(
     public async Task<BulkOperationResult> BulkUpdateExpirationAsync(IReadOnlyCollection<long> ids,
         DateTime? newExpirationDate, CancellationToken cancellationToken = default)
     {
-        if (ids == null)
-            throw new ArgumentNullException(nameof(ids));
-
-        if (ids.Count == 0)
-            throw new ArgumentException("IDs collection cannot be empty", nameof(ids));
-
         var idsCount = ids.Count;
         logger.LogInformation("Starting bulk expiration update for {IdsCount} short URLs", idsCount);
-
+        
         try
         {
             var now = DateTime.UtcNow;
@@ -187,25 +177,11 @@ public class UrlBulkOperationsRepository(
     public async Task<BulkOperationResult> BulkCreateAsync(IReadOnlyCollection<ShortUrl> shortUrls,
         CancellationToken cancellationToken = default)
     {
-        if (shortUrls == null)
-            throw new ArgumentNullException(nameof(shortUrls));
-
-        if (shortUrls.Count == 0)
-            throw new ArgumentException("Short URLs collection cannot be empty", nameof(shortUrls));
-
         var count = shortUrls.Count;
         logger.LogInformation("Starting bulk creation for {Count} short URLs", count);
 
         try
         {
-            var now = DateTime.UtcNow;
-            foreach (var url in shortUrls)
-            {
-                await ValidateShortUrlAsync(url, cancellationToken);
-                url.CreatedAt = now;
-                url.UpdatedAt = now;
-            }
-
             await dbContext.ShortUrls.AddRangeAsync(shortUrls, cancellationToken).ConfigureAwait(false);
             var affected = await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -219,51 +195,34 @@ public class UrlBulkOperationsRepository(
         }
     }
 
-
     
-    #region Helper Methods
-
-    /// <summary>
-    ///     Validates a short URL entity before database operations.
-    /// </summary>
-    /// <param name="shortUrl">The short URL to validate.</param>
-    /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
-    /// <exception cref="ValidationException">Thrown when validation fails.</exception>
-    /// <remarks>
-    ///     This method performs comprehensive validation including URL format,
-    ///     short code uniqueness, and business rule compliance.
-    /// </remarks>
-    private async Task ValidateShortUrlAsync(ShortUrl shortUrl, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    public async Task<BulkOperationResult> BulkUpdateShortCodeAsync(IReadOnlyDictionary<long, string?> shortUrlsMap,
+        CancellationToken cancellationToken = default)
     {
-        // Validate original URL format
-        if (!Uri.TryCreate(shortUrl.OriginalUrl, UriKind.Absolute, out _))
-            throw new ValidationException("Original URL format is invalid");
-
-        // Validate short code if provided
-        if (!string.IsNullOrEmpty(shortUrl.ShortCode))
+        var idsCount = shortUrlsMap.Count;
+        logger.LogInformation("Starting bulk expiration update for {IdsCount} short URLs", idsCount);
+        
+        try
         {
-            if (shortUrl.ShortCode.Length < 3 || shortUrl.ShortCode.Length > 50)
-                throw new ValidationException("Short code must be between 3 and 50 characters");
-
-            // if (await shortUrlRepository.ShortCodeExistsAsync(shortUrl.ShortCode, cancellationToken))
-            //     throw new ValidationException("Short code already exists");
+            var successCount = await dbContext.ShortUrls
+                .Where(s => shortUrlsMap.Keys.Contains(s.Id))
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(s => s.ShortCode, s => shortUrlsMap[s.Id])
+                        .SetProperty(s => s.UpdatedAt, DateTime.UtcNow)
+                    , cancellationToken)
+                .ConfigureAwait(false);
+        
+            var skippedCount = idsCount - successCount;
+            logger.LogInformation("Bulk short code update completed: {SuccessCount} updated, {SkippedCount} skipped",
+                successCount, skippedCount);
+        
+            return new BulkOperationResult(idsCount, successCount, skippedCount);
         }
-
-        // Validate click limit
-        if (shortUrl.ClickLimit < -1)
-            throw new ValidationException("Click limit must be -1 (unlimited) or a positive number");
-
-        // Validate expiration date
-        if (shortUrl.ExpiresAt.HasValue && shortUrl.ExpiresAt <= DateTime.UtcNow)
-            throw new ValidationException("Expiration date must be in the future");
-
-        // Validate owner information
-        if (shortUrl.OwnerType == enShortUrlOwnerType.User && !shortUrl.UserId.HasValue)
-            throw new ValidationException("User ID is required for user-owned URLs");
-
-        if (shortUrl.OwnerType == enShortUrlOwnerType.Organization && !shortUrl.OrganizationId.HasValue)
-            throw new ValidationException("Organization ID is required for organization-owned URLs");
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during bulk short code update of {TotalCount} short URLs", idsCount);
+            throw new DatabaseException("Bulk short code update failed", ex);
+        }
     }
-
-    #endregion
 }
