@@ -9,4 +9,5 @@ public record CreateUserResponse(
     enSubscriptionPlan SubscriptionPlanId,
     long Permissions,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt
+    );

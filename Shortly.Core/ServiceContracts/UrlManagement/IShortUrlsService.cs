@@ -21,7 +21,7 @@ public interface IShortUrlsService
     /// <returns>A <see cref="ShortUrlDto"/> containing the short URL information</returns>
     /// <exception cref="NotFoundException">Thrown when no short URL is found with the specified ID</exception>
     /// <exception cref="DatabaseException">Thrown when the database operation fails.</exception>
-    Task<ShortUrlDto> GetByShortCodeAsync(long id, bool includeTracking = false,
+    Task<ShortUrlDto> GetByIdAsync(long id, bool includeTracking = false,
         CancellationToken cancellationToken = default);
    
     
@@ -64,7 +64,7 @@ public interface IShortUrlsService
     /// <exception cref="NotFoundException">Thrown when no short URL is found with the specified ID</exception>
     /// <exception cref="ServiceUnavailableException">Thrown when the update operation fails</exception>
     /// <exception cref="DatabaseException">Thrown when the database operation fails.</exception>
-    Task<ShortUrlDto> UpdateAsync(long id, UpdateShortUrlRequest shortUrl, CancellationToken cancellationToken = default);
+    Task<ShortUrlDto> UpdateByIdAsync(long id, UpdateShortUrlRequest shortUrl, CancellationToken cancellationToken = default);
   
     
     /// <summary>
@@ -75,6 +75,7 @@ public interface IShortUrlsService
     /// <param name="cancellationToken">Cancellation token for the async operation</param>
     /// <returns>True if the update was successful</returns>
     /// <exception cref="NotFoundException">Thrown when no short URL is found with the specified ID</exception>
+    /// <exception cref="ConflictException">Thrown when a custom short code already exists</exception>
     /// <exception cref="DatabaseException">Thrown when the database operation fails.</exception>
     Task<bool> UpdateShortCodeAsync(long id, string newShortCode, CancellationToken cancellationToken = default);
    
@@ -109,5 +110,5 @@ public interface IShortUrlsService
     /// <returns>True if the short code exists, false otherwise</returns>
     /// <exception cref="ArgumentException">Thrown when the short code is null, empty, or whitespace</exception>
     /// <exception cref="DatabaseException">Thrown when the database operation fails.</exception>
-    Task<bool> ShortCodeExistsAsync(string shortCode, CancellationToken cancellationToken = default);
+    Task<bool> IsShortCodeExistsAsync(string shortCode, CancellationToken cancellationToken = default);
 }

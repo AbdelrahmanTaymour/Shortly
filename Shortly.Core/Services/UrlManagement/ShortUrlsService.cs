@@ -28,7 +28,7 @@ public class ShortUrlsService(
     : IShortUrlsService
 {
     /// <inheritdoc />
-    public async Task<ShortUrlDto> GetByShortCodeAsync(long id, bool includeTracking = false,
+    public async Task<ShortUrlDto> GetByIdAsync(long id, bool includeTracking = false,
         CancellationToken cancellationToken = default)
     {
         var url = await shortUrlRepository.GetByIdAsync(id, includeTracking, cancellationToken);
@@ -69,7 +69,7 @@ public class ShortUrlsService(
 
 
     /// <inheritdoc />
-    public async Task<ShortUrlDto> UpdateAsync(long id, UpdateShortUrlRequest shortUrl,
+    public async Task<ShortUrlDto> UpdateByIdAsync(long id, UpdateShortUrlRequest shortUrl,
         CancellationToken cancellationToken = default)
     {
         var existingUrl = await shortUrlRepository.GetByIdAsync(id, true, cancellationToken);
@@ -104,9 +104,13 @@ public class ShortUrlsService(
     public async Task<bool> UpdateShortCodeAsync(long id, string newShortCode,
         CancellationToken cancellationToken = default)
     {
+        if(await shortUrlRepository.IsShortCodeExistsAsync(newShortCode, cancellationToken))
+            throw new ConflictException("Short code already exists.");
+        
         var updated = await shortUrlRepository.UpdateShortCodeAsync(id, newShortCode, cancellationToken);
         if (!updated)
             throw new NotFoundException("Url", id);
+        
         return updated;
     }
 
@@ -136,12 +140,12 @@ public class ShortUrlsService(
 
 
     /// <inheritdoc />
-    public async Task<bool> ShortCodeExistsAsync(string shortCode, CancellationToken cancellationToken = default)
+    public async Task<bool> IsShortCodeExistsAsync(string shortCode, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(shortCode))
             throw new ArgumentException("Short code cannot be null or empty", nameof(shortCode));
 
-        return await shortUrlRepository.GetByShortCodeAsync(shortCode, false, cancellationToken) != null;
+        return await shortUrlRepository.IsShortCodeExistsAsync(shortCode, cancellationToken);
     }
 
 
@@ -281,8 +285,8 @@ public class ShortUrlsService(
     private async Task ValidateCustomShortCodeAsync(string customShortCode,
         CancellationToken cancellationToken = default)
     {
-        var existing = await shortUrlRepository.GetByShortCodeAsync(customShortCode, false, cancellationToken);
-        if (existing != null)
+        var isExist = await shortUrlRepository.IsShortCodeExistsAsync(customShortCode, cancellationToken);
+        if (isExist)
             throw new ConflictException("Custom short code already exists.");
     }
 

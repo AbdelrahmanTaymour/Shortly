@@ -103,4 +103,22 @@ public interface IUrlBulkOperationsRepository
     /// <exception cref="ValidationException">Thrown when any URL fails validation.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<BulkOperationResult> BulkCreateAsync(IReadOnlyCollection<ShortUrl> shortUrls, CancellationToken cancellationToken = default);
+
+    
+    /// <summary>
+    /// Performs a bulk update of short codes for the specified short URLs using a dictionary mapping.
+    /// Updates both the ShortCode and UpdatedAt properties in a single database operation.
+    /// </summary>
+    /// <param name="shortUrlsMap">Dictionary mapping short URL IDs to their new short codes. Values can be null to clear the short code.</param>
+    /// <param name="cancellationToken">Token to observe for cancellation requests.</param>
+    /// <returns>
+    /// A <see cref="BulkOperationResult"/> containing the total processed, success count, and failure count.
+    /// </returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    /// <remarks>
+    /// Uses ExecuteUpdateAsync for optimal performance. Non-existent IDs are counted as failures.
+    /// UpdatedAt is automatically set to current UTC time. Null short code values will clear the existing short code.
+    /// </remarks>
+    Task<BulkOperationResult> BulkUpdateShortCodeAsync(IReadOnlyDictionary<long, string?> shortUrlsMap,
+        CancellationToken cancellationToken = default);
 }

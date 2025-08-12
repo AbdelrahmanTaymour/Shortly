@@ -46,7 +46,7 @@ public interface IShortUrlAnalyticsRepository
     /// </returns>
     /// <exception cref="ArgumentException">Thrown when topCount is invalid.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<IReadOnlyList<ShortUrl>> GetMostPopularAsync(int topCount = 10, TimeSpan? timeframe = null,
+    Task<IEnumerable<ShortUrl>> GetMostPopularUrlAsync(int topCount = 10, TimeSpan? timeframe = null,
         Guid? userId = null, CancellationToken cancellationToken = default);
 
 
@@ -93,6 +93,6 @@ public interface IShortUrlAnalyticsRepository
     ///     For example, warningThreshold of 0.8 will return URLs that have used 80% or more
     ///     of their click limit. URLs with unlimited clicks (ClickLimit = -1) are excluded.
     /// </remarks>
-    Task<IReadOnlyList<ShortUrl>> GetApproachingLimitAsync(double warningThreshold = 0.8, int pageNumber = 1,
+    Task<IEnumerable<ShortUrl>> GetApproachingLimitAsync(double warningThreshold = 0.8, int pageNumber = 1,
         int pageSize = 50, CancellationToken cancellationToken = default);
 }

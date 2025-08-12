@@ -56,7 +56,7 @@ public class ShortUrlAnalyticsRepository(
 
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ShortUrl>> GetMostPopularAsync(int topCount = 10, TimeSpan? timeframe = null,
+    public async Task<IEnumerable<ShortUrl>> GetMostPopularUrlAsync(int topCount = 10, TimeSpan? timeframe = null,
         Guid? userId = null, CancellationToken cancellationToken = default)
     {
         if (topCount is < 1 or > 100)
@@ -154,7 +154,7 @@ public class ShortUrlAnalyticsRepository(
 
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ShortUrl>> GetApproachingLimitAsync(double warningThreshold = 0.8,
+    public async Task<IEnumerable<ShortUrl>> GetApproachingLimitAsync(double warningThreshold = 0.8,
         int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
         if (warningThreshold is < 0.0 or > 1.0)
@@ -165,46 +165,4 @@ public class ShortUrlAnalyticsRepository(
             pageNumber, pageSize, cancellationToken);
     }
 
-
-    #region Helper Methods
-
-    /// <summary>
-    ///     Validates a short URL entity before database operations.
-    /// </summary>
-    /// <param name="shortUrl">The short URL to validate.</param>
-    /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
-    /// <exception cref="ValidationException">Thrown when validation fails.</exception>
-    /// <remarks>
-    ///     This method performs comprehensive validation including URL format,
-    ///     short code uniqueness, and business rule compliance.
-    /// </remarks>
-    private async Task ValidateShortUrlAsync(ShortUrl shortUrl, CancellationToken cancellationToken)
-    {
-        // Validate original URL format
-        if (!Uri.TryCreate(shortUrl.OriginalUrl, UriKind.Absolute, out _))
-            throw new ValidationException("Original URL format is invalid");
-
-        // Validate short code if provided
-        if (!string.IsNullOrEmpty(shortUrl.ShortCode))
-            if (shortUrl.ShortCode.Length < 3 || shortUrl.ShortCode.Length > 50)
-                throw new ValidationException("Short code must be between 3 and 50 characters");
-        // if (await ShortCodeExistsAsync(shortUrl.ShortCode, cancellationToken))
-        //     throw new ValidationException("Short code already exists");
-        // Validate click limit
-        if (shortUrl.ClickLimit < -1)
-            throw new ValidationException("Click limit must be -1 (unlimited) or a positive number");
-
-        // Validate expiration date
-        if (shortUrl.ExpiresAt.HasValue && shortUrl.ExpiresAt <= DateTime.UtcNow)
-            throw new ValidationException("Expiration date must be in the future");
-
-        // Validate owner information
-        if (shortUrl.OwnerType == enShortUrlOwnerType.User && !shortUrl.UserId.HasValue)
-            throw new ValidationException("User ID is required for user-owned URLs");
-
-        if (shortUrl.OwnerType == enShortUrlOwnerType.Organization && !shortUrl.OrganizationId.HasValue)
-            throw new ValidationException("Organization ID is required for organization-owned URLs");
-    }
-
-    #endregion
 }

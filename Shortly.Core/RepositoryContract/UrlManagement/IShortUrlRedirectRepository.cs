@@ -109,6 +109,21 @@ public interface IShortUrlRedirectRepository
     /// </remarks>
     Task<bool> VerifyPasswordAsync(long shortUrlId, string passwordHash, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Retrieves the original URL associated with a given short code if the provided password hash matches.
+    /// </summary>
+    /// <param name="shortCode"> The unique short code that identifies the shortened URL.</param>
+    /// <param name="passwordHash"> The hashed password to verify access to the shortened URL.</param>
+    /// <param name="cancellationToken"> A token to monitor for cancellation requests.</param>
+    /// <returns> The original URL if the short code and password hash match; otherwise, <c>null</c>.</returns>
+    /// <exception cref="ArgumentException"> Thrown when <paramref name="shortCode"/> or <paramref name="passwordHash"/> is null, empty, or whitespace. </exception>
+    /// <exception cref="DatabaseException"> Thrown when a database error occurs while verifying the password. </exception>
+    /// <remarks>
+    /// This method performs a case-sensitive comparison on both the short code and the password hash.
+    /// It uses AsNoTracking to improve performance since no entity tracking is required.
+    /// </remarks>
+    Task<string?> GetUrlIfPasswordCorrectAsync(string shortCode, string passwordHash,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Determines whether a short URL is valid (exists and not expired) based on its expiration date.

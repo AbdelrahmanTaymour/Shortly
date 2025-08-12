@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs;
 using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Core.Exceptions.ClientErrors;
@@ -10,14 +9,10 @@ namespace Shortly.Core.Services.UserManagement;
 
 /// <inheritdoc />
 /// <param name="adminRepository">Repository for administrative user operations</param>
-/// <param name="userRepository">Repository for standard user operations</param>
 /// <param name="orgRepository">Repository for organization-related operations</param>
-/// <param name="logger">Logger instance for the service</param>
 public class UserAdministrationService(
     IUserAdministrationRepository adminRepository,
-    IUserRepository userRepository,
-    IOrganizationRepository orgRepository,
-    ILogger<UserAdministrationService> logger) : IUserAdministrationService
+    IOrganizationRepository orgRepository) : IUserAdministrationService
 {
     /// <inheritdoc />
     public async Task<ForceUpdateUserResponse> ForceUpdateUserAsync(Guid userId, ForceUpdateUserRequest request)

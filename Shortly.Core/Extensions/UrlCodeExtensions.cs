@@ -24,33 +24,37 @@ public static class UrlCodeExtensions
     /// </summary>
     public static string GenerateCodeAsync(long id, int minLength = 6)
     {
-        var code = EncodeBase54(id, minLength);
+        // Add an offset so even the very first ID is large
+        const long offset = 100_000;
+        
+        // Mix ID with randomness for unpredictability
+        var rand = Random.Shared.Next(10_000, 99_999);
+        long value = (id + offset) * 100_000 + rand;
+        
+        // Convert to Base54
+        var code = EncodeBase54(value, minLength);
+        
         return code;
     }
 
     /// <summary>
     /// High-performance Base54 encoding (no confusing characters)
     /// </summary>
-    private static string EncodeBase54(long number, int minLength = 6)
+    private static string EncodeBase54(long value, int minLength = 6)
     {
-        if (number == 0) return new string(SafeCharacters[0], minLength);
-
-        var result = new StringBuilder();
-        var workingNumber = Math.Abs(number); // Handle negative numbers
-
-        while (workingNumber > 0)
+        var sb = new StringBuilder();
+        
+        while (value > 0)
         {
-            result.Insert(0, SafeCharacters[(int)(workingNumber % Base)]);
-            workingNumber /= Base;
+            sb.Insert(0, SafeCharacters[(int)(value % Base)]);
+            value /= Base;
         }
 
-        // TODO: Pad to minimum length for consistent URL appearance
-        // while (result.Length < minLength)
-        // {
-        //     result.Insert(0, SafeCharacters[0]);
-        // }
+        // Pad to ensure minimum length
+        while (sb.Length < minLength)
+            sb.Insert(0, SafeCharacters[0]);
 
-        return result.ToString();
+        return sb.ToString();
     }
 
     /// <summary>
@@ -96,7 +100,7 @@ public static class UrlCodeExtensions
                 _ => GenerateSecureRandomCode(minLength + 2) // Cryptographically secure
             };
 
-            if (!await repository.ShortCodeExistsAsync(code)) return code;
+            if (!await repository.IsShortCodeExistsAsync(code)) return code;
         }
 
         // Fallback: Use timestamp + random for guaranteed uniqueness

@@ -164,7 +164,7 @@ public class ShortUrlRepository(SQLServerDbContext dbContext, ILogger<ShortUrlRe
 
     
     /// <inheritdoc />
-    public async Task<bool> ShortCodeExistsAsync(string shortCode, CancellationToken cancellationToken = default)
+    public async Task<bool> IsShortCodeExistsAsync(string shortCode, CancellationToken cancellationToken = default)
     {
         try
         {

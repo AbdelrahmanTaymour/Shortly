@@ -134,6 +134,6 @@ public interface IShortUrlRepository
     /// <exception cref="DatabaseException">
     /// Thrown when an error occurs while checking for the existence of the short code.
     /// </exception>
-    Task<bool> ShortCodeExistsAsync(string shortCode, CancellationToken cancellationToken = default);
+    Task<bool> IsShortCodeExistsAsync(string shortCode, CancellationToken cancellationToken = default);
   
 }

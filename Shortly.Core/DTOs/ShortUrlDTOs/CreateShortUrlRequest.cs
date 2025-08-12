@@ -4,7 +4,7 @@ namespace Shortly.Core.DTOs.ShortUrlDTOs;
 
 public record CreateShortUrlRequest
 {
-    public string OriginalUrl { get; set; }
+    public required string OriginalUrl { get; set; }
     public string? CustomShortCode { get; set; }
     public int ClickLimit { get; set; } = -1; // -1 = unlimited
     public bool TrackingEnabled { get; set; } = true;

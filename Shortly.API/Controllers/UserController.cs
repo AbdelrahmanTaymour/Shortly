@@ -41,6 +41,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     /// </example>
     [HttpGet("by-Id/{userId:guid:required}", Name = "GetUserById")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     //[RequirePermission(enPermissions.ViewUsers)]
     [Time]
@@ -71,6 +72,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     [HttpGet("by-email/", Name = "GetUserByEmail")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     //[RequirePermission(enPermissions.ViewUsers)]
     [Time]
@@ -131,7 +133,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     /// Body: { "email": "user@example.com", "username": "johnsmith", "firstName": "John", "lastName": "Smith" }
     /// </example>
     [HttpPost(Name = "CreateNewUser")]
-    [ProducesResponseType(typeof(CreateUserResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CreateUserResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]

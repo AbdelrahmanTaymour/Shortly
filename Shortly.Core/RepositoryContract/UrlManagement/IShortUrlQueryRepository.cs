@@ -25,7 +25,7 @@ public interface IShortUrlQueryRepository
     /// Results are ordered by CreatedAt descending. Use this method for complex
     /// filtering scenarios that aren't covered by specific methods.
     /// </remarks>
-    Task<IReadOnlyList<ShortUrl>> SearchAsync(
+    Task<IEnumerable<ShortUrl>> SearchAsync(
         Expression<Func<ShortUrl, bool>> predicate,
         int pageNumber,
         int pageSize,
@@ -45,7 +45,7 @@ public interface IShortUrlQueryRepository
     /// </returns>
     /// <exception cref="ValidationException">Thrown when pagination parameters are invalid.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<IReadOnlyList<ShortUrl>> GetByUserIdAsync(
+    Task<IEnumerable<ShortUrl>> GetByUserIdAsync(
         Guid userId,
         int pageNumber,
         int pageSize,
@@ -65,7 +65,7 @@ public interface IShortUrlQueryRepository
     /// </returns>
     /// <exception cref="ValidationException">Thrown when pagination parameters are invalid.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<IReadOnlyList<ShortUrl>> GetByOrganizationIdAsync(
+    Task<IEnumerable<ShortUrl>> GetByOrganizationIdAsync(
         Guid organizationId,
         int pageNumber,
         int pageSize,
@@ -87,7 +87,7 @@ public interface IShortUrlQueryRepository
     /// <exception cref="ArgumentException">Thrown when the date range is invalid.</exception>
     /// <exception cref="ValidationException">Thrown when pagination parameters are invalid.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<IReadOnlyList<ShortUrl>> GetAnonymousUrlsByDateRangeAsync(
+    Task<IEnumerable<ShortUrl>> GetAnonymousUrlsByDateRangeAsync(
         DateTime startDate, 
         DateTime endDate,
         int pageNumber = 1, 
@@ -108,7 +108,7 @@ public interface IShortUrlQueryRepository
     /// </returns>
     /// <exception cref="ValidationException">Thrown when pagination parameters are invalid.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<IReadOnlyList<ShortUrl>> GetExpiredAsync(
+    Task<IEnumerable<ShortUrl>> GetExpiredAsync(
         DateTime nowUtc,
         int pageNumber,
         int pageSize,
@@ -128,7 +128,7 @@ public interface IShortUrlQueryRepository
     /// </returns>
     /// <exception cref="ValidationException">Thrown when pagination parameters are invalid.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<IReadOnlyList<ShortUrl>> GetPrivateLinksAsync(
+    Task<IEnumerable<ShortUrl>> GetPrivateLinksAsync(
         Guid userId,
         int pageNumber,
         int pageSize,
@@ -150,7 +150,7 @@ public interface IShortUrlQueryRepository
     /// <exception cref="ArgumentException">Thrown when the date range is invalid.</exception>
     /// <exception cref="ValidationException">Thrown when pagination parameters are invalid.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<IReadOnlyList<ShortUrl>> GetByDateRangeAsync(
+    Task<IEnumerable<ShortUrl>> GetByDateRangeAsync(
         DateTime startDate, 
         DateTime endDate,
         int pageNumber = 1, 
@@ -172,7 +172,7 @@ public interface IShortUrlQueryRepository
     /// Useful for identifying and consolidating duplicate URLs to improve management.
     /// Each group contains URLs with the same OriginalUrl.
     /// </remarks>
-    Task<IReadOnlyList<IGrouping<string, ShortUrl>>> GetDuplicateUrlsAsync(
+    Task<IEnumerable<IGrouping<string, ShortUrl>>> GetDuplicateUrlsAsync(
         Guid? userId = null,
         Guid? organizationId = null,
         CancellationToken cancellationToken = default);
@@ -194,7 +194,7 @@ public interface IShortUrlQueryRepository
     /// <remarks>
     /// Useful for identifying unused URLs that might be candidates for cleanup.
     /// </remarks>
-    Task<IReadOnlyList<ShortUrl>> GetUnusedUrlsAsync(
+    Task<IEnumerable<ShortUrl>> GetUnusedUrlsAsync(
         TimeSpan? olderThan = null,
         int pageNumber = 1,
         int pageSize = 50,

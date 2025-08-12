@@ -33,6 +33,11 @@ public static class ShortUrlMapper
         };
     }
 
+    public static IEnumerable<ShortUrlDto> MapToShortUrlDtos(this IEnumerable<ShortUrl> urls)
+    {
+        return urls.Select(MapToShortUrlDto);
+    }
+
     public static CreateShortUrlResponse MapToCreateShortUrlResponse(this ShortUrl url)
     {
         return new CreateShortUrlResponse
