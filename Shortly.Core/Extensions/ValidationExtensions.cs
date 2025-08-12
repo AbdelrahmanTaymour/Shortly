@@ -112,6 +112,25 @@ public static partial class ValidationExtensions
         return dateTime > DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// Check if the URL is valid 
+    /// </summary>
+    public static bool BeValidUrl(string? url)
+    {
+        if (string.IsNullOrEmpty(url))
+            return false;
+
+        try
+        {
+            var uri = new Uri(url);
+            return uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
 
     [GeneratedRegex(@"^[a-zA-Z\s\-'\.]+$", RegexOptions.Compiled)]
     private static partial Regex MyNameRegex();
