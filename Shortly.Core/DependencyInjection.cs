@@ -34,7 +34,16 @@ public static class DependencyInjection
         // Auth
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ITokenService, TokenService>();
-
+        
+        
+        // URL Management
+        services.AddScoped<IShortUrlsService, ShortUrlsService>();
+        services.AddScoped<IShortUrlRedirectService, ShortUrlRedirectService>();
+        services.AddScoped<IShortUrlQueryService, ShortUrlQueryService>();
+        services.AddScoped<IShortUrlAnalyticsService, ShortUrlAnalyticsService>();
+        services.AddScoped<IUrlBulkOperationsService, UrlBulkOperationsService>();
+        
+        
         // User Management
         services.AddScoped<IUserSecurityService, UserSecurityService>();
         services.AddScoped<IUserAdministrationService, UserAdministrationService>();
@@ -43,10 +52,11 @@ public static class DependencyInjection
         services.AddScoped<IUserQueryService, UserQueryService>();
         services.AddScoped<IUserUsageService, UserUsageService>();
         services.AddScoped<IUserAuditLogService, UserAuditLogService>();
+        
+        
 
         // Organization Management
 
-        services.AddScoped<IShortUrlsService, ShortUrlsService>();
 
 
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
