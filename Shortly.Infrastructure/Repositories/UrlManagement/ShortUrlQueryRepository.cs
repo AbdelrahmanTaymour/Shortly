@@ -14,9 +14,8 @@ public class ShortUrlQueryRepository(SQLServerDbContext dbContext, ILogger<Short
     : IShortUrlQueryRepository
 {
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ShortUrl>> SearchAsync(Expression<Func<ShortUrl, bool>> predicate, int pageNumber,
-        int pageSize,
-        CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ShortUrl>> SearchAsync(Expression<Func<ShortUrl, bool>> predicate, int pageNumber,
+        int pageSize, CancellationToken cancellationToken = default)
     {
         if (pageNumber < 1)
             throw new ValidationException("Page number must be greater than 0");
@@ -44,7 +43,7 @@ public class ShortUrlQueryRepository(SQLServerDbContext dbContext, ILogger<Short
 
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ShortUrl>> GetByUserIdAsync(Guid userId, int pageNumber, int pageSize,
+    public async Task<IEnumerable<ShortUrl>> GetByUserIdAsync(Guid userId, int pageNumber, int pageSize,
         CancellationToken cancellationToken = default)
     {
         return await SearchAsync(s => s.UserId == userId, pageNumber, pageSize, cancellationToken);
@@ -52,7 +51,7 @@ public class ShortUrlQueryRepository(SQLServerDbContext dbContext, ILogger<Short
 
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ShortUrl>> GetByOrganizationIdAsync(Guid organizationId, int pageNumber,
+    public async Task<IEnumerable<ShortUrl>> GetByOrganizationIdAsync(Guid organizationId, int pageNumber,
         int pageSize, CancellationToken cancellationToken = default)
     {
         return await SearchAsync(s => s.OrganizationId == organizationId, pageNumber, pageSize, cancellationToken);
@@ -60,7 +59,7 @@ public class ShortUrlQueryRepository(SQLServerDbContext dbContext, ILogger<Short
 
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ShortUrl>> GetAnonymousUrlsByDateRangeAsync(DateTime startDate, DateTime endDate,
+    public async Task<IEnumerable<ShortUrl>> GetAnonymousUrlsByDateRangeAsync(DateTime startDate, DateTime endDate,
         int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
         if (startDate > endDate)
@@ -74,7 +73,7 @@ public class ShortUrlQueryRepository(SQLServerDbContext dbContext, ILogger<Short
 
     
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ShortUrl>> GetExpiredAsync(DateTime nowUtc, int pageNumber, int pageSize,
+    public async Task<IEnumerable<ShortUrl>> GetExpiredAsync(DateTime nowUtc, int pageNumber, int pageSize,
         CancellationToken cancellationToken = default)
     {
         return await SearchAsync(s => s.ExpiresAt != null && s.ExpiresAt <= nowUtc, pageNumber, pageSize,
@@ -83,7 +82,7 @@ public class ShortUrlQueryRepository(SQLServerDbContext dbContext, ILogger<Short
 
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ShortUrl>> GetPrivateLinksAsync(Guid userId, int pageNumber, int pageSize,
+    public async Task<IEnumerable<ShortUrl>> GetPrivateLinksAsync(Guid userId, int pageNumber, int pageSize,
         CancellationToken cancellationToken = default)
     {
         return await SearchAsync(s => s.UserId == userId && s.IsPrivate, pageNumber, pageSize, cancellationToken);
@@ -91,7 +90,7 @@ public class ShortUrlQueryRepository(SQLServerDbContext dbContext, ILogger<Short
 
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ShortUrl>> GetByDateRangeAsync(DateTime startDate, DateTime endDate,
+    public async Task<IEnumerable<ShortUrl>> GetByDateRangeAsync(DateTime startDate, DateTime endDate,
         int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
         if (startDate > endDate)
@@ -103,7 +102,7 @@ public class ShortUrlQueryRepository(SQLServerDbContext dbContext, ILogger<Short
 
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<IGrouping<string, ShortUrl>>> GetDuplicateUrlsAsync(Guid? userId = null,
+    public async Task<IEnumerable<IGrouping<string, ShortUrl>>> GetDuplicateUrlsAsync(Guid? userId = null,
         Guid? organizationId = null, CancellationToken cancellationToken = default)
     {
         try
@@ -131,7 +130,7 @@ public class ShortUrlQueryRepository(SQLServerDbContext dbContext, ILogger<Short
 
     
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ShortUrl>> GetUnusedUrlsAsync(TimeSpan? olderThan = null,
+    public async Task<IEnumerable<ShortUrl>> GetUnusedUrlsAsync(TimeSpan? olderThan = null,
         int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
         Expression<Func<ShortUrl, bool>> predicate = s => s.TotalClicks == 0;
