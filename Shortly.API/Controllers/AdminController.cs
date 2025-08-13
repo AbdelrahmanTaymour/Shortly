@@ -19,7 +19,7 @@ namespace Shortly.API.Controllers;
 ///     All endpoints in this controller require appropriate administrative permissions.
 /// </remarks>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/admin")]
 public class AdminController(
     IUserQueryService queryService, 
     IUserAdministrationService adminService) : ControllerApiBase

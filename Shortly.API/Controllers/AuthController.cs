@@ -8,7 +8,7 @@ using Shortly.Core.ServiceContracts.Authentication;
 namespace Shortly.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController(IAuthenticationService authenticationService) : ControllerBase
 {
     private readonly IAuthenticationService _authenticationService = authenticationService;

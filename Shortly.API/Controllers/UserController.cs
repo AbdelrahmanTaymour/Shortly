@@ -18,7 +18,7 @@ namespace Shortly.API.Controllers;
 /// authentication, and authorization through permission-based access control.
 /// </remarks>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/user")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
 public class UserController(IUserService userService) : ControllerApiBase

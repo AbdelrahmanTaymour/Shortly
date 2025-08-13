@@ -130,6 +130,50 @@ public class TokenService(
         return await refreshTokenRepository.RevokeAllRefreshTokensAsync(userId, cancellationToken);
     }
 
+    public string GenerateRedirectToken(string shortCode, TimeSpan lifetime)
+    {
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_jwtSection["Key"] ?? throw new InvalidOperationException()));
+
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim("shortCode", shortCode),
+            new Claim("type", "redirect")
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: configuration["JwtSettings:Issuer"],
+            audience: configuration["JwtSettings:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.Add(lifetime), // very short lifetime
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public string? ValidateRedirectToken(string token)
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var principal = handler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSection["Key"] ?? throw new InvalidOperationException())),
+                ValidateIssuerSigningKey = true
+            }, out _);
+
+            return principal.Claims.FirstOrDefault(c => c.Type == "shortCode")?.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     #region Private Methods
 

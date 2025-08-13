@@ -17,7 +17,7 @@ namespace Shortly.API.Controllers;
 ///     All operations are subject to permission-based authorization and operate only on the current user's data.
 /// </remarks>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/profile")]
 [Produces("application/json")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]

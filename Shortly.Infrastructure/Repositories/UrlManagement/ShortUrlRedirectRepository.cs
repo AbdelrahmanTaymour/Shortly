@@ -52,9 +52,6 @@ public class ShortUrlRedirectRepository(SQLServerDbContext dbContext, ILogger<Sh
     /// <inheritdoc />
     public async Task<bool> IncrementClickCountAsync(string shortCode, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(shortCode))
-            throw new ArgumentException("Short code cannot be null or empty", nameof(shortCode));
-
         try
         {
             var now = DateTime.UtcNow;
@@ -82,9 +79,6 @@ public class ShortUrlRedirectRepository(SQLServerDbContext dbContext, ILogger<Sh
     /// <inheritdoc />
     public async Task<bool> ShortCodeExistsAsync(string shortCode, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(shortCode))
-            throw new ArgumentException("Short code cannot be null or empty", nameof(shortCode));
-
         try
         {
             var now = DateTime.UtcNow;
@@ -145,9 +139,6 @@ public class ShortUrlRedirectRepository(SQLServerDbContext dbContext, ILogger<Sh
     public async Task<bool> VerifyPasswordAsync(long shortUrlId, string passwordHash,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(passwordHash))
-            throw new ArgumentException("Password hash cannot be null or empty", nameof(passwordHash));
-
         try
         {
             return await dbContext.ShortUrls
@@ -162,10 +153,31 @@ public class ShortUrlRedirectRepository(SQLServerDbContext dbContext, ILogger<Sh
         }
     }
 
+    /// <inheritdoc />
+    public async Task<string?> GetUrlIfPasswordCorrectAsync(string shortCode, string passwordHash,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.ShortUrls
+                .AsNoTracking()
+                .Where(s => s.ShortCode == shortCode && s.PasswordHash == passwordHash)
+                .Select(s => s.OriginalUrl)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                "Error verifying password for ShortCode: {ShortCode}, Hash: {PasswordHash}",
+                shortCode, passwordHash);
+
+            throw new DatabaseException("Failed to verify password for the provided short code.", ex);
+        }
+    }
 
     /// <inheritdoc />
-    public async Task<bool> IsValidAsync(long shortUrlId, DateTime nowUtc,
-        CancellationToken cancellationToken = default)
+    public async Task<bool> IsValidAsync(long shortUrlId, DateTime nowUtc, CancellationToken cancellationToken = default)
     {
         try
         {
