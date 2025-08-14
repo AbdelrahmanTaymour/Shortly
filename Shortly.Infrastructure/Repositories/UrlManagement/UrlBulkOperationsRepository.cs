@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs;
@@ -201,23 +202,47 @@ public class UrlBulkOperationsRepository(
         CancellationToken cancellationToken = default)
     {
         var idsCount = shortUrlsMap.Count;
-        logger.LogInformation("Starting bulk expiration update for {IdsCount} short URLs", idsCount);
-        
+
+        if (idsCount == 0)
+            return new BulkOperationResult(0, 0, 0);
+
+        logger.LogInformation("Starting bulk short code update for {IdsCount} short URLs", idsCount);
+
         try
         {
-            var successCount = await dbContext.ShortUrls
-                .Where(s => shortUrlsMap.Keys.Contains(s.Id))
-                .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(s => s.ShortCode, s => shortUrlsMap[s.Id])
-                        .SetProperty(s => s.UpdatedAt, DateTime.UtcNow)
-                    , cancellationToken)
-                .ConfigureAwait(false);
-        
+            var validUpdates = shortUrlsMap
+                .Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
+                .ToList();
+
+            if (validUpdates.Count == 0)
+            {
+                logger.LogWarning("No valid short codes provided for update");
+                return new BulkOperationResult(idsCount, 0, idsCount);
+            }
+
+            var successCount = 0;
+            const int batchSize = 500; // SQL Server parameter limit considerations
+
+            for (int i = 0; i < validUpdates.Count; i += batchSize)
+            {
+                var batch = validUpdates.Skip(i).Take(batchSize).ToList();
+
+                var sql = BuildUpdateSql(batch, out var parameters);
+                var batchSuccessCount = await dbContext.Database.ExecuteSqlRawAsync(sql, parameters, cancellationToken);
+                successCount += batchSuccessCount;
+            }
+
             var skippedCount = idsCount - successCount;
+
             logger.LogInformation("Bulk short code update completed: {SuccessCount} updated, {SkippedCount} skipped",
                 successCount, skippedCount);
-        
+
             return new BulkOperationResult(idsCount, successCount, skippedCount);
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogWarning("Bulk short code update was cancelled");
+            throw;
         }
         catch (Exception ex)
         {
@@ -225,4 +250,54 @@ public class UrlBulkOperationsRepository(
             throw new DatabaseException("Bulk short code update failed", ex);
         }
     }
+    
+    /// <inheritdoc />
+    public async Task<HashSet<string?>> GetExistingCustomShortCodesAsync(IReadOnlyCollection<string> customCodes,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await dbContext.ShortUrls
+                .Where(su => customCodes.Contains(su.ShortCode))
+                .Select(su => su.ShortCode)
+                .ToHashSetAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to check existing custom short codes");
+            throw new DatabaseException("Failed to validate custom short codes", ex);
+        }
+    }
+    
+    
+    private static string BuildUpdateSql(List<KeyValuePair<long, string>> batch, out object[] parameters)
+    {
+        var sqlBuilder = new StringBuilder();
+        var paramList = new List<object>();
+    
+        sqlBuilder.AppendLine("UPDATE ShortUrls SET");
+        sqlBuilder.AppendLine("    ShortCode = CASE Id");
+    
+        var paramIndex = 0;
+        foreach (var kvp in batch)
+        {
+            sqlBuilder.AppendLine($"        WHEN @p{paramIndex} THEN @p{paramIndex + 1}");
+            paramList.Add(kvp.Key);
+            paramList.Add(kvp.Value);
+            paramIndex += 2;
+        }
+    
+        sqlBuilder.AppendLine("    END,");
+        sqlBuilder.AppendLine($"    UpdatedAt = @p{paramIndex}");
+        paramList.Add(DateTime.UtcNow);
+    
+        sqlBuilder.Append("WHERE Id IN (");
+        var idParams = batch.Select((_, idx) => $"@p{idx * 2}");
+        sqlBuilder.Append(string.Join(", ", idParams));
+        sqlBuilder.AppendLine(")");
+    
+        parameters = paramList.ToArray();
+        return sqlBuilder.ToString();
+    }
+    
 }

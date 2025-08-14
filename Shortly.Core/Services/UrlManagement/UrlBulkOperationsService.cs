@@ -16,60 +16,94 @@ namespace Shortly.Core.Services.UrlManagement;
 /// <param name="bulkOperationsRepository">Repository for performing bulk database operations.</param>
 /// <param name="shortUrlRepository">Repository for individual short URL operations.</param>
 /// <param name="logger">Logger instance for operation tracking and debugging.</param>
-public class UrlBulkOperationsService(IUrlBulkOperationsRepository bulkOperationsRepository, IShortUrlRepository shortUrlRepository, ILogger<UrlBulkOperationsService> logger) : IUrlBulkOperationsService
+public class UrlBulkOperationsService(IUrlBulkOperationsRepository bulkOperationsRepository, 
+    IShortUrlRepository shortUrlRepository, ILogger<UrlBulkOperationsService> logger) : IUrlBulkOperationsService
 {
     
     /// <inheritdoc />
-    public async Task<BulkCreateShortUrlResult> BulkCreateAsync(IReadOnlyCollection<CreateShortUrlRequest> shortUrlRequests, IAuthenticationContext authContext, CancellationToken cancellationToken = default)
+    public async Task<BulkCreateShortUrlResult> BulkCreateAsync(
+    IReadOnlyCollection<CreateShortUrlRequest> shortUrlRequests, 
+    IAuthenticationContext authContext, 
+    CancellationToken cancellationToken = default)
     {
         if (shortUrlRequests == null || shortUrlRequests.Count == 0)
             throw new ArgumentException("Short URLs collection cannot be null or empty", nameof(shortUrlRequests));
         
         logger.LogInformation("Starting bulk creation for {RequestCount} short URLs.", shortUrlRequests.Count);
-        var shortUrlsToInsert = new List<ShortUrl>(shortUrlRequests.Count);
+        
+        var shortUrlsToInsert = new List<ShortUrl>();
         var conflictMessages = new List<string>();
-        
-        
-        
-        // TODO: The conflict checking loop could be optimized by batch-checking all custom codes at once
-        foreach (var request in shortUrlRequests)
+        var processedRequests = 0;
+
+        try
         {
-            // Validate the custom code if provided
-            if (!string.IsNullOrWhiteSpace(request.CustomShortCode) &&
-                await IsCustomShortCodeExistAsync(request.CustomShortCode, cancellationToken))
+            // Batch check all custom codes at once instead of individual checks
+            var customCodes = shortUrlRequests
+                .Where(r => !string.IsNullOrWhiteSpace(r.CustomShortCode))
+                .Select(r => r.CustomShortCode!)
+                .Distinct()
+                .ToHashSet();
+
+            HashSet<string?> existingCodes = customCodes.Count > 0 
+                ? await bulkOperationsRepository.GetExistingCustomShortCodesAsync(customCodes, cancellationToken)
+                : [];
+
+            // Process requests with optimized conflict checking
+            foreach (var request in shortUrlRequests)
             {
-                conflictMessages.Add($"Conflict detected: Custom short code '{request.CustomShortCode}' for URL '{request.OriginalUrl}' is already in use.");
-                continue;
+                processedRequests++;
+                
+                // Check for custom code conflicts using pre-fetched data
+                if (!string.IsNullOrWhiteSpace(request.CustomShortCode) && 
+                    existingCodes.Contains(request.CustomShortCode))
+                {
+                    conflictMessages.Add($"Custom short code '{request.CustomShortCode}' for URL '{request.OriginalUrl}' already exists.");
+                    continue;
+                }
+                
+                var shortUrl = BuildShortUrlEntity(request, authContext);
+                shortUrlsToInsert.Add(shortUrl);
             }
             
-            // Build the entity
-            var shortUrl = BuildShortUrlEntity(request, authContext);
-            shortUrlsToInsert.Add(shortUrl);
+            logger.LogInformation("Prepared {InsertCount} short URLs for database insertion.", shortUrlsToInsert.Count);
+            
+            // Insert URLs into database
+            var createResult = shortUrlsToInsert.Count > 0 
+                ? await bulkOperationsRepository.BulkCreateAsync(shortUrlsToInsert, cancellationToken)
+                : new BulkOperationResult(0, 0, 0);
+            
+            // Generate and update short codes for URLs that need them
+            var shortCodeUpdateResult = new BulkOperationResult(0, 0, 0);
+            if (createResult.SuccessCount > 0)
+            {
+                var urlsNeedingCodes = AssignShortCodes(shortUrlsToInsert);
+                if (urlsNeedingCodes.Count > 0)
+                {
+                    logger.LogInformation("Updating short codes for {Count} URLs.", urlsNeedingCodes.Count);
+                    var idCodesMap = urlsNeedingCodes.ToDictionary(x => x.Id, x => x.ShortCode);
+                    shortCodeUpdateResult = await bulkOperationsRepository.BulkUpdateShortCodeAsync(idCodesMap, cancellationToken);
+                }
+            }
+            
+            var totalFailures = createResult.FailureCount + shortCodeUpdateResult.FailureCount + conflictMessages.Count;
+            
+            logger.LogInformation("Bulk creation completed. Total: {Total}, Success: {Success}, Failures: {Failures}, Conflicts: {Conflicts}", 
+                processedRequests, createResult.SuccessCount, totalFailures, conflictMessages.Count);
+            
+            return new BulkCreateShortUrlResult(
+                TotalRequests: shortUrlRequests.Count,
+                ProcessedCount: processedRequests,
+                SuccessCount: createResult.SuccessCount,
+                FailureCount: totalFailures,
+                ConflictCount: conflictMessages.Count,
+                ConflictMessages: conflictMessages
+            );
         }
-        
-        
-        logger.LogInformation("Inserting {InsertCount} short URLs into the database.", shortUrlsToInsert.Count);
-        var createResult = await bulkOperationsRepository.BulkCreateAsync(shortUrlsToInsert, cancellationToken);
-        
-        
-        logger.LogInformation("Generating short codes for URLs missing them.");
-        var urlsNeedingCodes = AssignShortCodes(shortUrlsToInsert);
-        if (urlsNeedingCodes.Count != 0)
+        catch (Exception ex)
         {
-            var idCodesMap = urlsNeedingCodes.ToDictionary(x => x.Id, x => x.ShortCode);
-            await bulkOperationsRepository.BulkUpdateShortCodeAsync(idCodesMap, cancellationToken);
+            logger.LogError(ex, "Critical error during bulk creation of {RequestCount} short URLs", shortUrlRequests.Count);
+            throw new InvalidOperationException($"Bulk creation failed after processing {processedRequests} requests", ex);
         }
-        
-        
-        return new BulkCreateShortUrlResult
-        (
-            TotalRequests: shortUrlRequests.Count,
-            ProcessedCount: createResult.TotalProcessed,
-            SuccessCount: createResult.SuccessCount,
-            FailureCount: createResult.FailureCount,
-            ConflictCount: conflictMessages.Count,
-            ConflictMessages: conflictMessages
-        );
     }
     
     

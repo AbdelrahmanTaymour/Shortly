@@ -121,4 +121,8 @@ public interface IUrlBulkOperationsRepository
     /// </remarks>
     Task<BulkOperationResult> BulkUpdateShortCodeAsync(IReadOnlyDictionary<long, string?> shortUrlsMap,
         CancellationToken cancellationToken = default);
+
+
+    Task<HashSet<string?>> GetExistingCustomShortCodesAsync(IReadOnlyCollection<string> customCodes,
+        CancellationToken cancellationToken);
 }
