@@ -132,7 +132,7 @@ public class SQLServerDbContext : DbContext
                 RoleName = "Viewer",
                 Description = "Read-only access to resources.",
                 DefaultPermissions = (long)(
-                    enPermissions.ViewBasicAnalytics |
+                    enPermissions.ReadAnalytics |
                     enPermissions.ViewOwnProfile |
                     enPermissions.ViewOwnUsageStats)
             },

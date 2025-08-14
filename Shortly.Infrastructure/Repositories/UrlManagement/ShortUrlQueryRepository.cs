@@ -115,11 +115,25 @@ public class ShortUrlQueryRepository(SQLServerDbContext dbContext, ILogger<Short
             if (organizationId.HasValue)
                 query = query.Where(s => s.OrganizationId == organizationId);
 
-            return await query
+            // Find OriginalUrls that have duplicates
+            var duplicateKeys = await query
                 .GroupBy(s => s.OriginalUrl)
                 .Where(g => g.Count() > 1)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
+                .Select(g => g.Key)
+                .ToListAsync(cancellationToken);
+
+            if (duplicateKeys.Count == 0)
+                return [];
+
+            // Fetch only duplicates
+            var duplicates = await query
+                .Where(s => duplicateKeys.Contains(s.OriginalUrl))
+                .ToListAsync(cancellationToken);
+
+            // Step 3: Group in memory and return
+            return duplicates
+                .GroupBy(s => s.OriginalUrl)
+                .ToList();
         }
         catch (Exception ex)
         {

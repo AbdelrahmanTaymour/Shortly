@@ -14,7 +14,7 @@ public static class ShortUrlMapper
         {
             Id = url.Id,
             OriginalUrl = url.OriginalUrl,
-            ShortCode = url.ShortCode  ?? throw new ArgumentNullException(nameof(url), "Parameter 'url' has a null ShortUrl."),
+            ShortCode = url.ShortCode  ?? string.Empty,
             OwnerType = url.OwnerType,
             UserId = url.UserId,
             OrganizationId = url.OrganizationId,

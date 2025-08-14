@@ -14,7 +14,7 @@ public class RoleConfiguration
         [enUserRole.Viewer] = new RoleConfiguration
         {
             Role = enUserRole.Viewer,
-            DefaultPermissions = enPermissions.ReadUrl | enPermissions.ViewBasicAnalytics,
+            DefaultPermissions = enPermissions.ReadUrl | enPermissions.ReadAnalytics,
             Description = "Read-only access to URLs and analytics. Typically for guests or clients."
         },
         [enUserRole.Member] = new RoleConfiguration

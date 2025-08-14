@@ -13,7 +13,7 @@ namespace Shortly.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("")]
-public class UrlRedirectController(IShortUrlRedirectService redirectService, ITokenService tokenService) : ControllerApiBase
+public class ShortUrlRedirectController(IShortUrlRedirectService redirectService, ITokenService tokenService) : ControllerApiBase
 {
     
     /// <summary>
