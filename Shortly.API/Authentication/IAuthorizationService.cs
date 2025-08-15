@@ -1,6 +1,6 @@
 using Shortly.Domain.Enums;
 
-namespace Shortly.Core.ServiceContracts;
+namespace Shortly.API.Authorization;
 
 public interface IAuthorizationService
 {
