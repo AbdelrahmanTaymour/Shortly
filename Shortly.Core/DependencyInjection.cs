@@ -1,9 +1,11 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.ServiceContracts.ClickTracking;
 using Shortly.Core.ServiceContracts.UrlManagement;
 using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Core.Services.Authentication;
+using Shortly.Core.Services.ClickTracking;
 using Shortly.Core.Services.UrlManagement;
 using Shortly.Core.Services.UserManagement;
 using Shortly.Core.Validators.Auth;
@@ -35,14 +37,12 @@ public static class DependencyInjection
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ITokenService, TokenService>();
         
-        
         // URL Management
         services.AddScoped<IShortUrlsService, ShortUrlsService>();
         services.AddScoped<IShortUrlRedirectService, ShortUrlRedirectService>();
         services.AddScoped<IShortUrlQueryService, ShortUrlQueryService>();
         services.AddScoped<IShortUrlAnalyticsService, ShortUrlAnalyticsService>();
         services.AddScoped<IUrlBulkOperationsService, UrlBulkOperationsService>();
-        
         
         // User Management
         services.AddScoped<IUserSecurityService, UserSecurityService>();
@@ -53,12 +53,15 @@ public static class DependencyInjection
         services.AddScoped<IUserUsageService, UserUsageService>();
         services.AddScoped<IUserAuditLogService, UserAuditLogService>();
         
+        // Click Event
+        services.AddScoped<IClickTrackingService, ClickTrackingService>();
+        services.AddScoped<ITrafficSourceAnalyzer, TrafficSourceAnalyzer>();
+        services.AddScoped<IUserAgentParsingService, UserAgentParsingService>();
         
-
         // Organization Management
 
-
-
+        
+        // Validations
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 
 

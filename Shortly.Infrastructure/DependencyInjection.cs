@@ -2,11 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.RepositoryContract;
+using Shortly.Core.RepositoryContract.ClickTracking;
 using Shortly.Core.RepositoryContract.UrlManagement;
 using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Infrastructure.DbContexts;
 using Shortly.Infrastructure.Repositories;
+using Shortly.Infrastructure.Repositories.ClickTracking;
 using Shortly.Infrastructure.Repositories.OrganizationManagement;
 using Shortly.Infrastructure.Repositories.UrlManagement;
 using Shortly.Infrastructure.Repositories.UserManagement;
@@ -49,6 +51,15 @@ public static class DependencyInjection
         services.AddScoped<IShortUrlQueryRepository, ShortUrlQueryRepository>();
         services.AddScoped<IShortUrlRedirectRepository, ShortUrlRedirectRepository>();
         services.AddScoped<IShortUrlAnalyticsRepository, ShortUrlAnalyticsRepository>();
+        
+        // Click Event
+        services.AddScoped<IClickEventRepository, ClickEventRepository>();
+        //services.AddHttpClient<IGeoLocationService, GeoLocationService>();
+        services.AddHttpClient<IGeoLocationService, GeoLocationService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+            client.DefaultRequestHeaders.Add("User-Agent", "Short.ly/1.0");
+        });
 
         // Organization Management
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
