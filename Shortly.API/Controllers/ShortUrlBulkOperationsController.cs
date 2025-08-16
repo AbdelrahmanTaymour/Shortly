@@ -67,7 +67,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     [ProducesResponseType(typeof(BulkCreateShortUrlResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.BulkCreateUrl)]
+    //[RequirePermission(enPermissions.BulkCreateUrl)]
     public async Task<IActionResult> BulkCreate([FromBody] BulkCreateShortUrlsRequest request, CancellationToken cancellationToken = default)
     {
         var authContext = contextProvider.GetCurrentContextAsync(HttpContext);
