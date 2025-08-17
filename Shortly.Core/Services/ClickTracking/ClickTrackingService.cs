@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Shortly.Core.Models;
 using Shortly.Core.RepositoryContract.ClickTracking;
+using Shortly.Core.ServiceContracts.Authentication;
 using Shortly.Core.ServiceContracts.ClickTracking;
 using Shortly.Core.ServiceContracts.UrlManagement;
 using Shortly.Domain.Entities;
@@ -39,17 +41,18 @@ public class ClickTrackingService (
     IGeoLocationService geoLocationService,
     IUserAgentParsingService userAgentParsingService,
     ITrafficSourceAnalyzer trafficSourceAnalyzer,
+    IAuthenticationContextProvider authenticationContext,
     ILogger<ClickTrackingService> logger
     ) : IClickTrackingService
 {
     
     /// <inheritdoc />
-    public async Task<ClickEvent> TrackClickAsync(long shortUrlId, ClickTrackingData trackingData, CancellationToken cancellationToken = default)
+    public async Task<ClickEvent> TrackClickAsync(long shortUrlId, ClickTrackingData trackingData)
     {
         try
         {
             var userAgentInfo = userAgentParsingService.ParseUserAgent(trackingData.UserAgent);
-            var geoInfo = await geoLocationService.GetLocationInfoAsync(trackingData.IpAddress, cancellationToken);
+            var geoInfo = await geoLocationService.GetLocationInfoAsync(trackingData.IpAddress);
 
             var trafficSourceInfo = trafficSourceAnalyzer.AnalyzeTrafficSource(trackingData.Referrer,
                 trackingData.UtmSource, trackingData.UtmMedium);
@@ -76,7 +79,7 @@ public class ClickTrackingService (
                 TrafficSource = trafficSourceInfo.TrafficSource
             };
 
-            var savedClickEvent = await clickEventRepository.CreateAsync(clickEvent, cancellationToken);
+            var savedClickEvent = await clickEventRepository.CreateAsync(clickEvent);
             logger.LogInformation("Click tracked successfully for ShortUrlId: {ShortUrlId}, ClickEventId: {ClickEventId}", shortUrlId, savedClickEvent.Id);
             return savedClickEvent;
         }
@@ -87,7 +90,7 @@ public class ClickTrackingService (
         }
     }
 
-    
+
     /// <inheritdoc />
     public async Task<ClickAnalytics> GetAnalyticsAsync(long shortUrlId, DateTime? startDate = null, DateTime? endDate = null,
         CancellationToken cancellationToken = default)

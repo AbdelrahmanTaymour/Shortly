@@ -23,12 +23,12 @@ namespace Shortly.Infrastructure.Repositories.ClickTracking;
 public class ClickEventRepository(SQLServerDbContext dbContext, ILogger<ClickEventRepository> logger) : IClickEventRepository
 {
     /// <inheritdoc/>
-    public async Task<ClickEvent> CreateAsync(ClickEvent clickEvent, CancellationToken cancellationToken = default)
+    public async Task<ClickEvent> CreateAsync(ClickEvent clickEvent)
     {
         try
         {
-            await dbContext.ClickEvents.AddAsync(clickEvent, cancellationToken).ConfigureAwait(false);
-            await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await dbContext.ClickEvents.AddAsync(clickEvent).ConfigureAwait(false);
+            await dbContext.SaveChangesAsync().ConfigureAwait(false);
             return clickEvent;
         }
         catch (Exception ex)

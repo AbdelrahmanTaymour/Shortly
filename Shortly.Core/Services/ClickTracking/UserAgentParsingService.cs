@@ -46,24 +46,29 @@ public class UserAgentParsingService : IUserAgentParsingService
     /// </remarks>
     private (string Name, string Version) ExtractBrowser(string userAgent)
     {
-        
-        if(userAgent.Contains("edg/"))
-            return ("Microsoft Edge", ExtractVersion(userAgent, "edg/"));
-        
-        if(userAgent.Contains("chrome/") && !userAgent.Contains("edg"))
-            return ("Chrome", ExtractVersion(userAgent, "chrome/"));
-        
-        if(userAgent.Contains("firefox/"))
-            return ("Firefox", ExtractVersion(userAgent, "firefox/"));
-        
-        if(userAgent.Contains("safari/") && !userAgent.Contains("chrome/"))
-            return ("Safari", ExtractVersion(userAgent, "version/"));
-        
-        if (userAgent.Contains("opr/") || userAgent.Contains("opera/"))
-            return ("Opera", ExtractVersion(userAgent, userAgent.Contains("opr/") ? "opr/" : "opera/"));
-        
+        if (string.IsNullOrEmpty(userAgent))
+            return ("Unknown", "Unknown");
+
+        var ua = userAgent.ToLowerInvariant();
+
+        if (ua.Contains("edg/"))
+            return ("Microsoft Edge", ExtractVersion(ua, "edg/"));
+    
+        if (ua.Contains("chrome/") && !ua.Contains("edg"))
+            return ("Chrome", ExtractVersion(ua, "chrome/"));
+    
+        if (ua.Contains("firefox/"))
+            return ("Firefox", ExtractVersion(ua, "firefox/"));
+    
+        if (ua.Contains("safari/") && !ua.Contains("chrome/"))
+            return ("Safari", ExtractVersion(ua, "version/"));
+    
+        if (ua.Contains("opr/") || ua.Contains("opera/"))
+            return ("Opera", ExtractVersion(ua, ua.Contains("opr/") ? "opr/" : "opera/"));
+    
         return ("Unknown", "Unknown");
     }
+
     
     
     /// <summary>

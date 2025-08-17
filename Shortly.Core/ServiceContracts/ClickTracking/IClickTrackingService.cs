@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Models;
 using Shortly.Domain.Entities;
 
@@ -9,10 +11,7 @@ public interface IClickTrackingService
     /// Tracks a click event for a shortened URL with comprehensive data enrichment and persistence.
     /// </summary>
     /// <param name="shortUrlId">The unique identifier of the shortened URL that was clicked</param>
-    /// <param name="trackingData">
-    /// Container object with raw tracking data including IP address, User-Agent, referrer, and UTM parameters
-    /// </param>
-    /// <param name="cancellationToken">Token to monitor for cancellation requests during the async operation</param>
+    /// <param name="trackingData"></param>
     /// <returns>
     /// The created and persisted <see cref="ClickEvent"/> with all enriched data populated
     /// </returns>
@@ -59,7 +58,7 @@ public interface IClickTrackingService
     /// // Returns enriched click event with geolocation, browser info, and traffic source
     /// </code>
     /// </example>
-    Task<ClickEvent> TrackClickAsync(long shortUrlId, ClickTrackingData trackingData, CancellationToken cancellationToken = default);
+    Task<ClickEvent> TrackClickAsync(long shortUrlId, ClickTrackingData trackingData);
     
     
     /// <summary>

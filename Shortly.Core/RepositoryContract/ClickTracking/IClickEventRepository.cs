@@ -12,10 +12,9 @@ public interface IClickEventRepository
     /// Creates a new click event record in the database.
     /// </summary>
     /// <param name="clickEvent">The click event entity to be created</param>
-    /// <param name="cancellationToken">Token to monitor for cancellation requests during the async operation</param>
     /// <returns>The created click event with any database-generated values populated</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails</exception>
-    Task<ClickEvent> CreateAsync(ClickEvent clickEvent, CancellationToken cancellationToken = default);
+    Task<ClickEvent> CreateAsync(ClickEvent clickEvent);
    
     
     /// <summary>

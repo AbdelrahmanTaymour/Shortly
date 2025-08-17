@@ -1,7 +1,12 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs.ShortUrlDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Extensions;
+using Shortly.Core.Models;
 using Shortly.Core.RepositoryContract.UrlManagement;
+using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.ServiceContracts.ClickTracking;
 using Shortly.Core.ServiceContracts.UrlManagement;
 
 namespace Shortly.Core.Services.UrlManagement;
@@ -16,10 +21,14 @@ namespace Shortly.Core.Services.UrlManagement;
 ///     to handle additional validation, error handling, and exception throwing for
 ///     redirect-related operations.
 /// </remarks>
-public class ShortUrlRedirectService(IShortUrlRedirectRepository redirectRepository) : IShortUrlRedirectService
+public class ShortUrlRedirectService(
+    IShortUrlRedirectRepository redirectRepository,
+    IClickTrackingService clickTrackingService,
+    IAuthenticationContextProvider authenticationContext,
+    ILogger<ShortUrlRedirectService> logger) : IShortUrlRedirectService
 {
     /// <inheritdoc />
-    public async Task<UrlRedirectResult> GetRedirectInfoByShortCodeAsync(string shortCode,
+    public async Task<UrlRedirectResult> GetRedirectInfoByShortCodeAsync(string shortCode, HttpContext context,
         CancellationToken cancellationToken = default)
     {
         var redirectInfo = await redirectRepository.GetRedirectInfoByShortCodeAsync(shortCode, cancellationToken);
@@ -29,7 +38,18 @@ public class ShortUrlRedirectService(IShortUrlRedirectRepository redirectReposit
         if (!redirectInfo.CanAccess())
             throw new ForbiddenException("This link is no longer active.");
 
-        // TODO: Track the click
+        
+        await IncrementClickCountAsync(shortCode, cancellationToken);
+    
+        var trackingData = ExtractTrackingDataAsync(context, cancellationToken);
+        try
+        {
+            await clickTrackingService.TrackClickAsync(redirectInfo.Id, trackingData);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to track click for redirect {RedirectId}", redirectInfo.Id);
+        }
 
         return new UrlRedirectResult
         (
@@ -38,6 +58,44 @@ public class ShortUrlRedirectService(IShortUrlRedirectRepository redirectReposit
         );
     }
 
+
+    public ClickTrackingData ExtractTrackingDataAsync(HttpContext context, CancellationToken cancellationToken = default)
+    {
+        // IP Address (use X-Forwarded-For if behind proxy)
+        var ipAddress = authenticationContext.GetClientIpAddress(context);
+
+        // Session ID (Anonymous Id)
+        var sessionId = authenticationContext.GetAnonymousId(context);
+
+        // User Agent
+        var userAgent = context.Request.Headers["User-Agent"].FirstOrDefault() ?? "Unknown";
+
+        // Referrer
+        var referrer = context.Request.Headers["Referer"].FirstOrDefault();
+
+        // UTM Parameters
+        context.Request.Query.TryGetValue("utm_source", out var utmSource);
+        context.Request.Query.TryGetValue("utm_medium", out var utmMedium);
+        context.Request.Query.TryGetValue("utm_campaign", out var utmCampaign);
+        context.Request.Query.TryGetValue("utm_term", out var utmTerm);
+        context.Request.Query.TryGetValue("utm_content", out var utmContent);
+
+        var data = new ClickTrackingData(
+            ipAddress,
+            sessionId,
+            userAgent,
+            referrer,
+            utmSource,
+            utmMedium,
+            utmCampaign,
+            utmTerm,
+            utmContent
+        );
+
+        logger.LogDebug("Extracted ClickTrackingData: {@Data}", data);
+
+        return data;
+    }
 
     /// <inheritdoc />
     public async Task<bool> IncrementClickCountAsync(string shortCode, CancellationToken cancellationToken = default)

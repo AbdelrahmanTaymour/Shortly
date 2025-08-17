@@ -26,7 +26,7 @@ public class ShortUrlRedirectController(IShortUrlRedirectService redirectService
     /// - 302 redirect to the password entry page for protected links.
     /// </returns>
     /// <response code="301">Permanent redirect to the original URL.</response>
-    /// <response code="302">Redirect to password entry page for protected URLs.</response>
+    /// <response code="302">Redirect to the password entry page for protected URLs.</response>
     /// <response code="404">No URL found for the specified short code.</response>
     /// <response code="500">Internal server error occurred.</response>
     [HttpGet("{shortCode}")]
@@ -36,7 +36,7 @@ public class ShortUrlRedirectController(IShortUrlRedirectService redirectService
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RedirectToUrl(string shortCode, CancellationToken cancellationToken)
     {
-        var result = await redirectService.GetRedirectInfoByShortCodeAsync(shortCode, cancellationToken);
+        var result = await redirectService.GetRedirectInfoByShortCodeAsync(shortCode, HttpContext, cancellationToken);
 
         if (result.RequiresPassword)
         {
@@ -44,7 +44,7 @@ public class ShortUrlRedirectController(IShortUrlRedirectService redirectService
             return RedirectToAction(nameof(ShowPasswordPage), new { token });
         }
 
-        return RedirectPermanent(result.OriginalUrl);
+        return Redirect(result.OriginalUrl);
     }
     
     
@@ -110,6 +110,6 @@ public class ShortUrlRedirectController(IShortUrlRedirectService redirectService
             return ShowPasswordPage(token, "Invalid password. Please try again.");
         }
 
-        return RedirectPermanent(originalUrl);
+        return Redirect(originalUrl);
     }
 }

@@ -165,7 +165,7 @@ public class Program
 
         // 5. Routing
         app.UseRouting();
-
+        
         // 6. Authentication
         app.UseAuthentication();
 

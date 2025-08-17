@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Http;
 using Shortly.Core.DTOs.ShortUrlDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.Models;
 
 namespace Shortly.Core.ServiceContracts.UrlManagement;
 
@@ -14,14 +16,16 @@ public interface IShortUrlRedirectService
     /// Retrieves redirect information for a short URL by its short code.
     /// </summary>
     /// <param name="shortCode">The unique short code associated with the shortened URL.</param>
+    /// <param name="context"></param>
     /// <param name="cancellationToken">Token to cancel the asynchronous operation.</param>
     /// <returns>
     /// An <see cref="UrlRedirectResult"/> containing the original URL and whether it requires a password.
     /// </returns>
     /// <exception cref="NotFoundException">Thrown when no short URL is found for the specified short code.</exception>
     /// <exception cref="ForbiddenException">Thrown when the short URL exists but is no longer active or accessible.</exception>
-    Task<UrlRedirectResult> GetRedirectInfoByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default);
+    Task<UrlRedirectResult> GetRedirectInfoByShortCodeAsync(string shortCode, HttpContext context, CancellationToken cancellationToken = default);
     
+    ClickTrackingData ExtractTrackingDataAsync(HttpContext context, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Increments the click count for the specified short code.
