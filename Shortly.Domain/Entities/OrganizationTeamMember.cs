@@ -8,6 +8,6 @@ public class OrganizationTeamMember
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
-    public OrganizationTeam? Team { get; set; }
-    public OrganizationMember? Member { get; set; }
+    public OrganizationTeam Team { get; set; }
+    public OrganizationMember Member { get; set; }
 }
