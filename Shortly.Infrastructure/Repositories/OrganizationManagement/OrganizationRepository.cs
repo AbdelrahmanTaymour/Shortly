@@ -7,9 +7,18 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.OrganizationManagement;
 
+/// <summary>
+/// Repository implementation for managing Organization entities in the database.
+/// Provides CRUD operations, querying capabilities, and organization-specific business logic
+/// with comprehensive error handling and logging.
+/// </summary>
+/// <param name="dbContext">The Entity Framework database context for SQL Server operations.</param>
+/// <param name="logger">The logger instance for recording operation details and errors.</param>
+
 public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<OrganizationRepository> logger)
     : IOrganizationRepository
 {
+    /// <inheritdoc/>
     public async Task<IEnumerable<Organization>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -26,6 +35,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<Organization?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -41,6 +51,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<Organization> AddAsync(Organization organization)
     {
         try
@@ -56,6 +67,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<bool> UpdateAsync(Organization organization, CancellationToken cancellationToken = default)
     {
         try
@@ -70,6 +82,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<bool> DeleteAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         try
@@ -90,6 +103,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<bool> ExistsAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         try
@@ -105,6 +119,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<Organization?> GetByIdWithMembersAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -122,6 +137,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<Organization?> GetByIdWithTeamsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -139,6 +155,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<Organization?> GetByIdWithFullDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -159,6 +176,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<IEnumerable<Organization>> GetByOwnerIdAsync(Guid ownerId, CancellationToken cancellationToken = default)
     {
         try
@@ -175,6 +193,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<IEnumerable<Organization>> GetActiveOrganizationsAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -191,6 +210,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<IEnumerable<Organization>> GetSubscribedOrganizationsAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -207,6 +227,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<Organization?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
         try
@@ -222,6 +243,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<bool> IsOwnerAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -238,6 +260,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<int> GetMemberCountAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         try
@@ -253,6 +276,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
 
+    /// <inheritdoc/>
     public async Task<IEnumerable<Organization>> SearchByNameAsync(string searchTerm, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         try
@@ -272,6 +296,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         }
     }
     
+    /// <inheritdoc/>
     public async Task<bool> RestoreAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -291,8 +316,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
             throw new DatabaseException("An error occurred while restoring the organization.", ex);
         }
     }
-
-
+    
     /// <inheritdoc/>
     public async Task<bool> IsUserOwnerOfAnyOrganization(Guid userId)
     {
