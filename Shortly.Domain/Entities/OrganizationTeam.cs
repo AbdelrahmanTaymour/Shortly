@@ -10,7 +10,7 @@ public class OrganizationTeam
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
-    public Organization? Organization { get; set; }
-    public OrganizationMember? TeamManager { get; set; }
-    public ICollection<OrganizationTeamMember>? TeamMembers { get; set; }
+    public Organization Organization { get; set; }
+    public OrganizationMember TeamManager { get; set; }
+    public ICollection<OrganizationTeamMember> TeamMembers { get; set; }
 }

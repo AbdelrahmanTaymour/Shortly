@@ -7,8 +7,16 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.OrganizationManagement;
 
+/// <summary>
+/// Repository implementation for managing OrganizationTeam entities in the database.
+/// Provides CRUD operations, team queries, and organization team-specific business logic
+/// with comprehensive error handling and logging.
+/// </summary>
+/// <param name="dbContext">The Entity Framework database context for SQL Server operations.</param>
+/// <param name="logger">The logger instance for recording operation details and errors.</param>
 public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<OrganizationMemberRepository> logger) : IOrganizationTeamRepository
 {
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationTeam>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -23,7 +31,8 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
             throw new DatabaseException("An error occurred while retrieving organization teams.", ex);
         }
     }
-
+    
+    /// <inheritdoc />
     public async Task<OrganizationTeam?> GetByIdAsync(Guid id)
     {
         try
@@ -38,6 +47,7 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
         }
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationTeam>> GetByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         try
@@ -56,6 +66,7 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
         }
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationTeam>> GetManagedTeamsAsync(Guid managerId, CancellationToken cancellationToken = default)
     {
         try
@@ -72,6 +83,7 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
         }
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationTeam?> GetByIdWithMembersAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
         try
@@ -91,6 +103,7 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
         }
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationTeam?> GetByNameAndOrganizationAsync(string name, Guid organizationId, CancellationToken cancellationToken = default)
     {
         try
@@ -107,6 +120,7 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
         }
     }
 
+    /// <inheritdoc />
     public async Task<int> GetTeamMemberCountAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
         try
@@ -122,6 +136,7 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
         }
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationTeam> AddAsync(OrganizationTeam entity, CancellationToken cancellationToken = default)
     {
         try
@@ -138,6 +153,7 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> UpdateAsync(OrganizationTeam entity, CancellationToken cancellationToken = default)
     {
         try
@@ -152,6 +168,7 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -168,6 +185,7 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -183,6 +201,7 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> IsTeamManagerAsync(Guid teamId, Guid managerId)
     {
         try
