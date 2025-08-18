@@ -17,12 +17,14 @@ public class Organization
     public DateTime UpdatedAt { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid OwnerId { get; set; }
+    
+    public bool IsDeleted => DeletedAt != null;
 
     // Navigation properties
     public User? Owner { get; set; }
-    public ICollection<OrganizationMember>? Members { get; set; }
-    public ICollection<OrganizationTeam>? Teams { get; set; }
-    public ICollection<ShortUrl>? ShortUrls { get; set; }
-    public ICollection<OrganizationAuditLog>? AuditLogs { get; set; }
+    public ICollection<OrganizationMember> Members { get; set; }
+    public ICollection<OrganizationTeam> Teams { get; set; }
+    public ICollection<ShortUrl> ShortUrls { get; set; }
+    public ICollection<OrganizationAuditLog> AuditLogs { get; set; }
 }
 // TODO: public Dictionary<string, object> Settings { get; set; } = new();

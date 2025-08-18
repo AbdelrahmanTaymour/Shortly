@@ -71,9 +71,9 @@ public class PlanConfiguration
             Price = 200,
             Limits = new Dictionary<enPlanLimits, int>
             {
-                [enPlanLimits.UrlsPerMonth] = 3000,
-                [enPlanLimits.QrCodesPerMonth] = 200,
-                [enPlanLimits.CustomShortCode] = 10
+                [enPlanLimits.UrlsPerMonth] = -1,
+                [enPlanLimits.QrCodesPerMonth] = -1,
+                [enPlanLimits.CustomShortCode] = -1
             }
         }
     };

@@ -15,8 +15,7 @@ public class OrganizationInvitation
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Computed Property:
-    public bool
-        IsExpired { get; set; } //HasComputedColumnSql("CASE WHEN [ExpiresAt] < GETUTCDATE() THEN 1 ELSE 0 END");
+    public bool IsExpired { get; set; } //HasComputedColumnSql("CASE WHEN [ExpiresAt] < GETUTCDATE() THEN 1 ELSE 0 END");
 
     // Navigation properties
     public Organization? Organization { get; set; }
