@@ -14,7 +14,6 @@ namespace Shortly.Infrastructure.Repositories.OrganizationManagement;
 /// </summary>
 /// <param name="dbContext">The Entity Framework database context for SQL Server operations.</param>
 /// <param name="logger">The logger instance for recording operation details and errors.</param>
-
 public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<OrganizationRepository> logger)
     : IOrganizationRepository
 {
