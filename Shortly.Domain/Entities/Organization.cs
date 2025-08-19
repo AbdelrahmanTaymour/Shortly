@@ -11,7 +11,7 @@ public class Organization
     public string? Website { get; set; }
     public string? LogoUrl { get; set; }
     public int MemberLimit { get; set; } = 10;
-    public bool IsActive { get; set; } = false;
+    public bool IsActive { get; set; } = true;
     public bool IsSubscribed { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; }
