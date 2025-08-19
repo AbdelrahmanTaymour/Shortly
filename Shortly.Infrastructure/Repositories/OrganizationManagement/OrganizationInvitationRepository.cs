@@ -8,8 +8,18 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.OrganizationManagement;
 
-public class OrganizationInvitationRepository(SQLServerDbContext dbContext, ILogger<OrganizationInvitationRepository> logger) : IOrganizationInvitationRepository
+/// <summary>
+/// Repository implementation for managing OrganizationInvitation entities in the database.
+/// Provides CRUD operations, invitation management, status updates, and organization invitation-specific business logic
+/// with comprehensive error handling and logging.
+/// </summary>
+/// <param name="dbContext">The Entity Framework database context for SQL Server operations.</param>
+/// <param name="logger">The logger instance for recording operation details and errors.</param>
+public class OrganizationInvitationRepository(
+    SQLServerDbContext dbContext,
+    ILogger<OrganizationInvitationRepository> logger) : IOrganizationInvitationRepository
 {
+    
     public async Task<IEnumerable<OrganizationInvitation>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         try
