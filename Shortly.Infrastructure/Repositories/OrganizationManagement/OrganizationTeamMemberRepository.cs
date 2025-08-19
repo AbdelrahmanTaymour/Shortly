@@ -7,10 +7,18 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.OrganizationManagement;
 
+/// <summary>
+/// Repository implementation for managing OrganizationTeamMember entities in the database.
+/// Provides CRUD operations, team membership queries, and organization team member-specific business logic
+/// with comprehensive error handling and logging.
+/// </summary>
+/// <param name="dbContext">The Entity Framework database context for SQL Server operations.</param>
+/// <param name="logger">The logger instance for recording operation details and errors.</param>
 public class OrganizationTeamMemberRepository(
     SQLServerDbContext dbContext,
     ILogger<OrganizationTeamMemberRepository> logger) : IOrganizationTeamMemberRepository
 {
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationTeamMember>> GetAllAsync(CancellationToken cancellationToken)
     {
         try
@@ -26,6 +34,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationTeamMember?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -41,6 +50,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationTeamMember>> GetByTeamIdAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
         try
@@ -59,6 +69,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationTeamMember>> GetByMemberIdAsync(Guid memberId, CancellationToken cancellationToken = default)
     {
         try
@@ -76,6 +87,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationTeamMember?> GetByTeamAndMemberAsync(Guid teamId, Guid memberId, CancellationToken cancellationToken = default)
     {
         try
@@ -92,6 +104,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationTeam>> GetTeamsByMemberAsync(Guid memberId, CancellationToken cancellationToken = default)
     {
         try
@@ -110,6 +123,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationTeamMember> AddAsync(OrganizationTeamMember entity, CancellationToken cancellationToken = default)
     {
         try
@@ -126,6 +140,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> UpdateAsync(OrganizationTeamMember entity, CancellationToken cancellationToken = default)
     {
         try
@@ -140,6 +155,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -156,6 +172,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> RemoveFromTeamAsync(Guid teamId, Guid memberId, CancellationToken cancellationToken = default)
     {
         try
@@ -172,6 +189,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -187,6 +205,7 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> IsMemberOfTeamAsync(Guid memberId, Guid teamId, CancellationToken cancellationToken = default)
     {
         try
