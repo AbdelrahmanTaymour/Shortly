@@ -54,7 +54,6 @@ public static class DependencyInjection
         
         // Click Event
         services.AddScoped<IClickEventRepository, ClickEventRepository>();
-        //services.AddHttpClient<IGeoLocationService, GeoLocationService>();
         services.AddHttpClient<IGeoLocationService, GeoLocationService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(10);
@@ -63,6 +62,10 @@ public static class DependencyInjection
 
         // Organization Management
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+        services.AddScoped<IOrganizationMemberRepository, OrganizationMemberRepository>();
+        services.AddScoped<IOrganizationTeamRepository, OrganizationTeamRepository>();
+        services.AddScoped<IOrganizationTeamMemberRepository, OrganizationTeamMemberRepository>();
+        services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
 
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         

@@ -1,0 +1,281 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Shortly.Core.Exceptions.ServerErrors;
+using Shortly.Core.RepositoryContract.OrganizationManagement;
+using Shortly.Domain.Entities;
+using Shortly.Domain.Enums;
+using Shortly.Infrastructure.DbContexts;
+
+namespace Shortly.Infrastructure.Repositories.OrganizationManagement;
+
+public class OrganizationInvitationRepository(SQLServerDbContext dbContext, ILogger<OrganizationInvitationRepository> logger) : IOrganizationInvitationRepository
+{
+    public async Task<IEnumerable<OrganizationInvitation>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving all organization invitations.");
+            throw new DatabaseException("An error occurred while retrieving organization invitations.", ex);
+        }
+    }
+
+    public async Task<OrganizationInvitation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving organization invitation with ID {InvitationId}.", id);
+            throw new DatabaseException("An error occurred while retrieving the organization invitation.", ex);
+        }
+    }
+
+    public async Task<IEnumerable<OrganizationInvitation>> GetByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .Include(i => i.InvitedByMember)
+                .Where(i => i.OrganizationId == organizationId)
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving invitations for organization {OrganizationId}.", organizationId);
+            throw new DatabaseException("An error occurred while retrieving organization invitations.", ex);
+        }
+    }
+
+    public async Task<OrganizationInvitation?> GetByTokenAsync(string token, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .Include(i => i.Organization)
+                .FirstOrDefaultAsync(i => i.InvitationToken == token, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving organization invitation with token {Token}.", token);
+            throw new DatabaseException("An error occurred while retrieving the invitation by token.", ex);
+        }
+    }
+
+    public async Task<OrganizationInvitation?> GetByEmailAndOrganizationAsync(string email, Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.InvitedUserEmail == email && i.OrganizationId == organizationId,
+                    cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving invitation for email {Email} in organization {OrganizationId}.", 
+                email, organizationId);
+            throw new DatabaseException("An error occurred while retrieving the invitation by email and organization.", ex);
+        }
+    }
+
+    public async Task<IEnumerable<OrganizationInvitation>> GetPendingInvitationsAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .Where(i => i.OrganizationId == organizationId && i.Status == enInvitationStatus.Pending)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving pending invitations for organization {OrganizationId}.", organizationId);
+            throw new DatabaseException("An error occurred while retrieving pending invitations.", ex);
+        }
+    }
+
+    public async Task<IEnumerable<OrganizationInvitation>> GetExpiredInvitationsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .Where(i => (i.Status == enInvitationStatus.Pending ||
+                             i.Status == enInvitationStatus.EmailSent) &&
+                            i.ExpiresAt < DateTime.UtcNow)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving expired invitations.");
+            throw new DatabaseException("An error occurred while retrieving expired invitations.", ex);
+        }
+    }
+
+    public async Task<OrganizationInvitation> AddAsync(OrganizationInvitation entity, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await dbContext.OrganizationInvitations.AddAsync(entity, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return entity;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error adding organization invitation for email {Email} to organization {OrganizationId}.", 
+                entity.InvitedUserEmail, entity.OrganizationId);
+            throw new DatabaseException("An error occurred while adding the organization invitation.", ex);
+        }
+    }
+
+    public async Task<bool> UpdateAsync(OrganizationInvitation entity, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            dbContext.OrganizationInvitations.Update(entity);
+            return await dbContext.SaveChangesAsync(cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error updating organization invitation with ID {InvitationId}.", entity.Id);
+            throw new DatabaseException("An error occurred while updating the organization invitation.", ex);
+        }
+    }
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .Where(i => i.Id == id)
+                .ExecuteDeleteAsync(cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting organization invitation with ID {InvitationId}.", id);
+            throw new DatabaseException("An error occurred while deleting the organization invitation.", ex);
+        }
+    }
+
+    public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .AnyAsync(i => i.Id == id, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking if organization invitation with ID {InvitationId} exists.", id);
+            throw new DatabaseException("An error occurred while checking invitation existence.", ex);
+        }
+    }
+
+    public async Task<bool> HasPendingInvitationAsync(string email, Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .AnyAsync(
+                    i => i.InvitedUserEmail == email &&
+                         i.OrganizationId == organizationId &&
+                         i.Status == enInvitationStatus.Pending &&
+                        !i.IsExpired
+                    , cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking for pending invitation for email {Email} in organization {OrganizationId}.", 
+                email, organizationId);
+            throw new DatabaseException("An error occurred while checking for pending invitations.", ex);
+        }
+    }
+
+    public async Task<bool> ExpireInvitationAsync(Guid invitationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .Where(i => i.Id == invitationId)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(i => i.IsExpired, true)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error expiring invitation with ID {InvitationId}.", invitationId);
+            throw new DatabaseException("An error occurred while expiring the invitation.", ex);
+        }
+    }
+
+    public async Task<bool> AcceptInvitationAsync(Guid invitationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .Where(i => i.Id == invitationId)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(i => i.Status, enInvitationStatus.Registered)
+                        .SetProperty(i => i.RegisteredAt, DateTime.UtcNow)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error accepting invitation with ID {InvitationId}.", invitationId);
+            throw new DatabaseException("An error occurred while accepting the invitation.", ex);
+        }
+    }
+
+    public async Task<bool> RejectInvitationAsync(Guid invitationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .Where(i => i.Id == invitationId)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(i => i.Status, enInvitationStatus.Rejected)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error rejecting invitation with ID {InvitationId}.", invitationId);
+            throw new DatabaseException("An error occurred while rejecting the invitation.", ex);
+        }
+    }
+
+    public async Task<bool> CleanupExpiredInvitationsAsync()
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .Where(i => i.Status == enInvitationStatus.Pending && i.ExpiresAt < DateTime.UtcNow)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(i => i.IsExpired, true)) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error cleaning up expired invitations.");
+            throw new DatabaseException("An error occurred while cleaning up expired invitations.", ex);
+        }
+    }
+}
