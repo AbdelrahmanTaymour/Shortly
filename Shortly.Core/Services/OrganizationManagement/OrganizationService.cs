@@ -9,17 +9,28 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Core.Services.OrganizationManagement;
 
+/// <summary>
+/// Service implementation for managing organizations and their lifecycle operations.
+/// Provides business logic for organization CRUD operations, ownership management, member access control,
+/// activation/deactivation workflows, and organization search functionality with comprehensive validation and logging.
+/// </summary>
+/// <param name="organizationRepository">The repository for organization data operations.</param>
+/// <param name="memberRepository">The repository for organization member data operations.</param>
+/// <param name="userService">The service for user-related operations and validation.</param>
+/// <param name="logger">The logger instance for recording operation details and errors.</param>
 public class OrganizationService(
     IOrganizationRepository organizationRepository,
     IOrganizationMemberRepository memberRepository,
     IUserService userService,
     ILogger<OrganizationService> logger) : IOrganizationService
 {
+    /// <inheritdoc />
     public async Task<IEnumerable<Organization>> GetAllAsync(int page = 1, int pageSize = 50,CancellationToken cancellationToken = default)
     {
         return await organizationRepository.GetAllAsync(page, pageSize, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<Organization?> GetOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var organization = await organizationRepository.GetByIdAsync(organizationId, cancellationToken);
@@ -29,6 +40,7 @@ public class OrganizationService(
         return organization;
     }
 
+    /// <inheritdoc />
     public async Task<Organization?> GetOrganizationWithDetailsAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var organization = await organizationRepository.GetByIdWithFullDetailsAsync(organizationId, cancellationToken);
@@ -38,11 +50,13 @@ public class OrganizationService(
         return organization;
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<Organization>> GetUserOrganizationsAsync(Guid ownerId, CancellationToken cancellationToken = default)
     {
         return await organizationRepository.GetByOwnerIdAsync(ownerId, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<Organization> CreateOrganizationAsync(CreateOrganizationDto dto)
     {
         var userExists = await userService.ExistsAsync(dto.OwnerId);
@@ -75,6 +89,7 @@ public class OrganizationService(
         return createdOrg;
     }
 
+    /// <inheritdoc />
     public async Task<Organization> UpdateOrganizationAsync(Guid organizationId, UpdateOrganizationDto dto, CancellationToken cancellationToken = default)
     {
         var organization = await organizationRepository.GetByIdAsync(organizationId, cancellationToken);
@@ -92,6 +107,7 @@ public class OrganizationService(
         return organization;
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeleteOrganizationAsync(Guid organizationId, Guid requestingUserId, CancellationToken cancellationToken = default)
     {
         var isOwner = await organizationRepository.IsOwnerAsync(organizationId, requestingUserId, cancellationToken);
@@ -103,6 +119,7 @@ public class OrganizationService(
         return succeed;
     }
 
+    /// <inheritdoc />
     public async Task<bool> ActivateOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var isActivated = await organizationRepository.ActivateOrganizationAsync(organizationId, cancellationToken);
@@ -113,6 +130,7 @@ public class OrganizationService(
         return isActivated;
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeactivateOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var isDeactivated = await organizationRepository.DeactivateOrganizationAsync(organizationId, cancellationToken);
@@ -122,6 +140,7 @@ public class OrganizationService(
         return isDeactivated;
     }
 
+    /// <inheritdoc />
     public async Task<bool> TransferOwnershipAsync(Guid organizationId, Guid currentOwnerId, Guid newOwnerId, CancellationToken cancellationToken = default)
     {
         var isNewOwnerMember = await memberRepository.IsMemberOfOrganizationAsync(newOwnerId, organizationId, cancellationToken);
@@ -135,11 +154,13 @@ public class OrganizationService(
         return transferred;
     }
 
+    /// <inheritdoc />
     public async Task<bool> CanUserAccessOrganizationAsync(Guid userId, Guid organizationId, CancellationToken cancellationToken = default)
     {
         return await memberRepository.IsMemberOfOrganizationAsync(userId, organizationId, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<Organization>> SearchOrganizationsAsync(string searchTerm, int page = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
         return await organizationRepository.SearchByNameAsync(searchTerm, page, pageSize, cancellationToken);
