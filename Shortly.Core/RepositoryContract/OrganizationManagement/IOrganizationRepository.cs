@@ -13,19 +13,21 @@ public interface IOrganizationRepository
     /// <summary>
     /// Retrieves all non-deleted organizations from the database.
     /// </summary>
+    /// <param name="page">The page number for pagination (starting from 1).</param>
+    /// <param name="pageSize">The number of organizations per page.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A collection of all active organizations.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<IEnumerable<Organization>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<Organization>> GetAllAsync(int page = 1, int pageSize = 50, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves an organization by its unique identifier.
     /// </summary>
-    /// <param name="userId">The unique identifier of the organization.</param>
+    /// <param name="id">The unique identifier of the organization.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>The organization if found; otherwise, null.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<Organization?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Adds a new organization to the database.
@@ -42,7 +44,7 @@ public interface IOrganizationRepository
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>True if the update was successful; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<bool> UpdateAsync(Organization organization, CancellationToken cancellationToken = default);
+    Task<Organization> UpdateAsync(Organization organization, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Soft deletes an organization by setting its DeletedAt timestamp and IsActive status.
@@ -152,7 +154,19 @@ public interface IOrganizationRepository
     /// <returns>A paginated collection of organizations matching the search term.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
     Task<IEnumerable<Organization>> SearchByNameAsync(string searchTerm, int page = 0, int pageSize = 50, CancellationToken cancellationToken = default);
-   
+
+    /// <summary>
+    /// Transfers an organization's ownership from the current owner to another.
+    /// </summary>
+    /// <param name="organizationId">The unique identifier of the organization.</param>
+    /// <param name="currentOwnerId">The unique identifier of the current owner.</param>
+    /// <param name="newOwnerId">The unique identifier of the new owner.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+    /// <returns>True if the transferring was successful; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
+    Task<bool> TransferOwnershipAsync(Guid organizationId, Guid currentOwnerId, Guid newOwnerId,
+        CancellationToken cancellationToken = default);
+    
     /// <summary>
     /// Restores a soft-deleted organization by clearing its DeletedAt timestamp and setting it as active.
     /// </summary>
@@ -161,6 +175,25 @@ public interface IOrganizationRepository
     /// <returns>True if the restoration was successful; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
     Task<bool> RestoreAsync(Guid id, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Activate an organization by updating its IsActive to True and setting the activation timestamp.
+    /// </summary>
+    /// <param name="organizationId">The unique identifier of the organization to activate.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+    /// <returns>True if the organization was successfully activated; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
+    Task<bool> ActivateOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default);
+    
+    
+    /// <summary>
+    /// Deactivate an organization by updating its IsActive to False and setting the deactivation timestamp.
+    /// </summary>
+    /// <param name="organizationId">The unique identifier of the organization to deactivate.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+    /// <returns>True if the organization was successfully deactivated; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
+    Task<bool> DeactivateOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Determines whether the specified user is the owner of any organization.

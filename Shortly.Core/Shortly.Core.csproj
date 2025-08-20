@@ -20,7 +20,6 @@
 
     <ItemGroup>
         <Folder Include="DTOs\AnalyticsDto\"/>
-        <Folder Include="Services\OrganizationManagement\" />
     </ItemGroup>
 
 </Project>

@@ -18,13 +18,16 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
     : IOrganizationRepository
 {
     /// <inheritdoc/>
-    public async Task<IEnumerable<Organization>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Organization>> GetAllAsync(int page = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
         try
         {
             return await dbContext.Organizations
                 .AsNoTracking()
                 .Where(o => o.DeletedAt == null)
+                .OrderBy(o => o.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -35,17 +38,16 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
     }
 
     /// <inheritdoc/>
-    public async Task<Organization?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
             return await dbContext.Organizations
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.Id == userId, cancellationToken);
+                .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving organization with ID {OrganizationId}.", userId);
+            logger.LogError(ex, "Error retrieving organization with ID {OrganizationId}.", id);
             throw new DatabaseException("An error occurred while retrieving the organization.", ex);
         }
     }
@@ -67,12 +69,13 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
     }
 
     /// <inheritdoc/>
-    public async Task<bool> UpdateAsync(Organization organization, CancellationToken cancellationToken = default)
+    public async Task<Organization> UpdateAsync(Organization organization, CancellationToken cancellationToken = default)
     {
         try
         {
             dbContext.Organizations.Update(organization);
-            return await dbContext.SaveChangesAsync(cancellationToken) > 0;
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return organization;
         }
         catch (Exception ex)
         {
@@ -294,7 +297,28 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
             throw new DatabaseException("An error occurred while searching organizations.", ex);
         }
     }
-    
+
+    /// <inheritdoc/>
+    public async Task<bool> TransferOwnershipAsync(Guid organizationId, Guid currentOwnerId, Guid newOwnerId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Organizations
+                .AsNoTracking()
+                .Where(o => o.Id == organizationId && o.OwnerId == currentOwnerId && o.DeletedAt == null)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(o => o.OwnerId, newOwnerId)
+                        .SetProperty(o => o.UpdatedAt, DateTime.UtcNow)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error transferring organization's ownership with ID {OrganizationId}.", organizationId);
+            throw new DatabaseException("An error occurred while transferring organization's ownership.", ex);
+        }
+    }
+
     /// <inheritdoc/>
     public async Task<bool> RestoreAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -315,7 +339,47 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
             throw new DatabaseException("An error occurred while restoring the organization.", ex);
         }
     }
-    
+
+    /// <inheritdoc/>
+    public async Task<bool> ActivateOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Organizations
+                .AsNoTracking()
+                .Where(o => o.Id == organizationId && o.DeletedAt == null && !o.IsActive)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(o => o.IsActive, true)
+                        .SetProperty(o => o.UpdatedAt, DateTime.UtcNow)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error activating the organization with ID {organizationId}.", organizationId);
+            throw new DatabaseException("An error occurred while activating the organization.", ex);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> DeactivateOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Organizations
+                .AsNoTracking()
+                .Where(o => o.Id == organizationId && o.DeletedAt == null && o.IsActive)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(o => o.IsActive, false)
+                        .SetProperty(o => o.UpdatedAt, DateTime.UtcNow)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deactivating the organization with ID {organizationId}.", organizationId);
+            throw new DatabaseException("An error occurred while deactivating the organization.", ex);
+        }
+    }
+
     /// <inheritdoc/>
     public async Task<bool> IsUserOwnerOfAnyOrganization(Guid userId)
     {
