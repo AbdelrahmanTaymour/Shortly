@@ -8,12 +8,18 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Core.Services.OrganizationManagement;
 
+/// <summary>
+/// Provides operations for managing organization invitations,
+/// including creation, retrieval, acceptance, rejection, cancellation,
+/// resending, cleanup, and validation.
+/// </summary>
 public class OrganizationInvitationService(
     IOrganizationInvitationRepository invitationRepository,
     IOrganizationRepository organizationRepository,
     IOrganizationMemberRepository memberRepository,
     ILogger<OrganizationInvitationService> logger) : IOrganizationInvitationService
 {
+    /// <inheritdoc />
     public async Task<OrganizationInvitation> CreateInvitationAsync(Guid organizationId, InviteMemberDto dto, CancellationToken cancellationToken = default)
     {
         // Check if an organization exists and has capacity
@@ -49,6 +55,7 @@ public class OrganizationInvitationService(
         return created;
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationInvitation?> GetInvitationByTokenAsync(string token, CancellationToken cancellationToken = default)
     {
         var invitation = await invitationRepository.GetByTokenAsync(token, cancellationToken);
@@ -58,11 +65,13 @@ public class OrganizationInvitationService(
         return invitation;
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationInvitation>> GetOrganizationInvitationsAsync(Guid organizationId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         return await invitationRepository.GetByOrganizationIdAsync(organizationId, page, pageSize, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<bool> AcceptInvitationAsync(string token, Guid userId, CancellationToken cancellationToken = default)
     {
         var invitation = await invitationRepository.GetByTokenAsync(token, cancellationToken);
@@ -86,6 +95,7 @@ public class OrganizationInvitationService(
         return true;
     }
 
+    /// <inheritdoc />
     public async Task<bool> RejectInvitationAsync(string token, CancellationToken cancellationToken = default)
     {
         var invitation = await invitationRepository.GetByTokenAsync(token, cancellationToken);
@@ -99,6 +109,7 @@ public class OrganizationInvitationService(
         return await invitationRepository.RejectInvitationAsync(invitation.Id, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<bool> CancelInvitationAsync(Guid invitationId, Guid requestingUserId, CancellationToken cancellationToken = default)
     {
         var invitation = await invitationRepository.GetByIdAsync(invitationId, cancellationToken);
@@ -111,6 +122,7 @@ public class OrganizationInvitationService(
         return await invitationRepository.DeleteAsync(invitationId, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<bool> ResendInvitationAsync(Guid invitationId, Guid requestingUserId, CancellationToken cancellationToken = default)
     {
         var invitation = await invitationRepository.GetByIdAsync(invitationId, cancellationToken);
@@ -125,11 +137,13 @@ public class OrganizationInvitationService(
         return await invitationRepository.UpdateAsync(invitation, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<bool> CleanupExpiredInvitationsAsync()
     {
         return await invitationRepository.CleanupExpiredInvitationsAsync();
     }
 
+    /// <inheritdoc />
     public async Task<bool> ValidateInvitationTokenAsync(string token, CancellationToken cancellationToken = default)
     {
         var invitation = await invitationRepository.GetByTokenAsync(token, cancellationToken);
@@ -141,6 +155,10 @@ public class OrganizationInvitationService(
     }
     
     
+    /// <summary>
+    /// Generates a unique invitation token using a combination of a GUID and current timestamp.
+    /// </summary>
+    /// <returns>A unique string representing the invitation token.</returns>
     private string GenerateInvitationToken()
     {
         return Guid.NewGuid().ToString("N")[..16] + DateTime.UtcNow.Ticks.ToString("X");
