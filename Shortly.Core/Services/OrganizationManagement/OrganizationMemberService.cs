@@ -7,31 +7,42 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Core.Services.OrganizationManagement;
 
+/// <summary>
+/// Service for managing organization members, including adding, removing, and updating member roles and permissions.
+/// </summary>
+/// <param name="memberRepository">Repository for organization member data operations.</param>
+/// <param name="organizationRepository">Repository for organization data operations.</param>
+/// <param name="logger">Logger for recording service operations and events.</param>
 public class OrganizationMemberService(
     IOrganizationMemberRepository memberRepository,
     IOrganizationRepository organizationRepository,
     ILogger<OrganizationMemberService> logger) : IOrganizationMemberService
 {
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationMember>> GetAllMembersAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         return await memberRepository.GetAllAsync(page, pageSize, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationMember>> GetOrganizationMembersAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         return await memberRepository.GetByOrganizationIdAsync(organizationId, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationMember>> GetUserMembershipsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await memberRepository.GetByUserIdAsync(userId, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationMember?> GetMembershipAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken = default)
     {
         return await memberRepository.GetByOrganizationAndUserAsync(organizationId, userId, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationMember> AddMemberAsync(Guid organizationId, Guid userId, enUserRole roleId, Guid invitedBy, CancellationToken cancellationToken = default)
     {
         // Validate organization exists and has capacity
@@ -65,8 +76,8 @@ public class OrganizationMemberService(
         return created;
     }
 
-    public async Task<bool> RemoveMemberAsync(Guid organizationId, Guid userId, Guid requestingUserId,
-        CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    public async Task<bool> RemoveMemberAsync(Guid organizationId, Guid userId, Guid requestingUserId, CancellationToken cancellationToken = default)
     {
         // Don't allow removing the owner
         var isOwner = await organizationRepository.IsOwnerAsync(organizationId, userId, cancellationToken);
@@ -79,6 +90,7 @@ public class OrganizationMemberService(
         return removed;
     }
 
+    /// <inheritdoc />
     public async Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, enUserRole newRoleId, CancellationToken cancellationToken = default)
     {
         var updated = await memberRepository.UpdateMemberRoleAsync(organizationId, userId, newRoleId, cancellationToken);
@@ -89,6 +101,7 @@ public class OrganizationMemberService(
         return updated;
     }
 
+    /// <inheritdoc />
     public async Task<bool> UpdateMemberPermissionsAsync(Guid organizationId, Guid userId, enPermissions permissions, CancellationToken cancellationToken = default)
     {
         var updated = await memberRepository.UpdateMemberPermissionsAsync(organizationId, userId, permissions, cancellationToken);
@@ -99,6 +112,7 @@ public class OrganizationMemberService(
         return updated;
     }
 
+    /// <inheritdoc />
     public async Task<bool> IsMemberAsync(Guid userId, Guid organizationId, CancellationToken cancellationToken = default)
     {
         return await memberRepository.IsMemberOfOrganizationAsync(userId, organizationId, cancellationToken);
