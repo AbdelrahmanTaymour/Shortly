@@ -202,19 +202,38 @@ public class OrganizationTeamRepository(SQLServerDbContext dbContext, ILogger<Or
     }
 
     /// <inheritdoc />
-    public async Task<bool> IsTeamManagerAsync(Guid teamId, Guid managerId)
+    public async Task<bool> IsTeamManagerAsync(Guid teamId, Guid managerId, CancellationToken cancellationToken = default)
     {
         try
         {
             return await dbContext.OrganizationTeams
                 .AsNoTracking()
-                .AnyAsync(t => t.Id == teamId && t.TeamManagerId == managerId);
+                .AnyAsync(t => t.Id == teamId && t.TeamManagerId == managerId,
+                    cancellationToken);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error checking if user {ManagerId} is manager of team {TeamId}.", 
                 managerId, teamId);
             throw new DatabaseException("An error occurred while checking team management.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> IsTeamNameExistAsync(string name, Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeams
+                .AsNoTracking()
+                .AnyAsync(t => t.Name == name && t.OrganizationId == organizationId,
+                    cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking if team name {name} in organization with ID {organizationId} already taken.", 
+                name, organizationId);
+            throw new DatabaseException("An error occurred while checking if team name.", ex);
         }
     }
 }

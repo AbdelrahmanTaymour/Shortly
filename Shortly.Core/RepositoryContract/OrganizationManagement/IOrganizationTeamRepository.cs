@@ -112,7 +112,18 @@ public interface IOrganizationTeamRepository
     /// </summary>
     /// <param name="teamId">The unique identifier of the team.</param>
     /// <param name="managerId">The unique identifier of the potential manager.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>True if the user is the team manager; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<bool> IsTeamManagerAsync(Guid teamId, Guid managerId);
+    Task<bool> IsTeamManagerAsync(Guid teamId, Guid managerId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Checks if the name of the team already taken within a specific organization.
+    /// </summary>
+    /// <param name="name">The name of the team to retrieve.</param>
+    /// <param name="organizationId">The unique identifier of the organization.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+    /// <returns>True if the user is the team name exists; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
+    Task<bool> IsTeamNameExistAsync(string name, Guid organizationId, CancellationToken cancellationToken = default);
 }
