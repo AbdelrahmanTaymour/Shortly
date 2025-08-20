@@ -50,7 +50,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
-    public async Task<IEnumerable<OrganizationInvitation>> GetByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrganizationInvitation>> GetByOrganizationIdAsync(Guid organizationId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -58,6 +58,8 @@ public class OrganizationInvitationRepository(
                 .AsNoTracking()
                 .Include(i => i.InvitedByMember)
                 .Where(i => i.OrganizationId == organizationId)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync(cancellationToken);
         }

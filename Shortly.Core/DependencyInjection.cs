@@ -2,10 +2,12 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.ServiceContracts.Authentication;
 using Shortly.Core.ServiceContracts.ClickTracking;
+using Shortly.Core.ServiceContracts.OrganizationManagement;
 using Shortly.Core.ServiceContracts.UrlManagement;
 using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Core.Services.Authentication;
 using Shortly.Core.Services.ClickTracking;
+using Shortly.Core.Services.OrganizationManagement;
 using Shortly.Core.Services.UrlManagement;
 using Shortly.Core.Services.UserManagement;
 using Shortly.Core.Validators.Auth;
@@ -59,7 +61,10 @@ public static class DependencyInjection
         services.AddScoped<IUserAgentParsingService, UserAgentParsingService>();
         
         // Organization Management
-
+        services.AddScoped<IOrganizationService, OrganizationService>();
+        services.AddScoped<IOrganizationMemberService, OrganizationMemberService>();
+        services.AddScoped<IOrganizationTeamService, OrganizationTeamService>();
+        services.AddScoped<IOrganizationInvitationService, OrganizationInvitationService>();
         
         // Validations
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();

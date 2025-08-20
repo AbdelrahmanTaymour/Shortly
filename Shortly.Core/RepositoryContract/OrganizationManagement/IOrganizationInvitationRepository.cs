@@ -25,15 +25,17 @@ public interface IOrganizationInvitationRepository
     /// <returns>The organization invitation if found; otherwise, null.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
     Task<OrganizationInvitation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-   
+
     /// <summary>
     /// Retrieves all invitations for a specific organization, including inviter details, ordered by creation date.
     /// </summary>
     /// <param name="organizationId">The unique identifier of the organization.</param>
+    /// <param name="page">The page number for pagination (starting from 1).</param>
+    /// <param name="pageSize">The number of organizations per page.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A collection of organization invitations with inviter details ordered by creation date (newest first).</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<IEnumerable<OrganizationInvitation>> GetByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationInvitation>> GetByOrganizationIdAsync(Guid organizationId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Retrieves an organization invitation by its unique invitation token including organization details.
