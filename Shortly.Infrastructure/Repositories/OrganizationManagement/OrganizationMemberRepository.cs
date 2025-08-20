@@ -18,13 +18,15 @@ namespace Shortly.Infrastructure.Repositories.OrganizationManagement;
 public class OrganizationMemberRepository(SQLServerDbContext dbContext, ILogger<OrganizationMember> logger) : IOrganizationMemberRepository
 {
     /// <inheritdoc />
-    public async Task<IEnumerable<OrganizationMember>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrganizationMember>> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         try
         {
             return await dbContext.OrganizationMembers
                 .AsNoTracking()
                 .Where(m => m.IsActive)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -205,6 +207,46 @@ public class OrganizationMemberRepository(SQLServerDbContext dbContext, ILogger<
         {
             logger.LogError(ex, "Error updating organization member with ID {MemberId}.", entity.Id);
             throw new DatabaseException("An error occurred while updating the organization member.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, enUserRole newRoleId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationMembers
+                .AsNoTracking()
+                .Where(m => m.OrganizationId == organizationId && m.UserId == userId && m.IsActive)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(m => m.RoleId, newRoleId)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error updating role for member with ID {MemberId}.", userId);
+            throw new DatabaseException("An error occurred while updating the member role.", ex);
+        }
+    }
+    
+    /// <inheritdoc />
+    public async Task<bool> UpdateMemberPermissionsAsync(Guid organizationId, Guid userId, enPermissions permissions,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationMembers
+                .AsNoTracking()
+                .Where(m => m.OrganizationId == organizationId && m.UserId == userId && m.IsActive)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(m => m.CustomPermissions, permissions)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error updating custom permissions for member with ID {MemberId}.", userId);
+            throw new DatabaseException("An error occurred while updating the custom permissions.", ex);
         }
     }
 

@@ -13,10 +13,12 @@ public interface IOrganizationMemberRepository
     /// <summary>
     /// Retrieves all active organization members from the database.
     /// </summary>
+    /// <param name="page">The page number for pagination (starting from 1).</param>
+    /// <param name="pageSize">The number of organizations per page.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A collection of all active organization members.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<IEnumerable<OrganizationMember>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationMember>> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Retrieves an organization member by their unique identifier.
@@ -111,6 +113,28 @@ public interface IOrganizationMemberRepository
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
     Task<bool> UpdateAsync(OrganizationMember entity, CancellationToken cancellationToken = default);
    
+    /// <summary>
+    /// Updates the role of a specific organization member.
+    /// </summary>
+    /// <param name="organizationId">The unique identifier of the organization.</param>
+    /// <param name="userId">The unique identifier of the member whose role is being updated.</param>
+    /// <param name="newRoleId">The new role to assign to the member.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+    /// <returns>True if the update was successful; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when a database error occurs during the update operation.</exception>
+    Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, enUserRole newRoleId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Updates the custom permissions of a specific organization member.
+    /// </summary>
+    /// <param name="organizationId">The unique identifier of the organization.</param>
+    /// <param name="userId">The unique identifier of the member whose permissions are being updated.</param>
+    /// <param name="permissions">The new set of permissions to assign to the member.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+    /// <returns>True if the update was successful; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when a database error occurs during the update operation.</exception>
+    Task<bool> UpdateMemberPermissionsAsync(Guid organizationId, Guid userId, enPermissions permissions, CancellationToken cancellationToken = default);
+    
     /// <summary>
     /// Permanently removes a member from an organization by hard deleting the membership record.
     /// </summary>
