@@ -7,12 +7,20 @@ using Shortly.Domain.Entities;
 
 namespace Shortly.Core.Services.OrganizationManagement;
 
+/// <summary>
+/// Service for managing organization teams, including creating, updating, deleting teams and managing team memberships.
+/// </summary>
+/// <param name="teamRepository">Repository for organization team data operations.</param>
+/// <param name="teamMemberRepository">Repository for team member data operations.</param>
+/// <param name="memberRepository">Repository for organization member data operations.</param>
+/// <param name="logger">Logger for recording service operations and events.</param>
 public class OrganizationTeamService(
     IOrganizationTeamRepository teamRepository,
     IOrganizationTeamMemberRepository teamMemberRepository,
     IOrganizationMemberRepository memberRepository,
     ILogger<OrganizationTeamService> logger) : IOrganizationTeamService
 {
+    /// <inheritdoc />
     public async Task<OrganizationTeam?> GetTeamAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
         var team = await teamRepository.GetByIdAsync(teamId);
@@ -22,6 +30,7 @@ public class OrganizationTeamService(
         return team;
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationTeam?> GetTeamWithMembersAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
         var team = await teamRepository.GetByIdWithMembersAsync(teamId, cancellationToken);
@@ -30,16 +39,19 @@ public class OrganizationTeamService(
         return team;
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationTeam>> GetOrganizationTeamsAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         return await teamRepository.GetByOrganizationIdAsync(organizationId, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationTeamMember>> GetTeamMembersAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
         return await teamMemberRepository.GetByTeamIdAsync(teamId, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationTeam> CreateTeamAsync(CreateTeamDto dto)
     {
         // Validate team manager is a member of the organization
@@ -77,6 +89,7 @@ public class OrganizationTeamService(
         return createdTeam;
     }
 
+    /// <inheritdoc />
     public async Task<bool> AddMemberToTeamAsync(Guid teamId, Guid memberId, Guid requestingUserId, CancellationToken cancellationToken = default)
     {
         // Check if the member is already in the team
@@ -94,6 +107,7 @@ public class OrganizationTeamService(
         return true;
     }
 
+    /// <inheritdoc />
     public async Task<bool> UpdateTeamAsync(Guid teamId, string? name, string? description, Guid requestingUserId,
         CancellationToken cancellationToken = default)
     {
@@ -107,6 +121,7 @@ public class OrganizationTeamService(
         return await teamRepository.UpdateAsync(team, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeleteTeamAsync(Guid teamId, Guid requestingUserId, CancellationToken cancellationToken = default)
     {
         var deleted = await teamRepository.DeleteAsync(teamId, cancellationToken);
@@ -117,6 +132,7 @@ public class OrganizationTeamService(
         return deleted;
     }
 
+    /// <inheritdoc />
     public async Task<bool> RemoveMemberFromTeamAsync(Guid teamId, Guid memberId, Guid requestingUserId,
         CancellationToken cancellationToken = default)
     {
@@ -128,6 +144,7 @@ public class OrganizationTeamService(
         return deleted;
     }
 
+    /// <inheritdoc />
     public async Task<bool> ChangeTeamManagerAsync(Guid teamId, Guid newManagerId, Guid requestingUserId,
         CancellationToken cancellationToken = default)
     {
