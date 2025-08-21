@@ -14,7 +14,7 @@ public static class AuthorizationServiceExtensions
             {
                 // Skip None and AllPermissions, and skip combination permissions to avoid policy conflicts
                 if (permission != enPermissions.None && 
-                    permission != enPermissions.AllPermissions &&
+                    permission != enPermissions.SystemAdmin &&
                     !IsCombinationPermission(permission))
                 {
                     options.AddPolicy(permission.ToString(),
@@ -33,19 +33,12 @@ public static class AuthorizationServiceExtensions
         // List of combination permissions that shouldn't have individual policies
         var combinations = new[]
         {
-            enPermissions.BasicUrlOperations,
-            enPermissions.AdvancedUrlOperations,
-            enPermissions.FullUrlManagement,
-            enPermissions.BasicAnalytics,
-            enPermissions.DetailedAnalytics,
-            enPermissions.FullAnalytics,
-            enPermissions.CustomizationFeatures,
-            enPermissions.SelfManagement,
-            enPermissions.UserAdministration,
-            enPermissions.AdvancedUserAdministration,
-            enPermissions.TeamManagement,
-            enPermissions.OrganizationManagement,
-            enPermissions.FullTeamAndOrg
+            enPermissions.BasicUser,
+            enPermissions.TeamMember,
+            enPermissions.TeamManager,
+            enPermissions.OrgAdmin,
+            enPermissions.SuperAdmin,
+            enPermissions.SystemAdmin
         };
 
         return combinations.Contains(permission);

@@ -14,46 +14,42 @@ public class RoleConfiguration
         [enUserRole.Viewer] = new RoleConfiguration
         {
             Role = enUserRole.Viewer,
-            DefaultPermissions = enPermissions.ReadUrl | enPermissions.ReadAnalytics,
+            DefaultPermissions = enPermissions.ReadOwnAnalytics | enPermissions.ReadOrgAnalytics | enPermissions.ReadTeamAnalytics,
             Description = "Read-only access to URLs and analytics. Typically for guests or clients."
         },
         [enUserRole.Member] = new RoleConfiguration
         {
             Role = enUserRole.Member,
-            DefaultPermissions = enPermissions.FullUrlManagement | enPermissions.FullAnalytics |
-                                 enPermissions.CustomizationFeatures |
-                                 enPermissions.SetPasswordProtection,
+            DefaultPermissions = enPermissions.TeamMember,
             Description = "Experienced user with extended capabilities including analytics, branding, and campaigns."
         },
         [enUserRole.TeamManager] = new RoleConfiguration
         {
             Role = enUserRole.TeamManager,
-            DefaultPermissions = enPermissions.FullUrlManagement | enPermissions.FullAnalytics |
-                                 enPermissions.CustomizationFeatures | enPermissions.TeamManagement,
+            DefaultPermissions = enPermissions.TeamManager,
             Description = "Leads a team. Manages team roles, URLs, and integrations."
         },
         [enUserRole.OrgAdmin] = new RoleConfiguration
         {
             Role = enUserRole.OrgAdmin,
-            DefaultPermissions = enPermissions.FullUrlManagement | enPermissions.FullAnalytics |
-                                 enPermissions.CustomizationFeatures | enPermissions.FullTeamAndOrg,
-            Description = "Admin-level access within the organization. Full team/org control and feature access."
+            DefaultPermissions = enPermissions.OrgAdmin,
+            Description = "SuperAdmin-level access within the organization. Full team/org control and feature access."
         },
         [enUserRole.OrgOwner] = new RoleConfiguration
         {
             Role = enUserRole.OrgOwner,
-            DefaultPermissions = enPermissions.AllPermissions,
+            DefaultPermissions = enPermissions.OrgOwner,
             Description = "Organization owner with full organizational control"
-        },
-        [enUserRole.Admin] = new RoleConfiguration
-        {
-            Role = enUserRole.Admin,
-            DefaultPermissions = enPermissions.AllPermissions,
         },
         [enUserRole.SuperAdmin] = new RoleConfiguration
         {
             Role = enUserRole.SuperAdmin,
-            DefaultPermissions = enPermissions.AllPermissions,
+            DefaultPermissions = enPermissions.SuperAdmin,
+        },
+        [enUserRole.SystemAdmin] = new RoleConfiguration
+        {
+            Role = enUserRole.SystemAdmin,
+            DefaultPermissions = enPermissions.SystemAdmin,
             Description = "System administrator with complete access"
         }
     };

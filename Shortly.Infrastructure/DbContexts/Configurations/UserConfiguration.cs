@@ -32,7 +32,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion<byte>();
 
         builder.Property(user => user.Permissions)
-            .HasDefaultValue(enPermissions.BasicUrlOperations);
+            .HasDefaultValue(enPermissions.BasicUser);
 
         builder.Property(user => user.IsActive)
             .HasDefaultValue(true);

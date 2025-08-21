@@ -12,6 +12,7 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
         builder.HasKey(r => r.Id);
 
         // Properties configuration
+        builder.Property(r => r.Id).HasConversion<byte>();
         builder.Property(r => r.RoleName).HasMaxLength(30).IsUnicode(false);
         builder.Property(r => r.Description).HasMaxLength(200).IsUnicode();
 

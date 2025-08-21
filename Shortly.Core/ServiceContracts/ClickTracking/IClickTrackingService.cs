@@ -279,7 +279,7 @@ public interface IClickTrackingService
     /// - Additional properties: HasNextPage, HasPreviousPage, TotalPages
     /// 
     /// Use Cases:
-    /// - Admin interfaces for detailed click analysis
+    /// - SuperAdmin interfaces for detailed click analysis
     /// - Data export and reporting functionality
     /// - Historical trend analysis
     /// - Compliance and audit requirements

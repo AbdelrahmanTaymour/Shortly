@@ -128,70 +128,55 @@ public class SQLServerDbContext : DbContext
         modelBuilder.Entity<Role>().HasData(
             new Role
             {
-                Id = (byte)enUserRole.Viewer,
+                Id = enUserRole.Viewer,
                 RoleName = "Viewer",
                 Description = "Read-only access to resources.",
                 DefaultPermissions = (long)(
-                    enPermissions.ReadAnalytics |
+                    enPermissions.ReadOwnAnalytics |
                     enPermissions.ViewOwnProfile |
                     enPermissions.ViewOwnUsageStats)
             },
             new Role
             {
-                Id = (byte)enUserRole.Member,
+                Id = enUserRole.Member,
                 RoleName = "Member",
                 Description = "Can manage and track their own content.",
-                DefaultPermissions = (long)(
-                    enPermissions.FullUrlManagement |
-                    enPermissions.GenerateQrCodes |
-                    enPermissions.BasicAnalytics |
-                    enPermissions.SelfManagement)
+                DefaultPermissions = (long)enPermissions.TeamMember
             },
             new Role
             {
-                Id = (byte)enUserRole.TeamManager,
+                Id = enUserRole.TeamManager,
                 RoleName = "TeamManager",
                 Description = "Can manage their team and content.",
-                DefaultPermissions = (long)(
-                    enPermissions.FullUrlManagement |
-                    enPermissions.CustomizationFeatures |
-                    enPermissions.FullAnalytics |
-                    enPermissions.TeamManagement |
-                    enPermissions.SelfManagement)
+                DefaultPermissions = (long)enPermissions.TeamManager
             },
             new Role
             {
-                Id = (byte)enUserRole.OrgAdmin,
+                Id = enUserRole.OrgAdmin,
                 RoleName = "OrgAdmin",
                 Description = "Can manage users and settings for the organization.",
-                DefaultPermissions = (long)(
-                    enPermissions.FullUrlManagement |
-                    enPermissions.FullAnalytics |
-                    enPermissions.CustomizationFeatures |
-                    enPermissions.FullTeamAndOrg |
-                    enPermissions.SelfManagement |
-                    enPermissions.UserAdministration)
+                DefaultPermissions = (long)enPermissions.OrgAdmin
             },
             new Role
             {
-                Id = (byte)enUserRole.OrgOwner,
+                Id = enUserRole.OrgOwner,
                 RoleName = "OrgOwner",
                 Description = "Owns the organization with full control.",
-                DefaultPermissions = (long)(enPermissions.AllPermissions)
+                DefaultPermissions = (long)enPermissions.OrgOwner
             },
             new Role
             {
-                Id = (byte)enUserRole.Admin,
+                Id = enUserRole.SuperAdmin,
                 RoleName = "PlatformAdmin",
                 Description = "Platform-wide admin access.",
-                DefaultPermissions = (long)(enPermissions.AllPermissions)
+                DefaultPermissions = (long)enPermissions.SuperAdmin
             },
             new Role
             {
-                Id = (byte)enUserRole.SuperAdmin,
-                RoleName = "SuperAdmin",
+                Id = enUserRole.SystemAdmin,
+                RoleName = "SystemAdmin",
                 Description = "System-wide root access.",
-                DefaultPermissions = (long)enPermissions.AllPermissions
+                DefaultPermissions = (long)enPermissions.SystemAdmin
             }
         );
     }

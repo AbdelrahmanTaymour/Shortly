@@ -15,7 +15,7 @@ public class OrganizationMemberConfiguration : IEntityTypeConfiguration<Organiza
         // Properties configuration
         builder.Property(e => e.RoleId)
             .HasConversion<byte>()
-            .HasDefaultValue((byte)enUserRole.Member);
+            .HasDefaultValue(enUserRole.Member);
 
         builder.Property(e => e.CustomPermissions)
             .HasConversion<long>().HasDefaultValue(enPermissions.None);

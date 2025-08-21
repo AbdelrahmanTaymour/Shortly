@@ -67,7 +67,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     [ProducesResponseType(typeof(BulkCreateShortUrlResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.BulkCreateUrl)]
+    [RequirePermission(enPermissions.BulkCreateLinks)]
     public async Task<IActionResult> BulkCreate([FromBody] BulkCreateShortUrlsRequest request, CancellationToken cancellationToken = default)
     {
         var authContext = contextProvider.GetCurrentContextAsync(HttpContext);
@@ -112,7 +112,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.BulkUpdateUrl)]
+    [RequirePermission(enPermissions.BulkUpdateLinks)]
     public async Task<IActionResult> BulkUpdateExpiration([FromBody] BulkUpdateExpirationRequest request, CancellationToken cancellationToken = default)
     {
         var result = await bulkOperationsService.BulkUpdateExpirationAsync(request.Ids, request.NewExpirationDate, cancellationToken);
@@ -157,7 +157,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.BulkDeleteUrl)]
+    [RequirePermission(enPermissions.BulkDeleteLinks)]
     public async Task<IActionResult> BulkDelete([FromBody] BasicBulkRequest request, CancellationToken cancellationToken = default)
     {
        var result = await bulkOperationsService.BulkDeleteAsync(request.Ids, cancellationToken);
@@ -196,7 +196,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     [HttpDelete("delete-expired", Name = "DeleteExpiredShortUrls")]
     [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.BulkDeleteUrl)]
+    [RequirePermission(enPermissions.CleanupSystemData)]
     public async Task<IActionResult> DeleteExpired(CancellationToken cancellationToken = default)
     {
         var nowUtc = DateTime.UtcNow;
@@ -241,7 +241,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.BulkUpdateUrl)]
+    [RequirePermission(enPermissions.BulkUpdateLinks)]
     public async Task<IActionResult> BulkActivate([FromBody] BasicBulkRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -283,7 +283,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.BulkUpdateUrl)]
+    [RequirePermission(enPermissions.BulkUpdateLinks)]
     public async Task<IActionResult> BulkDeactivate([FromBody] BasicBulkRequest request,
         CancellationToken cancellationToken = default)
     {

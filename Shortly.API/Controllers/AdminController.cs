@@ -44,7 +44,7 @@ public class AdminController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUsers)]
+    [RequirePermission(enPermissions.ViewAllUsers)]
     [Time]
     public async Task<ActionResult<BasicUserSearchResponse>> SearchBasicUsers(
         [FromQuery] UserSearchRequest request,
@@ -79,7 +79,7 @@ public class AdminController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-   // [RequirePermission(enPermissions.ViewUsersDetails)]
+    [RequirePermission(enPermissions.ViewUserDetails)]
     public async Task<ActionResult<CompleteUserSearchResponse>> SearchCompleteUsers(
         [FromQuery] UserSearchRequest request,
         CancellationToken cancellationToken = default)
@@ -115,7 +115,7 @@ public class AdminController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-  //  [RequirePermission(enPermissions.UpdateUser)]
+    [RequirePermission(enPermissions.UpdateUser)]
     public async Task<IActionResult> ForceUpdateUser(Guid userId, [FromBody] ForceUpdateUserRequest request)
     {
         var updatedUser = await adminService.ForceUpdateUserAsync(userId, request);
@@ -153,7 +153,7 @@ public class AdminController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-   // [RequirePermission(enPermissions.HardDeleteUser)]
+    [RequirePermission(enPermissions.DeleteUser)]
     public async Task<IActionResult> HardDeleteUser(
         Guid userId,
         bool deleteOwnedShortUrls = false,
@@ -189,7 +189,7 @@ public class AdminController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ManageUserActivation)]
+    [RequirePermission(enPermissions.UpdateUser)]
     public async Task<IActionResult> BulkActivateUsers(
         [FromBody] ICollection<Guid> userIds,
         CancellationToken cancellationToken = default)
@@ -219,7 +219,7 @@ public class AdminController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ManageUserActivation)]
+    [RequirePermission(enPermissions.UpdateUser)]
     public async Task<IActionResult> BulkDeactivateUsers(
         [FromBody] ICollection<Guid> userIds,
         CancellationToken cancellationToken = default)
@@ -255,7 +255,7 @@ public class AdminController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-   // [RequirePermission(enPermissions.SoftDeleteUser)]
+    [RequirePermission(enPermissions.DeleteUser)]
     public async Task<IActionResult> BulkDeleteUsers(
         [FromBody] ICollection<Guid> userIds,
         CancellationToken cancellationToken = default)

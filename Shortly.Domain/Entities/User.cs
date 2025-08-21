@@ -10,7 +10,7 @@ public class User
     public required string Username { get; set; }
     public required string PasswordHash { get; set; }
     public enSubscriptionPlan SubscriptionPlanId { get; set; } = enSubscriptionPlan.Free;
-    public long Permissions { get; set; } = (long)enPermissions.BasicUrlOperations;
+    public long Permissions { get; set; } = (long)enPermissions.BasicUser;
     public bool IsActive { get; set; } = true;
     public bool IsEmailConfirmed { get; set; } = false;
     public DateTime? LastLoginAt { get; set; } = null;
