@@ -1,5 +1,7 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Domain.Entities;
@@ -61,6 +63,17 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
             await dbContext.SaveChangesAsync();
             return organization;
         }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 2627 || sqlEx.Number == 2601))
+        {
+            // SQL Server error codes:
+            // 2601 - Cannot insert duplicate key row in object with unique index
+            // 2627 - Violation of UNIQUE KEY constraint
+            logger.LogWarning(ex,
+                "Conflict: Organization with name {OrganizationName} already exists for owner {OwnerId}.",
+                organization.Name, organization.OwnerId);
+
+            throw new ConflictException($"An organization with the name '{organization.Name}' already exists for this owner.");
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error adding organization with name {OrganizationName}.", organization.Name);
@@ -76,6 +89,17 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
             dbContext.Organizations.Update(organization);
             await dbContext.SaveChangesAsync(cancellationToken);
             return organization;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 2627 || sqlEx.Number == 2601))
+        {
+            // SQL Server error codes:
+            // 2601 - Cannot insert duplicate key row in object with unique index
+            // 2627 - Violation of UNIQUE KEY constraint
+            logger.LogWarning(ex,
+                "Conflict: Organization with updated name {OrganizationName} already exists for owner {OwnerId}.",
+                organization.Name, organization.OwnerId);
+
+            throw new ConflictException($"The organization with the updated name '{organization.Name}' already exists for this owner.");
         }
         catch (Exception ex)
         {

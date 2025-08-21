@@ -1,3 +1,4 @@
+using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 
@@ -34,6 +35,7 @@ public interface IOrganizationRepository
     /// </summary>
     /// <param name="organization">The organization to add.</param>
     /// <returns>The added organization with any database-generated values.</returns>
+    /// <exception cref="ConflictException">Thrown when an organization with the same name already exists for the same owner. </exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
     Task<Organization> AddAsync(Organization organization);
     
@@ -43,6 +45,7 @@ public interface IOrganizationRepository
     /// <param name="organization">The organization with updated values.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>True if the update was successful; otherwise, false.</returns>
+    /// <exception cref="ConflictException">Thrown when the owner already has an organization with the same updated name.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
     Task<Organization> UpdateAsync(Organization organization, CancellationToken cancellationToken = default);
     

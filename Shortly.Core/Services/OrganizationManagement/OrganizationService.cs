@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs.OrganizationDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.Mappers;
 using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Core.ServiceContracts.OrganizationManagement;
 using Shortly.Core.ServiceContracts.UserManagement;
@@ -25,43 +26,45 @@ public class OrganizationService(
     ILogger<OrganizationService> logger) : IOrganizationService
 {
     /// <inheritdoc />
-    public async Task<IEnumerable<Organization>> GetAllAsync(int page = 1, int pageSize = 50,CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrganizationDto>> GetAllAsync(int page = 1, int pageSize = 50,CancellationToken cancellationToken = default)
     {
-        return await organizationRepository.GetAllAsync(page, pageSize, cancellationToken);
+        var organizations = await organizationRepository.GetAllAsync(page, pageSize, cancellationToken);
+        return organizations.MapToOrganizationDtos();
     }
 
     /// <inheritdoc />
-    public async Task<Organization?> GetOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    public async Task<OrganizationDto?> GetOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var organization = await organizationRepository.GetByIdAsync(organizationId, cancellationToken);
         if(organization == null)
             throw new NotFoundException("Organization", organizationId);
         
-        return organization;
+        return organization.MapToOrganizationDto();
     }
 
     /// <inheritdoc />
-    public async Task<Organization?> GetOrganizationWithDetailsAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    public async Task<OrganizationDto?> GetOrganizationWithDetailsAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var organization = await organizationRepository.GetByIdWithFullDetailsAsync(organizationId, cancellationToken);
         if(organization == null)
             throw new NotFoundException("Organization", organizationId);
         
-        return organization;
+        return organization.MapToOrganizationDto();
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<Organization>> GetUserOrganizationsAsync(Guid ownerId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrganizationDto>> GetUserOrganizationsAsync(Guid ownerId, CancellationToken cancellationToken = default)
     {
-        return await organizationRepository.GetByOwnerIdAsync(ownerId, cancellationToken);
+        var organizations = await organizationRepository.GetByOwnerIdAsync(ownerId, cancellationToken);
+        return organizations.MapToOrganizationDtos();
     }
 
     /// <inheritdoc />
-    public async Task<Organization> CreateOrganizationAsync(CreateOrganizationDto dto)
+    public async Task<OrganizationDto> CreateOrganizationAsync(CreateOrganizationDto dto, Guid ownerId)
     {
-        var userExists = await userService.ExistsAsync(dto.OwnerId);
+        var userExists = await userService.ExistsAsync(ownerId);
         if(!userExists)
-            throw new NotFoundException("User", dto.OwnerId);
+            throw new NotFoundException("User", ownerId);
 
         var organization = new Organization
         {
@@ -70,7 +73,7 @@ public class OrganizationService(
             Website = dto.Website,
             LogoUrl = dto.LogoUrl,
             MemberLimit = dto.MemberLimit,
-            OwnerId = dto.OwnerId,
+            OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -85,26 +88,28 @@ public class OrganizationService(
             InvitedBy = createdOrg.OwnerId
         });
 
-        logger.LogInformation("Organization {OrganizationName} created by user {UserId}", dto.Name, dto.OwnerId);
-        return createdOrg;
+        logger.LogInformation("Organization {OrganizationName} created by user {UserId}", dto.Name, ownerId);
+        return createdOrg.MapToOrganizationDto();
     }
 
     /// <inheritdoc />
-    public async Task<Organization> UpdateOrganizationAsync(Guid organizationId, UpdateOrganizationDto dto, CancellationToken cancellationToken = default)
+    public async Task<OrganizationDto> UpdateOrganizationAsync(Guid organizationId, UpdateOrganizationDto dto, CancellationToken cancellationToken = default)
     {
         var organization = await organizationRepository.GetByIdAsync(organizationId, cancellationToken);
         if(organization == null)
             throw new NotFoundException("Organization", organizationId);
         
-        if (dto.Name != null) organization.Name = dto.Name;
+        if (dto.Name != null) organization.Name =  dto.Name;
         if (dto.Description != null) organization.Description = dto.Description;
         if (dto.Website != null) organization.Website = dto.Website;
         if (dto.LogoUrl != null) organization.LogoUrl = dto.LogoUrl;
         if (dto.MemberLimit.HasValue) organization.MemberLimit = dto.MemberLimit.Value;
         if (dto.IsActive.HasValue) organization.IsActive = dto.IsActive.Value;
         if (dto.IsSubscribed.HasValue) organization.IsSubscribed = dto.IsSubscribed.Value;
+        
+        await organizationRepository.UpdateAsync(organization, cancellationToken);
 
-        return organization;
+        return organization.MapToOrganizationDto();
     }
 
     /// <inheritdoc />
@@ -112,7 +117,7 @@ public class OrganizationService(
     {
         var isOwner = await organizationRepository.IsOwnerAsync(organizationId, requestingUserId, cancellationToken);
         if(!isOwner)
-            throw new ForbiddenException($"The requested user with ID '{requestingUserId}' must be the organization owner to delete it.");
+            throw new ForbiddenException($"The requested user with ID '{requestingUserId}' must be the organization owner to delete it. Or the organization is already deleted. ");
         
         var succeed = await organizationRepository.DeleteAsync(organizationId, cancellationToken);
         logger.LogInformation("Organization {OrganizationId} deleted by user {UserId}", organizationId, requestingUserId);
@@ -161,8 +166,9 @@ public class OrganizationService(
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<Organization>> SearchOrganizationsAsync(string searchTerm, int page = 1, int pageSize = 50, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrganizationDto>> SearchOrganizationsAsync(string searchTerm, int page = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
-        return await organizationRepository.SearchByNameAsync(searchTerm, page, pageSize, cancellationToken);
+        var organizations = await organizationRepository.SearchByNameAsync(searchTerm, page, pageSize, cancellationToken);
+        return organizations.MapToOrganizationDtos();
     }
 }

@@ -20,7 +20,7 @@ public interface IOrganizationService
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A collection of organizations for the specified page.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<IEnumerable<Organization>> GetAllAsync(int page = 1, int pageSize = 50, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationDto>> GetAllAsync(int page = 1, int pageSize = 50, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Retrieves an organization by its unique identifier with basic information.
@@ -30,7 +30,7 @@ public interface IOrganizationService
     /// <returns>The organization if found.</returns>
     /// <exception cref="NotFoundException">Thrown when the organization with the specified ID is not found.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<Organization?> GetOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default);
+    Task<OrganizationDto?> GetOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Retrieves an organization by its unique identifier including all related details (owner, members, teams).
@@ -40,7 +40,7 @@ public interface IOrganizationService
     /// <returns>The organization with full details including an owner, members, and teams.</returns>
     /// <exception cref="NotFoundException">Thrown when the organization with the specified ID is not found.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<Organization?> GetOrganizationWithDetailsAsync(Guid organizationId, CancellationToken cancellationToken = default);
+    Task<OrganizationDto?> GetOrganizationWithDetailsAsync(Guid organizationId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Retrieves all organizations owned by a specific user.
@@ -49,14 +49,16 @@ public interface IOrganizationService
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A collection of organizations owned by the specified user.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<IEnumerable<Organization>> GetUserOrganizationsAsync(Guid ownerId, CancellationToken cancellationToken = default);
-  
+    Task<IEnumerable<OrganizationDto>> GetUserOrganizationsAsync(Guid ownerId, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Creates a new organization and automatically adds the creator as the first member with an organization owner role.
     /// </summary>
     /// <param name="dto">The data transfer object containing organization creation details.</param>
+    /// <param name="ownerId">The unique identifier of the organization owner.</param>
     /// <returns>The created organization with database-generated values.</returns>
     /// <exception cref="NotFoundException">Thrown when the specified owner user ID does not exist.</exception>
+    /// <exception cref="ConflictException">Thrown when an organization with the same name already exists for the same owner. </exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during creation.</exception>
     /// <remarks>
     /// This method performs the following operations:
@@ -65,7 +67,7 @@ public interface IOrganizationService
     /// 3. Automatically adds the owner as the first organization member with OrgOwner role
     /// 4. Logs the successful creation
     /// </remarks>
-    Task<Organization> CreateOrganizationAsync(CreateOrganizationDto dto);
+    Task<OrganizationDto> CreateOrganizationAsync(CreateOrganizationDto dto, Guid ownerId);
    
     /// <summary>
     /// Updates an existing organization with the provided information. Only non-null values are updated.
@@ -75,12 +77,13 @@ public interface IOrganizationService
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>The updated organization with the new values.</returns>
     /// <exception cref="NotFoundException">Thrown when the organization with the specified ID is not found.</exception>
+    /// <exception cref="ConflictException">Thrown when the owner already has an organization with the same updated name.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during an update.</exception>
     /// <remarks>
     /// This method uses partial update semantics - only properties with non-null values in the DTO will be updated.
     /// Properties with null values will remain unchanged in the organization.
     /// </remarks>
-    Task<Organization> UpdateOrganizationAsync(Guid organizationId, UpdateOrganizationDto dto, CancellationToken cancellationToken = default);
+    Task<OrganizationDto> UpdateOrganizationAsync(Guid organizationId, UpdateOrganizationDto dto, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Soft deletes an organization. Only the organization owner can perform this operation.
@@ -162,5 +165,5 @@ public interface IOrganizationService
     /// The search performs a case-insensitive partial match on organization names.
     /// Results are paginated to improve performance for large result sets.
     /// </remarks>
-    Task<IEnumerable<Organization>> SearchOrganizationsAsync(string searchTerm, int page = 1, int pageSize = 50, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationDto>> SearchOrganizationsAsync(string searchTerm, int page = 1, int pageSize = 50, CancellationToken cancellationToken = default);
 }

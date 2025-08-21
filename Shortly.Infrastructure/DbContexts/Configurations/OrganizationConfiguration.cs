@@ -28,6 +28,7 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
         builder.HasIndex(o => o.OwnerId);
         builder.HasIndex(o => o.IsActive);
         builder.HasIndex(o => new { o.IsActive, o.DeletedAt });
+        builder.HasIndex(o => new { o.OwnerId, o.Name }).IsUnique();
 
         // Relationships
         builder.HasOne(o => o.Owner)
@@ -54,5 +55,7 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
             .WithOne(a => a.Organization)
             .HasForeignKey(a => a.OrganizationId)
             .OnDelete(DeleteBehavior.NoAction);
+        
+        
     }
 }
