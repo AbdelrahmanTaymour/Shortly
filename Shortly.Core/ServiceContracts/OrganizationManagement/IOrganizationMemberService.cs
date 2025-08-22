@@ -1,3 +1,4 @@
+using Shortly.Core.DTOs.OrganizationDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
@@ -18,7 +19,7 @@ public interface IOrganizationMemberService
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>A collection of organization members for the specified page.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during an access check.</exception>
-    Task<IEnumerable<OrganizationMember>> GetAllMembersAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationMemberDto>> GetAllMembersAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
    
     
     /// <summary>
@@ -28,7 +29,7 @@ public interface IOrganizationMemberService
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>A collection of members in the specified organization.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during an access check.</exception>
-    Task<IEnumerable<OrganizationMember>> GetOrganizationMembersAsync(Guid organizationId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationMemberDto>> GetOrganizationMembersAsync(Guid organizationId, CancellationToken cancellationToken = default);
     
     
     /// <summary>
@@ -38,7 +39,7 @@ public interface IOrganizationMemberService
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>A collection of organization memberships for the specified user.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during an access check.</exception>
-    Task<IEnumerable<OrganizationMember>> GetUserMembershipsAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationMemberDto>> GetUserMembershipsAsync(Guid userId, CancellationToken cancellationToken = default);
     
     
     /// <summary>
@@ -48,25 +49,22 @@ public interface IOrganizationMemberService
     /// <param name="userId">The unique identifier of the user.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The organization member record if found, otherwise null.</returns>
+    /// <exception cref="NotFoundException">Thrown when the organization member does not exist.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during an access check.</exception>
-    Task<OrganizationMember?> GetMembershipAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken = default);
+    Task<OrganizationMemberDto> GetMembershipAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken = default);
     
     
     /// <summary>
     /// Adds a new member to an organization with the specified role.
     /// </summary>
-    /// <param name="organizationId">The unique identifier of the organization.</param>
-    /// <param name="userId">The unique identifier of the user to add.</param>
-    /// <param name="roleId">The role to assign to the new member.</param>
-    /// <param name="invitedBy">The unique identifier of the user who invited this member.</param>
+    /// <param name="request">The member data to add.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>The newly created organization member record.</returns>
     /// <exception cref="NotFoundException">Thrown when the organization does not exist.</exception>
     /// <exception cref="BusinessRuleException">Thrown when the organization has reached its member limit.</exception>
     /// <exception cref="InvalidOperationException">Thrown when the user is already a member of the organization.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during an access check.</exception>
-    /// <exception cref="DatabaseException">Thrown when a database error occurs during an access check.</exception>
-    Task<OrganizationMember> AddMemberAsync(Guid organizationId, Guid userId, enUserRole roleId, Guid invitedBy, CancellationToken cancellationToken = default);
+    Task<OrganizationMemberDto> AddMemberAsync(CreateMemberRequest request, CancellationToken cancellationToken = default);
    
     
     /// <summary>

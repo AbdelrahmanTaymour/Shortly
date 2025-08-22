@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
+using Shortly.Core.DTOs.OrganizationDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.Mappers;
 using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Core.ServiceContracts.OrganizationManagement;
 using Shortly.Domain.Entities;
@@ -19,61 +21,68 @@ public class OrganizationMemberService(
     ILogger<OrganizationMemberService> logger) : IOrganizationMemberService
 {
     /// <inheritdoc />
-    public async Task<IEnumerable<OrganizationMember>> GetAllMembersAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrganizationMemberDto>> GetAllMembersAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
-        return await memberRepository.GetAllAsync(page, pageSize, cancellationToken);
+        var members = await memberRepository.GetAllAsync(page, pageSize, cancellationToken);
+        return members.MapToOrganizationMemberDtos();
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<OrganizationMember>> GetOrganizationMembersAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrganizationMemberDto>> GetOrganizationMembersAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
-        return await memberRepository.GetByOrganizationIdAsync(organizationId, cancellationToken);
+        var members = await memberRepository.GetByOrganizationIdAsync(organizationId, cancellationToken);
+        return members.MapToOrganizationMemberDtos();
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<OrganizationMember>> GetUserMembershipsAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrganizationMemberDto>> GetUserMembershipsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        return await memberRepository.GetByUserIdAsync(userId, cancellationToken);
+        var members = await memberRepository.GetByUserIdAsync(userId, cancellationToken);
+        return members.MapToOrganizationMemberDtos();
     }
 
     /// <inheritdoc />
-    public async Task<OrganizationMember?> GetMembershipAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken = default)
+    public async Task<OrganizationMemberDto> GetMembershipAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken = default)
     {
-        return await memberRepository.GetByOrganizationAndUserAsync(organizationId, userId, cancellationToken);
+        var members = await memberRepository.GetByOrganizationAndUserAsync(organizationId, userId, cancellationToken);
+        if(members == null)
+            throw new NotFoundException($"Member with '{userId}' not found for organization '{organizationId}'");
+        
+        return members.MapToOrganizationMemberDto();
     }
 
     /// <inheritdoc />
-    public async Task<OrganizationMember> AddMemberAsync(Guid organizationId, Guid userId, enUserRole roleId, Guid invitedBy, CancellationToken cancellationToken = default)
+    public async Task<OrganizationMemberDto> AddMemberAsync(CreateMemberRequest request, CancellationToken cancellationToken = default)
     {
         // Validate organization exists and has capacity
-        var org = await organizationRepository.GetByIdAsync(organizationId, cancellationToken);
+        var org = await organizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
         if(org == null)
-            throw new NotFoundException("Organization", organizationId);
+            throw new NotFoundException("Organization", request.OrganizationId);
 
         // Check if the org reached the member limits
         var currentMemberCount =
-            await memberRepository.GetMemberCountByOrganizationAsync(organizationId, cancellationToken);
+            await memberRepository.GetMemberCountByOrganizationAsync(request.OrganizationId, cancellationToken);
         
         if(currentMemberCount >= org.MemberLimit)
             throw new BusinessRuleException("Organization has reached member limit.");
 
         // Check if a user is already a member
-        var existingMember = await memberRepository.IsMemberOfOrganizationAsync(userId, organizationId, cancellationToken);
+        var existingMember = await memberRepository.IsMemberOfOrganizationAsync(request.UserId, request.OrganizationId, cancellationToken);
         if (existingMember)
             throw new InvalidOperationException("User is already a member of this organization");
         
         var member = new OrganizationMember
         {
-            OrganizationId = organizationId,
-            UserId = userId,
-            RoleId = roleId,
-            InvitedBy = invitedBy,
+            OrganizationId = request.OrganizationId,
+            UserId = request.UserId,
+            RoleId = request.RoleId,
+            InvitedBy = request.InvitedBy,
             JoinedAt = DateTime.UtcNow
         };
         
         var created = await memberRepository.AddAsync(member, cancellationToken);
-        logger.LogInformation("User {UserId} added to organization {OrganizationId} with role {RoleId}", userId, organizationId, roleId);
-        return created;
+        logger.LogInformation("User {UserId} added to organization {OrganizationId} with role {RoleId}", request.UserId, request.OrganizationId, request.RoleId);
+        return created.MapToOrganizationMemberDto();
     }
 
     /// <inheritdoc />
@@ -85,6 +94,9 @@ public class OrganizationMemberService(
             throw new BusinessRuleException("Organization owner cannot be removed.");
         
         var removed = await memberRepository.RemoveMemberAsync(organizationId, userId, cancellationToken);
+        if(!removed)
+            throw new NotFoundException($"Member with '{userId}' not found for organization '{organizationId}'");
+        
         logger.LogInformation("User {UserId} removed from organization {OrganizationId} by {RequestingUserId}",
             userId, organizationId, requestingUserId);
         return removed;
@@ -93,9 +105,13 @@ public class OrganizationMemberService(
     /// <inheritdoc />
     public async Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, enUserRole newRoleId, CancellationToken cancellationToken = default)
     {
+        var isOwner = await organizationRepository.IsOwnerAsync(organizationId, userId, cancellationToken);
+        if(isOwner)
+            throw new BusinessRuleException("Can not change the owner role.");
+        
         var updated = await memberRepository.UpdateMemberRoleAsync(organizationId, userId, newRoleId, cancellationToken);
         if(!updated)
-            throw new NotFoundException("OrganizationMember", userId);
+            throw new NotFoundException("OrganizationMemberDto", userId);
         
         logger.LogInformation("User {UserId} updated role of organization {OrganizationId} to {NewRoleId}", userId, organizationId, newRoleId);
         return updated;
@@ -106,7 +122,7 @@ public class OrganizationMemberService(
     {
         var updated = await memberRepository.UpdateMemberPermissionsAsync(organizationId, userId, permissions, cancellationToken);
         if(!updated)
-            throw new NotFoundException("OrganizationMember", userId);
+            throw new NotFoundException("OrganizationMemberDto", userId);
         
         logger.LogInformation("User {UserId} updated permissions of organization {OrganizationId} to {NewPermissions}", userId, organizationId, permissions);
         return updated;

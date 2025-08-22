@@ -9,7 +9,7 @@ using Shortly.Infrastructure.DbContexts;
 namespace Shortly.Infrastructure.Repositories.OrganizationManagement;
 
 /// <summary>
-/// Repository implementation for managing OrganizationMember entities in the database.
+/// Repository implementation for managing OrganizationMemberDto entities in the database.
 /// Provides CRUD operations, membership queries, and organization-member-specific business logic
 /// with comprehensive error handling and logging.
 /// </summary>
@@ -274,6 +274,7 @@ public class OrganizationMemberRepository(SQLServerDbContext dbContext, ILogger<
         {
             return await dbContext.OrganizationMembers
                 .AsNoTracking()
+                .Where(m => m.OrganizationId == organizationId && m.UserId == userId && m.IsActive)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(m => m.IsActive, false)
                     , cancellationToken) > 0;
@@ -287,13 +288,18 @@ public class OrganizationMemberRepository(SQLServerDbContext dbContext, ILogger<
     }
 
     /// <inheritdoc />
-    public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsAsync(Guid id, Guid? organizationId, CancellationToken cancellationToken = default)
     {
         try
         {
-            return await dbContext.OrganizationMembers
-                .AsNoTracking()
-                .AnyAsync(m => m.Id == id, cancellationToken);
+            var query = dbContext.OrganizationMembers.AsNoTracking().Where(m => m.Id == id);
+
+            if (organizationId.HasValue)
+            {
+                query = query.Where(m => m.OrganizationId == organizationId.Value);
+            }
+
+            return await query.AnyAsync(cancellationToken);
         }
         catch (Exception ex)
         {

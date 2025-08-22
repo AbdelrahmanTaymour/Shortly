@@ -5,7 +5,7 @@ using Shortly.Domain.Enums;
 namespace Shortly.Core.RepositoryContract.OrganizationManagement;
 
 /// <summary>
-/// Defins repository for managing OrganizationMember entities in the database.
+/// Defins repository for managing OrganizationMemberDto entities in the database.
 /// Provides CRUD operations, membership queries, and organization-member-specific business logic.
 /// </summary>
 public interface IOrganizationMemberRepository
@@ -153,15 +153,16 @@ public interface IOrganizationMemberRepository
     /// <returns>True if the member was successfully removed; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
     Task<bool> RemoveMemberAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken = default);
-   
+
     /// <summary>
-    /// Checks if an organization member exists in the database.
+    /// Checks if an organization member exists in the database or in a specific organization if provided.
     /// </summary>
     /// <param name="id">The unique identifier of the organization member to check.</param>
+    /// <param name="organizationId">he unique identifier of the organization.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>True if the organization member exists; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<bool> ExistsAsync(Guid id, Guid? organizationId = null, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Checks if a user is an active member of a specific organization.
