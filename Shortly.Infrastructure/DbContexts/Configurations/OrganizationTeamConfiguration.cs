@@ -29,6 +29,6 @@ public class OrganizationTeamConfiguration : IEntityTypeConfiguration<Organizati
         builder.HasMany(ot => ot.TeamMembers)
             .WithOne(tm => tm.Team)
             .HasForeignKey(tm => tm.TeamId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

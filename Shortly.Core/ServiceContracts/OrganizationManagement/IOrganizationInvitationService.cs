@@ -23,7 +23,7 @@ public interface IOrganizationInvitationService
     /// <exception cref="BusinessRuleException">Thrown if the organization has reached its member limit.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the user already has a pending invitation.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<OrganizationInvitation> CreateInvitationAsync(Guid organizationId, InviteMemberDto dto, CancellationToken cancellationToken = default);
+    Task<OrganizationInvitationDto> CreateInvitationAsync(Guid organizationId, InviteMemberDto dto, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Retrieves an invitation by its unique token.
@@ -33,7 +33,7 @@ public interface IOrganizationInvitationService
     /// <returns>The corresponding <see cref="OrganizationInvitation"/> if found.</returns>
     /// <exception cref="NotFoundException">Thrown if the invitation is not found.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<OrganizationInvitation?> GetInvitationByTokenAsync(string token, CancellationToken cancellationToken = default);
+    Task<OrganizationInvitationDto> GetInvitationByTokenAsync(string token, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Retrieves all invitations for a given organization with pagination support.
@@ -44,7 +44,7 @@ public interface IOrganizationInvitationService
     /// <param name="cancellationToken">Token for canceling the operation.</param>
     /// <returns>A collection of <see cref="OrganizationInvitation"/> records.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<IEnumerable<OrganizationInvitation>> GetOrganizationInvitationsAsync(Guid organizationId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationInvitationDto>> GetOrganizationInvitationsAsync(Guid organizationId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Accepts an invitation using its token and adds the user as a member of the organization.

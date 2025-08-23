@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs.OrganizationDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.Mappers;
 using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Core.ServiceContracts.OrganizationManagement;
 using Shortly.Domain.Entities;
@@ -21,58 +22,59 @@ public class OrganizationTeamService(
     ILogger<OrganizationTeamService> logger) : IOrganizationTeamService
 {
     /// <inheritdoc />
-    public async Task<OrganizationTeam?> GetTeamAsync(Guid teamId, CancellationToken cancellationToken = default)
+    public async Task<OrganizationTeamDto> GetTeamAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
         var team = await teamRepository.GetByIdAsync(teamId);
         if(team == null)
             throw new NotFoundException("Team", teamId);
         
-        return team;
+        return team.MapToOrganizationTeamDto();
     }
 
     /// <inheritdoc />
-    public async Task<OrganizationTeam?> GetTeamWithMembersAsync(Guid teamId, CancellationToken cancellationToken = default)
+    public async Task<OrganizationTeamDto> GetTeamWithMembersAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
         var team = await teamRepository.GetByIdWithMembersAsync(teamId, cancellationToken);
         if (team == null)
             throw new NotFoundException("Team", teamId);
-        return team;
+        return team.MapToOrganizationTeamDto();
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<OrganizationTeam>> GetOrganizationTeamsAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrganizationTeamDto>> GetOrganizationTeamsAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
-        return await teamRepository.GetByOrganizationIdAsync(organizationId, cancellationToken);
+        var teams = await teamRepository.GetByOrganizationIdAsync(organizationId, cancellationToken);
+        return teams.MapToOrganizationTeamDtos();
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<OrganizationTeamMember>> GetTeamMembersAsync(Guid teamId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrganizationTeamMemberDto>> GetTeamMembersAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
-        return await teamMemberRepository.GetByTeamIdAsync(teamId, cancellationToken);
+        var teamMembers = await teamMemberRepository.GetByTeamIdAsync(teamId, cancellationToken);
+        return teamMembers.MapToOrganizationTeamMemberDtos();
     }
 
     /// <inheritdoc />
-    public async Task<OrganizationTeam> CreateTeamAsync(CreateTeamDto dto)
+    public async Task<OrganizationTeamDto> CreateTeamAsync(CreateTeamRequest request)
     {
         // Validate team manager is a member of the organization
-        var isManagerMember =
-            await memberRepository.IsMemberOfOrganizationAsync(dto.TeamManagerId, dto.OrganizationId);
+        var isManagerMember = await memberRepository.ExistsAsync(request.TeamManagerId);
         
         if(!isManagerMember)
             throw new BusinessRuleException("Team manager must be a member of the organization.");
         
         // Check for duplicate team name in the organization
-        var existingTeamName = await teamRepository.IsTeamNameExistAsync(dto.Name, dto.OrganizationId);
+        var existingTeamName = await teamRepository.IsTeamNameExistAsync(request.Name, request.OrganizationId);
         if(existingTeamName)
             throw new ConflictException("Team", "name");
 
         // Create New Team
         var team = new OrganizationTeam
         {
-            OrganizationId = dto.OrganizationId,
-            TeamManagerId = dto.TeamManagerId,
-            Name = dto.Name,
-            Description = dto.Description,
+            OrganizationId = request.OrganizationId,
+            TeamManagerId = request.TeamManagerId,
+            Name = request.Name,
+            Description = request.Description,
             CreatedAt = DateTime.UtcNow
         };
         var createdTeam = await teamRepository.AddAsync(team);
@@ -85,38 +87,48 @@ public class OrganizationTeamService(
             JoinedAt = DateTime.UtcNow
         });
         
-        logger.LogInformation("Team {TeamName} created in organization {OrganizationId}", dto.Name, dto.OrganizationId);
-        return createdTeam;
+        logger.LogInformation("Team {TeamName} created in organization {OrganizationId}", request.Name, request.OrganizationId);
+        return createdTeam.MapToOrganizationTeamDto();
     }
 
     /// <inheritdoc />
-    public async Task<bool> AddMemberToTeamAsync(Guid teamId, Guid memberId, Guid requestingUserId, CancellationToken cancellationToken = default)
+    public async Task<OrganizationTeamMemberDto> AddMemberToTeamAsync(Guid teamId, Guid memberId, Guid requestingUserId, CancellationToken cancellationToken = default)
     {
+        // Check if the team exists
+        var team = await teamRepository.GetByIdAsync(teamId);
+        if(team == null)
+            throw new NotFoundException("Team", teamId);
+        
+        // check if the member exists in the organization
+        var isMember = await memberRepository.ExistsAsync(memberId, team.OrganizationId, cancellationToken);
+        if(!isMember)
+            throw new BusinessRuleException("Member must be a member of the organization.");
+        
         // Check if the member is already in the team
-        var isMember = await teamMemberRepository.IsMemberOfTeamAsync(memberId, teamId, cancellationToken);
+        var isTeamMember = await teamMemberRepository.IsMemberOfTeamAsync(memberId, teamId, cancellationToken);
         if(isMember)
             throw new ConflictException("Member is already a member of this team");
 
-        await teamMemberRepository.AddAsync(new OrganizationTeamMember
+        var createdTeamMember = await teamMemberRepository.AddAsync(new OrganizationTeamMember
         {
             TeamId = teamId,
             MemberId = memberId,
             JoinedAt = DateTime.UtcNow
         }, cancellationToken);
         
-        return true;
+        return createdTeamMember.MapToOrganizationTeamMemberDto();
     }
 
     /// <inheritdoc />
-    public async Task<bool> UpdateTeamAsync(Guid teamId, string? name, string? description, Guid requestingUserId,
+    public async Task<bool> UpdateTeamAsync(Guid teamId, UpdateTeamRequest request, Guid requestingUserId,
         CancellationToken cancellationToken = default)
     {
         var team = await teamRepository.GetByIdAsync(teamId);
         if(team == null)
             throw new NotFoundException("Team", teamId);
         
-        if (name != null) team.Name = name;
-        if (description != null) team.Description = description;
+        if (request.Name != null) team.Name = request.Name;
+        if (request.Description != null) team.Description = request.Description;
         
         return await teamRepository.UpdateAsync(team, cancellationToken);
     }

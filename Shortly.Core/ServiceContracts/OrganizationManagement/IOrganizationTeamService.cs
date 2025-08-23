@@ -18,7 +18,7 @@ public interface IOrganizationTeamService
     /// <returns>The organization team if found.</returns>
     /// <exception cref="NotFoundException">Thrown when the team is not found.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<OrganizationTeam?> GetTeamAsync(Guid teamId, CancellationToken cancellationToken = default);
+    Task<OrganizationTeamDto> GetTeamAsync(Guid teamId, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Retrieves a specific team along with its members by the team's unique identifier.
@@ -28,7 +28,7 @@ public interface IOrganizationTeamService
     /// <returns>The organization team with its members if found.</returns>
     /// <exception cref="NotFoundException">Thrown when the team is not found.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<OrganizationTeam?> GetTeamWithMembersAsync(Guid teamId, CancellationToken cancellationToken = default);
+    Task<OrganizationTeamDto> GetTeamWithMembersAsync(Guid teamId, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Retrieves all teams belonging to a specific organization.
@@ -37,7 +37,7 @@ public interface IOrganizationTeamService
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>A collection of teams in the specified organization.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<IEnumerable<OrganizationTeam>> GetOrganizationTeamsAsync(Guid organizationId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationTeamDto>> GetOrganizationTeamsAsync(Guid organizationId, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Retrieves all members of a specific team.
@@ -46,17 +46,17 @@ public interface IOrganizationTeamService
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>A collection of team members in the specified team.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<IEnumerable<OrganizationTeamMember>> GetTeamMembersAsync(Guid teamId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationTeamMemberDto>> GetTeamMembersAsync(Guid teamId, CancellationToken cancellationToken = default);
   
     /// <summary>
     /// Creates a new team within an organization and automatically adds the team manager as the first member.
     /// </summary>
-    /// <param name="dto">Data transfer object containing team creation information.</param>
+    /// <param name="request">Data transfer object containing team creation information.</param>
     /// <returns>The newly created organization team.</returns>
     /// <exception cref="BusinessRuleException">Thrown when the team manager is not a member of the organization.</exception>
     /// <exception cref="ConflictException">Thrown when a team with the same name already exists in the organization.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<OrganizationTeam> CreateTeamAsync(CreateTeamDto dto);
+    Task<OrganizationTeamDto> CreateTeamAsync(CreateTeamRequest request);
    
     /// <summary>
     /// Adds a member to an existing team.
@@ -65,23 +65,22 @@ public interface IOrganizationTeamService
     /// <param name="memberId">The unique identifier of the member to add.</param>
     /// <param name="requestingUserId">The unique identifier of the user requesting the addition.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
-    /// <returns>True if the member was successfully added to the team.</returns>
+    /// <returns>The added team member dto.</returns>
     /// <exception cref="ConflictException">Thrown when the member is already a member of the team.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<bool> AddMemberToTeamAsync(Guid teamId, Guid memberId, Guid requestingUserId, CancellationToken cancellationToken = default);
+    Task<OrganizationTeamMemberDto> AddMemberToTeamAsync(Guid teamId, Guid memberId, Guid requestingUserId, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Updates the name and/or description of an existing team.
     /// </summary>
     /// <param name="teamId">The unique identifier of the team to update.</param>
-    /// <param name="name">The new name for the team (null to keep the existing name).</param>
-    /// <param name="description">The new description for the team (null to keep the existing description).</param>
+    /// <param name="request">The new data of the team.</param>
     /// <param name="requestingUserId">The unique identifier of the user requesting the update.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the team was successfully updated, false otherwise.</returns>
     /// <exception cref="NotFoundException">Thrown when the team is not found.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<bool> UpdateTeamAsync(Guid teamId, string? name, string? description, Guid requestingUserId, CancellationToken cancellationToken = default);
+    Task<bool> UpdateTeamAsync(Guid teamId, UpdateTeamRequest request, Guid requestingUserId, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Deletes a team from the organization.

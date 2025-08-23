@@ -45,6 +45,7 @@ public class OrganizationRepository(SQLServerDbContext dbContext, ILogger<Organi
         try
         {
             return await dbContext.Organizations
+                .AsNoTracking()
                 .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
         }
         catch (Exception ex)
