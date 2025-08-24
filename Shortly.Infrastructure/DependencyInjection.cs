@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Shortly.Core.Models;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.RepositoryContract.ClickTracking;
+using Shortly.Core.RepositoryContract.EmailService;
 using Shortly.Core.RepositoryContract.UrlManagement;
 using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Core.RepositoryContract.UserManagement;
@@ -12,6 +14,7 @@ using Shortly.Infrastructure.Repositories.ClickTracking;
 using Shortly.Infrastructure.Repositories.OrganizationManagement;
 using Shortly.Infrastructure.Repositories.UrlManagement;
 using Shortly.Infrastructure.Repositories.UserManagement;
+using Shortly.Infrastructure.Services;
 
 namespace Shortly.Infrastructure;
 
@@ -28,6 +31,7 @@ public static class DependencyInjection
     /// <param name="services">
     /// The <see cref="IServiceCollection"/> instance to which the infrastructure services will be added.
     /// </param>
+    /// <param name="configuration"></param>
     /// <returns>
     /// The same <see cref="IConfiguration"/> instance, allowing for fluent chaining of service registrations.
     /// </returns>
@@ -36,6 +40,21 @@ public static class DependencyInjection
         // Register infrastructure-related services.
         services.AddDbContext<SQLServerDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("ConnectionString")));
+        
+        // Register email provider (can be configured to use different providers)
+        services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+
+        var emailProvider = configuration["EmailSettings:Provider"]?.ToLower() ?? "smtp";
+        switch (emailProvider)
+        {
+            case "smtp":
+                services.AddScoped<IEmailProvider, SmtpEmailProvider>();
+                break;
+            // Add other providers like SendGrid, AWS SES, etc.
+            default:
+                services.AddScoped<IEmailProvider, SmtpEmailProvider>();
+                break;
+        }
 
         // User Management
         services.AddScoped<IUserRepository, UserRepository>();

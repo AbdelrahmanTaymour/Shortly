@@ -12,7 +12,7 @@ public class RefreshToken
     public DateTime? UpdatedAt { get; set; }
 
     // Navigation properties
-    public User? User { get; set; }
+    public User User { get; set; }
 
     // Computed properties
     public bool IsExpired => DateTime.UtcNow >= ExpiresAt;

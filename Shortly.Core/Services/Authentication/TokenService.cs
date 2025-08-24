@@ -130,12 +130,13 @@ public class TokenService(
         return await refreshTokenRepository.RevokeAllRefreshTokensAsync(userId, cancellationToken);
     }
 
+    /// <inheritdoc />
     public string GenerateRedirectToken(string shortCode, TimeSpan lifetime)
     {
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_jwtSection["Key"] ?? throw new InvalidOperationException()));
 
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
         {
@@ -144,15 +145,16 @@ public class TokenService(
         };
 
         var token = new JwtSecurityToken(
-            issuer: configuration["JwtSettings:Issuer"],
-            audience: configuration["JwtSettings:Audience"],
+            issuer: configuration["Jwt:Issuer"],
+            audience: configuration["Jwt:Audience"],
             claims: claims,
             expires: DateTime.UtcNow.Add(lifetime), // very short lifetime
-            signingCredentials: creds);
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    /// <inheritdoc />
     public string? ValidateRedirectToken(string token)
     {
         try
@@ -216,7 +218,7 @@ public class TokenService(
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.Username),
             new(ClaimTypes.Email, user.Email),
-            new("Permissions", ((long)user.Permissions).ToString()),
+            new("Permissions", (user.Permissions).ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
         return claims;
@@ -256,7 +258,7 @@ public class TokenService(
     /// Creates and stores a hashed refresh token for the given user ID.
     /// </summary>
     /// <param name="userId">The ID of the user to associate with the token.</param>
-    /// <returns>The saved refresh token entity, with unhashed token in the TokenHash property.</returns>
+    /// <returns>The saved refresh token entity, with an unhashed token in the TokenHash property.</returns>
     /// <exception cref="DatabaseException">Thrown if storing the refresh token fails.</exception>
     /// <exception cref="ConfigurationException">Thrown if the refresh token expiration config is missing.</exception>
     private async Task<RefreshToken> CreateRefreshTokenAsync(Guid userId)

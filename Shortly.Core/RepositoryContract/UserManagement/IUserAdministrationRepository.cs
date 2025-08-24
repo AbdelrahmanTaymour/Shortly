@@ -2,13 +2,12 @@ using Shortly.Core.DTOs;
 using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
-using Shortly.Domain.Entities;
 
 namespace Shortly.Core.RepositoryContract.UserManagement;
 
 public interface IUserAdministrationRepository
 {
-    // Admin-specific user management
+    // SuperAdmin-specific user management
 
     /// <summary>
     /// Forcefully updates a user and all their related entities (profile, security, and usage) 

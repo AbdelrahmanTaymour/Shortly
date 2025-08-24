@@ -141,7 +141,7 @@ public class Program
         
         // Custom Services
         builder.Services.AddInfrastructure(builder.Configuration);
-        builder.Services.AddCore();
+        builder.Services.AddCore(builder.Configuration);
 
         var app = builder.Build();
 
