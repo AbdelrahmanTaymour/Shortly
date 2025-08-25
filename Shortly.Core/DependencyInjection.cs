@@ -1,12 +1,16 @@
 using FluentValidation;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Shortly.Core.Models;
 using Shortly.Core.ServiceContracts.Authentication;
 using Shortly.Core.ServiceContracts.ClickTracking;
+using Shortly.Core.ServiceContracts.Email;
 using Shortly.Core.ServiceContracts.OrganizationManagement;
 using Shortly.Core.ServiceContracts.UrlManagement;
 using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Core.Services.Authentication;
 using Shortly.Core.Services.ClickTracking;
+using Shortly.Core.Services.Email;
 using Shortly.Core.Services.OrganizationManagement;
 using Shortly.Core.Services.UrlManagement;
 using Shortly.Core.Services.UserManagement;
@@ -28,12 +32,19 @@ public static class DependencyInjection
     /// <param name="services">
     /// The <see cref="IServiceCollection"/> to which Core services will be added.
     /// </param>
+    /// <param name="configuration"></param>
     /// <returns>
     /// The modified <see cref="IServiceCollection"/> with registered Core services.
     /// </returns>
-    public static IServiceCollection AddCore(this IServiceCollection services)
+    public static IServiceCollection AddCore(this IServiceCollection services, IConfiguration configuration)
     {
         // Register Core-related services.
+        
+        // Email
+        services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+        services.AddScoped<IEmailNotificationService, EmailNotificationService>();
 
         // Auth
         services.AddScoped<IAuthenticationService, AuthenticationService>();
