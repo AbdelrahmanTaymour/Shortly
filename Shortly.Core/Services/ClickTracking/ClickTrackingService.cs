@@ -1,8 +1,6 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Shortly.Core.Models;
 using Shortly.Core.RepositoryContract.ClickTracking;
-using Shortly.Core.ServiceContracts.Authentication;
 using Shortly.Core.ServiceContracts.ClickTracking;
 using Shortly.Core.ServiceContracts.UrlManagement;
 using Shortly.Domain.Entities;
@@ -41,7 +39,6 @@ public class ClickTrackingService (
     IGeoLocationService geoLocationService,
     IUserAgentParsingService userAgentParsingService,
     ITrafficSourceAnalyzer trafficSourceAnalyzer,
-    IAuthenticationContextProvider authenticationContext,
     ILogger<ClickTrackingService> logger
     ) : IClickTrackingService
 {

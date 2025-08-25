@@ -8,13 +8,13 @@ using Shortly.Core.ServiceContracts.Authentication;
 namespace Shortly.API.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[Route("api")]
 public class AuthController(IAuthenticationService authenticationService) : ControllerBase
 {
     private readonly IAuthenticationService _authenticationService = authenticationService;
 
     [Time]
-    [HttpPost("register", Name = "Register")]
+    [HttpPost("auth/register", Name = "Register")]
     [ProducesResponseType(typeof(AuthenticationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
@@ -28,7 +28,7 @@ public class AuthController(IAuthenticationService authenticationService) : Cont
     }
 
     [Time]
-    [HttpPost("login", Name = "Login")]
+    [HttpPost("auth/login", Name = "Login")]
     [ProducesResponseType(typeof(AuthenticationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
