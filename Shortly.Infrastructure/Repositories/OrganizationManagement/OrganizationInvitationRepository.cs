@@ -19,7 +19,7 @@ public class OrganizationInvitationRepository(
     SQLServerDbContext dbContext,
     ILogger<OrganizationInvitationRepository> logger) : IOrganizationInvitationRepository
 {
-    
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationInvitation>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -35,6 +35,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationInvitation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -50,6 +51,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationInvitation>> GetByOrganizationIdAsync(Guid organizationId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         try
@@ -69,23 +71,8 @@ public class OrganizationInvitationRepository(
             throw new DatabaseException("An error occurred while retrieving organization invitations.", ex);
         }
     }
-
-    public async Task<OrganizationInvitation?> GetByTokenAsync(string token, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            return await dbContext.OrganizationInvitations
-                .AsNoTracking()
-                .Include(i => i.Organization)
-                .FirstOrDefaultAsync(i => i.InvitationToken == token, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error retrieving organization invitation with token {Token}.", token);
-            throw new DatabaseException("An error occurred while retrieving the invitation by token.", ex);
-        }
-    }
-
+    
+    /// <inheritdoc />
     public async Task<OrganizationInvitation?> GetByEmailAndOrganizationAsync(string email, Guid organizationId, CancellationToken cancellationToken = default)
     {
         try
@@ -103,6 +90,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationInvitation>> GetPendingInvitationsAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         try
@@ -119,6 +107,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<OrganizationInvitation>> GetExpiredInvitationsAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -137,6 +126,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<OrganizationInvitation> AddAsync(OrganizationInvitation entity, CancellationToken cancellationToken = default)
     {
         try
@@ -153,6 +143,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> UpdateAsync(OrganizationInvitation entity, CancellationToken cancellationToken = default)
     {
         try
@@ -167,6 +158,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -183,6 +175,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -198,6 +191,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> HasPendingInvitationAsync(string email, Guid organizationId, CancellationToken cancellationToken = default)
     {
         try
@@ -219,6 +213,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> ExpireInvitationAsync(Guid invitationId, CancellationToken cancellationToken = default)
     {
         try
@@ -237,6 +232,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> AcceptInvitationAsync(Guid invitationId, CancellationToken cancellationToken = default)
     {
         try
@@ -256,6 +252,7 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> RejectInvitationAsync(Guid invitationId, CancellationToken cancellationToken = default)
     {
         try
@@ -274,6 +271,26 @@ public class OrganizationInvitationRepository(
         }
     }
 
+    /// <inheritdoc />
+    public async Task<bool> MarkInvitationAsSentAsync(Guid invitationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationInvitations
+                .AsNoTracking()
+                .Where(i => i.Id == invitationId)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(i => i.Status, enInvitationStatus.EmailSent)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error marking invitation as sent with ID {InvitationId}.", invitationId);
+            throw new DatabaseException("An error occurred while marking invitation as sent.", ex);
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<bool> CleanupExpiredInvitationsAsync()
     {
         try

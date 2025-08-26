@@ -50,7 +50,25 @@ public class OrganizationMemberRepository(SQLServerDbContext dbContext, ILogger<
             throw new DatabaseException("An error occurred while retrieving the organization member.", ex);
         }
     }
-    
+
+    /// <inheritdoc />
+    public async Task<string?> GetMemberUsernameAsync(Guid organizationId, Guid memberId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationMembers
+                .AsNoTracking()
+                .Where(m => m.OrganizationId == organizationId && m.Id == memberId && m.IsActive)
+                .Select(m => m.User.Username)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving organization member name with ID {MemberId}.", memberId);
+            throw new DatabaseException("An error occurred while retrieving the organization member name.", ex);
+        }
+    }
+
     /// <inheritdoc />
     public async Task<IEnumerable<OrganizationMember>> GetByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
