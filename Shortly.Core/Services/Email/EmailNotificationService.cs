@@ -76,18 +76,17 @@ public class EmailNotificationService(
     }
 
     /// <inheritdoc />
-    public async Task<EmailResult> SendUserInvitationAsync(string email, string inviterName, string inviteeName,
-        string invitationToken,
+    public async Task<EmailResult> SendUserInvitationAsync(string email, string inviterUsername, string inviteeName,
+        string? invitationToken,
         string organizationName)
     {
         try
         {
-            var baseUrl = configuration["AppSettings:BaseUrl"];
-            var invitationLink =
-                $"{baseUrl}/accept-invitation?token={invitationToken}&email={Uri.EscapeDataString(email)}";
+            var baseUiUrl = configuration["AppSettings:BaseUrl"];
+            var invitationLink = $"{baseUiUrl}/api/organization-invitations/accept?token={Uri.EscapeDataString(invitationToken)}";
 
             var template =
-                templateService.GetUserInvitationTemplateAsync(inviterName, inviteeName, invitationLink,
+                templateService.GetUserInvitationTemplateAsync(inviterUsername, inviteeName, invitationLink,
                     organizationName);
 
             var request = new EmailRequest
@@ -98,7 +97,7 @@ public class EmailNotificationService(
                 IsHtml = template.IsHtml
             };
 
-            logger.LogInformation("Sending user invitation to {Email} from {Inviter}", email, inviterName);
+            logger.LogInformation("Sending user invitation to {Email} from {Inviter}", email, inviterUsername);
             return await emailService.SendAsync(request);
         }
         catch (Exception ex)

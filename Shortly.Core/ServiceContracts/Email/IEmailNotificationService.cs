@@ -35,13 +35,13 @@ public interface IEmailNotificationService
     /// Sends an invitation email to a new user to join an organization.
     /// </summary>
     /// <param name="email">The invitee's email address.</param>
-    /// <param name="inviterName">The name of the person sending the invitation.</param>
-    /// <param name="inviteeName">The name of the person being invited.</param>
+    /// <param name="inviterUsername">The name of the person sending the invitation.</param>
+    /// <param name="inviteeName">The username of the person being invited.</param>
     /// <param name="invitationToken">The unique token for accepting the invitation.</param>
     /// <param name="organizationName">The name of the organization the invitee is asked to join.</param>
     /// <returns>
     /// An <see cref="EmailResult"/> that contains the outcome of the email operation,
     /// including success status and error details when applicable.
     /// </returns>
-    Task<EmailResult> SendUserInvitationAsync(string email, string inviterName, string inviteeName, string invitationToken, string organizationName);
+    Task<EmailResult> SendUserInvitationAsync(string email, string inviterUsername, string inviteeName, string? invitationToken, string organizationName);
 }
