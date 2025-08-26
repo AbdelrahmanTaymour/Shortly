@@ -40,6 +40,16 @@ public interface IOrganizationMemberRepository
     Task<OrganizationMember?> GetByOrganizationAndUserAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
+    /// Retrieves the username of an active member within a specific organization.
+    /// </summary>
+    /// <param name="organizationId">The unique identifier of the organization.</param>
+    /// <param name="memberId">The unique identifier of the member.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
+    /// <returns>The username of the member if found and active; otherwise, <c>null</c>.</returns>
+    /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
+    Task<string?> GetMemberUsernameAsync(Guid organizationId, Guid memberId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
     /// Retrieves all active members of a specific organization, including organization and role details.
     /// </summary>
     /// <param name="organizationId">The unique identifier of the organization.</param>

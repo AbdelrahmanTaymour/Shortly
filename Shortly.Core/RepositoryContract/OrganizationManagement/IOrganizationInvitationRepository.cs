@@ -38,15 +38,6 @@ public interface IOrganizationInvitationRepository
     Task<IEnumerable<OrganizationInvitation>> GetByOrganizationIdAsync(Guid organizationId, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default);
    
     /// <summary>
-    /// Retrieves an organization invitation by its unique invitation token including organization details.
-    /// </summary>
-    /// <param name="token">The unique invitation token.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
-    /// <returns>The organization invitation with organization details if found; otherwise, null.</returns>
-    /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<OrganizationInvitation?> GetByTokenAsync(string token, CancellationToken cancellationToken = default);
-    
-    /// <summary>
     /// Retrieves an organization invitation by email address and organization identifier.
     /// </summary>
     /// <param name="email">The email address of the invited user.</param>
@@ -145,6 +136,20 @@ public interface IOrganizationInvitationRepository
     /// <returns>True if the invitation was successfully rejected; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
     Task<bool> RejectInvitationAsync(Guid invitationId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Marks a specific organization invitation as sent by updating its status in the database.
+    /// </summary>
+    /// <param name="invitationId">The unique identifier of the invitation to update.</param>
+    /// <param name="cancellationToken">
+    /// A token to monitor for cancellation requests while the operation is in progress.
+    /// </param>
+    /// <returns>
+    /// A task representing the asynchronous operation. The task result is <c>true</c> if the update 
+    /// was successful (at least one row affected); otherwise, <c>false</c>.
+    /// </returns>
+    /// <exception cref="DatabaseException"> Thrown when an error occurs while accessing or updating the database.</exception>
+    Task<bool> MarkInvitationAsSentAsync(Guid invitationId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Performs cleanup of expired invitations by marking all pending invitations past their expiration date as expired.

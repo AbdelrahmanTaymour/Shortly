@@ -28,13 +28,13 @@ public interface IOrganizationInvitationService
     /// <summary>
     /// Retrieves an invitation by its unique token.
     /// </summary>
-    /// <param name="token">The invitation token.</param>
+    /// <param name="id">The invitation token Id.</param>
     /// <param name="cancellationToken">Token for canceling the operation.</param>
     /// <returns>The corresponding <see cref="OrganizationInvitation"/> if found.</returns>
     /// <exception cref="NotFoundException">Thrown if the invitation is not found.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<OrganizationInvitationDto> GetInvitationByTokenAsync(string token, CancellationToken cancellationToken = default);
-   
+    Task<OrganizationInvitationDto> GetInvitationByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    
     /// <summary>
     /// Retrieves all invitations for a given organization with pagination support.
     /// </summary>
@@ -60,17 +60,17 @@ public interface IOrganizationInvitationService
     /// <summary>
     /// Rejects an invitation using its token.
     /// </summary>
-    /// <param name="token">The invitation token.</param>
+    /// <param name="invitationId">The identifier of the invitation (InvitationId of the invitation Token).</param>
     /// <param name="cancellationToken">Token for canceling the operation.</param>
     /// <returns><c>true</c> if the invitation is rejected successfully.</returns>
     /// <exception cref="ValidationException">Thrown if the invitation is invalid, expired, or already handled.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<bool> RejectInvitationAsync(string token, CancellationToken cancellationToken = default);
+    Task<bool> RejectInvitationAsync(Guid invitationId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Cancels an invitation if the requesting user is the inviter.
     /// </summary>
-    /// <param name="invitationId">The identifier of the invitation.</param>
+    /// <param name="invitationId">The identifier of the invitation (InvitationId of the invitation Token).</param>
     /// <param name="requestingUserId">The identifier of the user requesting cancellation.</param>
     /// <param name="cancellationToken">Token for canceling the operation.</param>
     /// <returns><c>true</c> if the invitation is canceled successfully.</returns>
@@ -100,9 +100,9 @@ public interface IOrganizationInvitationService
     /// <summary>
     /// Validates whether an invitation token is still active and usable.
     /// </summary>
-    /// <param name="token">The invitation token.</param>
+    /// <param name="invitationId">The identifier of the invitation.</param>
     /// <param name="cancellationToken">Token for canceling the operation.</param>
     /// <returns><c>true</c> if the token is valid and the invitation is active; otherwise, <c>false</c>.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<bool> ValidateInvitationTokenAsync(string token, CancellationToken cancellationToken = default);
+    Task<bool> ValidateInvitationTokenAsync(Guid invitationId, CancellationToken cancellationToken = default);
 }
