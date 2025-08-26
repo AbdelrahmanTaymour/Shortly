@@ -10,9 +10,9 @@ namespace Shortly.Domain.Enums;
 public enum enInvitationStatus
 {
     Pending = 1,
-    EmailSent,
-    Failure,
-    UserClicked,
-    Registered,
-    Rejected
+    EmailSent = 2,
+    Failure = 3,
+    UserClicked = 4,
+    Registered = 5,
+    Rejected = 6
 }
