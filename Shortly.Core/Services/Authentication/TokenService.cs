@@ -70,7 +70,7 @@ public class TokenService(
             throw new UnauthorizedException("Refresh token is no longer active.");
         }
 
-        // Generate new refresh token string
+        // Generate a new refresh token string
         var newRefreshToken = GenerateRefreshTokenString();
 
         // Update Refresh Token entity
@@ -178,7 +178,7 @@ public class TokenService(
     }
 
     #region Private Methods
-
+    
     /// <summary>
     /// Generates a JWT access token for the specified user.
     /// </summary>

@@ -123,12 +123,18 @@ public class SmtpEmailProvider : IEmailProvider
         message.To.Add(request.To);
 
         // Add CC recipients
-        foreach (var cc in request.Cc.Where(email => !string.IsNullOrWhiteSpace(email) && IsEmailAllowed(email)))
+        foreach (var cc in (request.Cc ?? Enumerable.Empty<string>())
+                 .Where(email => !string.IsNullOrWhiteSpace(email) && IsEmailAllowed(email)))
+        {
             message.CC.Add(cc);
+        }
 
         // Add BCC recipients
-        foreach (var bcc in request.Bcc.Where(email => !string.IsNullOrWhiteSpace(email) && IsEmailAllowed(email)))
+        foreach (var bcc in (request.Bcc ?? Enumerable.Empty<string>())
+                 .Where(email => !string.IsNullOrWhiteSpace(email) && IsEmailAllowed(email)))
+        {
             message.Bcc.Add(bcc);
+        }
 
         if (_generalSettings.LogEmailContent)
             _logger.LogDebug("Sending email - To: {To}, Subject: {Subject}, Body Length: {BodyLength}",
