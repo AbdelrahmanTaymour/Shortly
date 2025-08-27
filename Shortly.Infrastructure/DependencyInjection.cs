@@ -8,6 +8,7 @@ using Shortly.Core.RepositoryContract.EmailService;
 using Shortly.Core.RepositoryContract.UrlManagement;
 using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Core.RepositoryContract.UserManagement;
+using Shortly.Infrastructure.BackgroundServices;
 using Shortly.Infrastructure.DbContexts;
 using Shortly.Infrastructure.Repositories;
 using Shortly.Infrastructure.Repositories.ClickTracking;
@@ -41,7 +42,8 @@ public static class DependencyInjection
         services.AddDbContext<SQLServerDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("ConnectionString")));
         
-        // Register email provider (can be configured to use different providers)
+        
+        // Register an email provider (can be configured to use different providers)
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
 
         var emailProvider = configuration["EmailSettings:Provider"]?.ToLower() ?? "smtp";
@@ -88,6 +90,9 @@ public static class DependencyInjection
 
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         
+        
+        // Register background services
+        services.AddHostedService<EmailBackgroundWorker>();
 
         return services;
     }

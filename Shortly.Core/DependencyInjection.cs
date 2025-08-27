@@ -42,6 +42,7 @@ public static class DependencyInjection
         
         // Email
         services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
+        services.AddSingleton<EmailQueueService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
         services.AddScoped<IEmailNotificationService, EmailNotificationService>();
