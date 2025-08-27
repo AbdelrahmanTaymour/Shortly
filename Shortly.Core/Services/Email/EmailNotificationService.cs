@@ -12,98 +12,70 @@ namespace Shortly.Core.Services.Email;
 ///     values (e.g., <c>AppSettings:BaseUrl</c>) and logs all email operations.
 /// </remarks>
 public class EmailNotificationService(
-    IEmailService emailService,
+    EmailQueueService emailQueueService,
     IEmailTemplateService templateService,
     IConfiguration configuration,
     ILogger<EmailNotificationService> logger)
     : IEmailNotificationService
 {
     /// <inheritdoc />
-    public async Task<EmailResult> SendEmailVerificationAsync(string email, string userName, string verificationToken)
+    public void SendEmailVerificationAsync(string email, string userName, string verificationToken)
     {
-        try
+        var baseUrl = configuration["AppSettings:BaseUrl"];
+        var verificationLink = $"{baseUrl}/verify-email?token={verificationToken}&email={Uri.EscapeDataString(email)}";
+
+        var template = templateService.GetEmailVerificationTemplateAsync(userName, verificationLink);
+
+        var emailRequest = new EmailRequest
         {
-            var baseUrl = configuration["AppSettings:BaseUrl"];
-            var verificationLink =
-                $"{baseUrl}/verify-email?token={verificationToken}&email={Uri.EscapeDataString(email)}";
+            To = email,
+            Subject = template.Subject,
+            Body = template.Body,
+            IsHtml = template.IsHtml
+        };
 
-            var template = templateService.GetEmailVerificationTemplateAsync(userName, verificationLink);
-
-            var request = new EmailRequest
-            {
-                To = email,
-                Subject = template.Subject,
-                Body = template.Body,
-                IsHtml = template.IsHtml
-            };
-
-            logger.LogInformation("Sending email verification to {Email}", email);
-            return await emailService.SendAsync(request);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to send email verification to {Email}", email);
-            return EmailResult.Failure("Failed to send email verification", ex);
-        }
+        emailQueueService.EnqueueEmail(emailRequest);
+        logger.LogInformation("Enqueued email verification to '{Email}'.", email);
     }
 
     /// <inheritdoc />
-    public async Task<EmailResult> SendPasswordResetAsync(string email, string userName, string resetToken)
+    public void SendPasswordResetAsync(string email, string userName, string resetToken)
     {
-        try
+        var baseUrl = configuration["AppSettings:BaseUrl"];
+        var resetLink = $"{baseUrl}/reset-password?token={resetToken}&email={Uri.EscapeDataString(email)}";
+
+        var template = templateService.GetPasswordResetTemplateAsync(userName, resetLink);
+
+        var emailRequest = new EmailRequest
         {
-            var baseUrl = configuration["AppSettings:BaseUrl"];
-            var resetLink = $"{baseUrl}/reset-password?token={resetToken}&email={Uri.EscapeDataString(email)}";
+            To = email,
+            Subject = template.Subject,
+            Body = template.Body,
+            IsHtml = template.IsHtml
+        };
 
-            var template = templateService.GetPasswordResetTemplateAsync(userName, resetLink);
-
-            var request = new EmailRequest
-            {
-                To = email,
-                Subject = template.Subject,
-                Body = template.Body,
-                IsHtml = template.IsHtml
-            };
-
-            logger.LogInformation("Sending password reset email to {Email}", email);
-            return await emailService.SendAsync(request);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to send password reset email to {Email}", email);
-            return EmailResult.Failure("Failed to send password reset email", ex);
-        }
+        emailQueueService.EnqueueEmail(emailRequest);
+        logger.LogInformation("Enqueued reset password email to {Email}.", email);
+        
     }
 
     /// <inheritdoc />
-    public async Task<EmailResult> SendUserInvitationAsync(string email, string inviterUsername, string inviteeName,
-        string? invitationToken,
-        string organizationName)
+    public void EnqueueSendUserInvitation(string email, string inviterUsername, string inviteeName, string invitationToken, string organizationName)
     {
-        try
+        var baseUiUrl = configuration["AppSettings:BaseUIUrl"];
+        var invitationLink = $"{baseUiUrl}/authPage.html?token={Uri.EscapeDataString(invitationToken)}";
+
+        var template = templateService.GetUserInvitationTemplateAsync(inviterUsername, inviteeName, invitationLink, organizationName);
+
+        var emailRequest = new EmailRequest
         {
-            var baseUiUrl = configuration["AppSettings:BaseUrl"];
-            var invitationLink = $"{baseUiUrl}/api/organization-invitations/accept?token={Uri.EscapeDataString(invitationToken)}";
+            To = email,
+            Subject = template.Subject,
+            Body = template.Body,
+            IsHtml = template.IsHtml
+        };
 
-            var template =
-                templateService.GetUserInvitationTemplateAsync(inviterUsername, inviteeName, invitationLink,
-                    organizationName);
-
-            var request = new EmailRequest
-            {
-                To = email,
-                Subject = template.Subject,
-                Body = template.Body,
-                IsHtml = template.IsHtml
-            };
-
-            logger.LogInformation("Sending user invitation to {Email} from {Inviter}", email, inviterUsername);
-            return await emailService.SendAsync(request);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to send user invitation to {Email}", email);
-            return EmailResult.Failure("Failed to send user invitation", ex);
-        }
+        emailQueueService.EnqueueEmail(emailRequest);
+        logger.LogInformation("Enqueued invitation email for {Email} by {Inviter}.", email, inviterUsername);
     }
 }
