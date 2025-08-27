@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace Shortly.Core.Extensions;
 
@@ -16,14 +17,13 @@ public static class Sha256Extensions
     public static string ComputeHash(string input)
     {
         // Create an instance of the SHA-256 algorithm
-        using (var sha256 = SHA256.Create())
-        {
-            // Compute the hash value from the UTF-8 encoded input string
-            var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+        using var sha256 = SHA256.Create();
+        
+        // Compute the hash value from the UTF-8 encoded input string
+        var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
 
-            // Convert the byte array to a lowercase hexadecimal string
-            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-        }
+        // Convert the byte array to a lowercase hexadecimal string
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
     }
 
     /// <summary>
@@ -32,32 +32,23 @@ public static class Sha256Extensions
     /// <param name="plainText">The text to encrypt. If null, returns null.</param>
     /// <param name="key">The 16-byte encryption key (default is "1234567890123456").</param>
     /// <returns>The encrypted text as a Base64-encoded string.</returns>
-    public static string? Encrypt(string? plainText, string key = "1234567890123456")
+    public static string Encrypt(string plainText, string key = "1234567890123456")
     {
-        if (plainText == null) return null;
+        using var aesAlg = Aes.Create();
+        aesAlg.Key = Encoding.UTF8.GetBytes(key);
+        aesAlg.IV = new byte[aesAlg.BlockSize / 8];
 
-        using (var aesAlg = Aes.Create())
+        var encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+        using var msEncrypt = new MemoryStream();
+        using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+        using (var swEncrypt = new StreamWriter(csEncrypt))
         {
-            // Set the key and IV for AES encryption
-            aesAlg.Key = Encoding.UTF8.GetBytes(key);
-            aesAlg.IV = new byte[aesAlg.BlockSize / 8];
-
-            // Create an encryptor
-            var encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
-
-            // Encrypt the data
-            using (var msEncrypt = new MemoryStream())
-            {
-                using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-                using (var swEncrypt = new StreamWriter(csEncrypt))
-                {
-                    swEncrypt.Write(plainText);
-                }
-
-                // Return the encrypted data as a Base64-encoded string
-                return Convert.ToBase64String(msEncrypt.ToArray());
-            }
+            swEncrypt.Write(plainText);
         }
+
+        // Make it URL-safe
+        return WebEncoders.Base64UrlEncode(msEncrypt.ToArray());
     }
 
 
@@ -71,23 +62,17 @@ public static class Sha256Extensions
     {
         if (cipherText == null) return null;
 
-        using (var aesAlg = Aes.Create())
-        {
-            // Set the key and IV for AES decryption
-            aesAlg.Key = Encoding.UTF8.GetBytes(key);
-            aesAlg.IV = new byte[aesAlg.BlockSize / 8];
+        using var aesAlg = Aes.Create();
+        aesAlg.Key = Encoding.UTF8.GetBytes(key);
+        aesAlg.IV = new byte[aesAlg.BlockSize / 8];
 
-            // Create a decrypt
-            var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+        var decrypted = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
-            // Decrypt the data
-            using (var msDecrypt = new MemoryStream(Convert.FromBase64String(cipherText)))
-            using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-            using (var srDecrypt = new StreamReader(csDecrypt))
-            {
-                // Read the decrypted data from the StreamReader
-                return srDecrypt.ReadToEnd();
-            }
-        }
+        var buffer = WebEncoders.Base64UrlDecode(cipherText);
+
+        using var msDecrypt = new MemoryStream(buffer);
+        using var csDecrypt = new CryptoStream(msDecrypt, decrypted, CryptoStreamMode.Read);
+        using var srDecrypt = new StreamReader(csDecrypt);
+        return srDecrypt.ReadToEnd();
     }
 }

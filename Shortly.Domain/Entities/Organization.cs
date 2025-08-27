@@ -27,4 +27,3 @@ public class Organization
     public ICollection<ShortUrl> ShortUrls { get; set; }
     public ICollection<OrganizationAuditLog> AuditLogs { get; set; }
 }
-// TODO: public Dictionary<string, object> Settings { get; set; } = new();

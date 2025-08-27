@@ -68,7 +68,7 @@ public class ShortUrlRedirectController(IShortUrlRedirectService redirectService
         if (shortCode == null)
             return Forbid();
         
-        return Content(PasswordFormTemplate.Generate(error, token), "text/html");
+        return Content(UrlPasswordFormTemplate.Generate(error, token), "text/html");
     }
     
     

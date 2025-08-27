@@ -1,6 +1,5 @@
 using System.Net;
 using Shortly.Core.Exceptions.Base;
-using FluentValidation;
 
 namespace Shortly.Core.Exceptions.ClientErrors;
 
@@ -33,9 +32,7 @@ public sealed class ValidationException : ClientErrorException
             { field, new[] { error } }
         })
     {
-        // TODO: Debug this this ctor
-        ValidationErrors = Details as Dictionary<string, string[]>
-                           ?? new Dictionary<string, string[]>();
+        ValidationErrors = Details as Dictionary<string, string[]> ?? new Dictionary<string, string[]>();
     }
 
     /// <summary>

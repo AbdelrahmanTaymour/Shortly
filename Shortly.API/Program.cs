@@ -100,17 +100,19 @@ public class Program
             });
         });
 
-        // CORS Configuration
+        // Add CORS services
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowFrontend", policy =>
+            options.AddDefaultPolicy(policyBuilder =>
             {
-                policy.WithOrigins("http://127.0.0.1:5501") // MUST match exactly
-                    .AllowAnyHeader()
+                policyBuilder.WithOrigins("http://localhost:3000", "https://localhost:3000", 
+                        "http://127.0.0.1:5501", "https://127.0.0.1:5501") // Add your frontend URLs
                     .AllowAnyMethod()
-                    .AllowCredentials();
+                    .AllowAnyHeader()
+                    .AllowCredentials(); // Only if you need cookies/sessions
             });
         });
+
 
         // Authentication
         builder.Services.AddAuthentication(options =>
@@ -151,7 +153,7 @@ public class Program
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         // 2. CORS
-        app.UseCors("AllowFrontend");
+        app.UseCors();
 
         // 3. Development-only middleware
         if (app.Environment.IsDevelopment())

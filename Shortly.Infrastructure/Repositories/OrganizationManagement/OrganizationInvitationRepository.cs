@@ -297,9 +297,8 @@ public class OrganizationInvitationRepository(
         {
             return await dbContext.OrganizationInvitations
                 .AsNoTracking()
-                .Where(i => i.Status == enInvitationStatus.Pending && i.ExpiresAt < DateTime.UtcNow)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(i => i.IsExpired, true)) > 0;
+                .Where(i => i.IsExpired)
+                .ExecuteDeleteAsync() > 0;
         }
         catch (Exception ex)
         {

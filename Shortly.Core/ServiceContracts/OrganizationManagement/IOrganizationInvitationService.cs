@@ -60,12 +60,12 @@ public interface IOrganizationInvitationService
     /// <summary>
     /// Rejects an invitation using its token.
     /// </summary>
-    /// <param name="invitationId">The identifier of the invitation (InvitationId of the invitation Token).</param>
+    /// <param name="token">The encrypted identifier of the invitation.</param>
     /// <param name="cancellationToken">Token for canceling the operation.</param>
     /// <returns><c>true</c> if the invitation is rejected successfully.</returns>
     /// <exception cref="ValidationException">Thrown if the invitation is invalid, expired, or already handled.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<bool> RejectInvitationAsync(Guid invitationId, CancellationToken cancellationToken = default);
+    Task<bool> RejectInvitationAsync(string token, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Cancels an invitation if the requesting user is the inviter.
@@ -100,9 +100,9 @@ public interface IOrganizationInvitationService
     /// <summary>
     /// Validates whether an invitation token is still active and usable.
     /// </summary>
-    /// <param name="invitationId">The identifier of the invitation.</param>
+    /// <param name="token">The encrypted identifier of the invitation.</param>
     /// <param name="cancellationToken">Token for canceling the operation.</param>
     /// <returns><c>true</c> if the token is valid and the invitation is active; otherwise, <c>false</c>.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<bool> ValidateInvitationTokenAsync(Guid invitationId, CancellationToken cancellationToken = default);
+    Task<bool> ValidateInvitationTokenAsync(string token, CancellationToken cancellationToken = default);
 }

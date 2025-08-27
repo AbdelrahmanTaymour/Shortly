@@ -76,7 +76,7 @@ public class ExceptionHandlingMiddleware
         // Handle specific system exceptions
         var response = exception switch
         {
-            ArgumentNullException nullEx =>
+            ArgumentNullException =>
                 CreateErrorResponse("Required parameter is missing.", "MissingParameter", HttpStatusCode.BadRequest,
                     traceId),
 

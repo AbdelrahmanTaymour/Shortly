@@ -44,14 +44,14 @@ public class OrganizationInvitationService(
             ExpiresAt = DateTime.UtcNow.AddDays(expiryDays),
             CreatedAt = DateTime.UtcNow
         };
-        
         var invitationCreated = await invitationRepository.AddAsync(invitation, cancellationToken);
         logger.LogInformation("Invitation created for {Email} to organization {OrganizationId}", dto.Email, organizationId);
         
-        // Send Email invitation
+        
+        // Enqueue email for background service to process
         var invitationToken = Sha256Extensions.Encrypt(invitationCreated.Id.ToString());
-        var emailSent = await SendInvitationEmail(organization, invitationCreated, invitationToken, cancellationToken);
-        if(emailSent) invitationCreated.Status = enInvitationStatus.EmailSent;
+        await SendInvitationEmail(organization, invitationCreated, invitationToken, cancellationToken);
+        logger.LogInformation("Invitation created for {Email} to organization {OrganizationId}", dto.Email, organizationId);
         
         return invitationCreated.MapToOrganizationInvitationDto();
     }
@@ -106,9 +106,10 @@ public class OrganizationInvitationService(
     }
 
     /// <inheritdoc />
-    public async Task<bool> RejectInvitationAsync(Guid invitationId, CancellationToken cancellationToken = default)
+    public async Task<bool> RejectInvitationAsync(string token, CancellationToken cancellationToken = default)
     {
-        var invitation = await invitationRepository.GetByIdAsync(invitationId, cancellationToken);
+        var id = Guid.Parse(Sha256Extensions.Decrypt(token) ?? throw new ValidationException("Invalid token invitation."));
+        var invitation = await invitationRepository.GetByIdAsync(id, cancellationToken);
         if (invitation == null || invitation.IsExpired ||
                 invitation.Status == enInvitationStatus.Failure || 
                 invitation.Status == enInvitationStatus.Registered || 
@@ -145,7 +146,8 @@ public class OrganizationInvitationService(
         
         // Resent invitation email
         var invitationToken = Sha256Extensions.Encrypt(invitation.Id.ToString()); 
-        return await SendInvitationEmail(organization, invitation, invitationToken, cancellationToken);
+        await SendInvitationEmail(organization, invitation, invitationToken, cancellationToken);
+        return true;
     }
 
     /// <inheritdoc />
@@ -155,10 +157,11 @@ public class OrganizationInvitationService(
     }
 
     /// <inheritdoc />
-    public async Task<bool> ValidateInvitationTokenAsync(Guid invitationId, CancellationToken cancellationToken = default)
+    public async Task<bool> ValidateInvitationTokenAsync(string token, CancellationToken cancellationToken = default)
     {
-        var invitation = await invitationRepository.GetByIdAsync(invitationId, cancellationToken);
-        return invitation != null && !invitation.IsExpired;
+        var id = Guid.Parse(Sha256Extensions.Decrypt(token) ?? throw new ValidationException("Invalid token invitation."));
+        var invitation = await invitationRepository.GetByIdAsync(id, cancellationToken);
+        return !(invitation == null || invitation.IsExpired);
     }
 
     /// <summary>
@@ -187,7 +190,7 @@ public class OrganizationInvitationService(
     /// <list type="bullet">
     /// <item>The organization exists.</item>
     /// <item>The organization has not exceeded its member limit.</item>
-    /// <item>The invitee is not already invited or an existing member.</item>
+    /// <item>The invitee is not yet invited or an existing member.</item>
     /// </list>
     /// </remarks>
     private async Task<Organization> ValidateInvitationCreationRequest(Guid organizationId, InviteMemberDto dto,
@@ -228,19 +231,12 @@ public class OrganizationInvitationService(
     /// If the email is sent successfully, the invitation record is updated to reflect that it has been sent.
     /// The inviter's username is resolved from the organization membership list.
     /// </remarks>
-    private async Task<bool> SendInvitationEmail(Organization organization, OrganizationInvitation invitation, string? invitationToken, CancellationToken cancellationToken = default)
+    private async Task SendInvitationEmail(Organization organization, OrganizationInvitation invitation, string invitationToken, CancellationToken cancellationToken = default)
     {
-        var inviterUsername =
-            await memberRepository.GetMemberUsernameAsync(invitation.OrganizationId, invitation.InvitedBy,
-                cancellationToken) ?? "Unknown";
+        var inviterUsername = await memberRepository.GetMemberUsernameAsync(invitation.OrganizationId, invitation.InvitedBy, cancellationToken) ?? "Unknown";
         var inviteeName = invitation.InvitedUserEmail.Split('@')[0];
 
-        var result = await notificationService.SendUserInvitationAsync(invitation.InvitedUserEmail, inviterUsername,
+        notificationService.EnqueueSendUserInvitation(invitation.InvitedUserEmail, inviterUsername,
             inviteeName, invitationToken,organization.Name);
-        
-        if(result.IsSuccess)
-            await invitationRepository.MarkInvitationAsSentAsync(invitation.Id, cancellationToken);
-        
-        return result.IsSuccess;
     }
 }

@@ -77,25 +77,25 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     /// <summary>
     /// Validates an invitation token to check if it's valid and not expired.
     /// </summary>
-    /// <param name="id">The invitation token id to validate.</param>
+    /// <param name="token">The invitation token to validate.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>True if the token is valid, false otherwise.</returns>
-    /// <example>GET /api/organization-invitations/550e8400-e29b-41d4-a716-446655440000/validate</example>
+    /// <example>GET /api/organization-invitations/validate?token=QCqPym5vuxi185cq1viT9DlvR4fV9P0ZvptE1qC7Pkf2FdFnNznFhWqYwzmOIYEU</example>
     /// <remarks>
     /// Sample Request:
     ///
-    ///      GET /api/organization-invitations/550e8400-e29b-41d4-a716-446655440000/validate
+    ///      GET /api/organization-invitations/validate?token=QCqPym5vuxi185cq1viT9DlvR4fV9P0ZvptE1qC7Pkf2FdFnNznFhWqYwzmOIYEU
     /// </remarks>
     /// <response code="200">Returns the validation status.</response>
     /// <response code="401">User is not authenticated.</response>
     /// <response code="403">User does not have permission to validate invitations.</response>
     /// <response code="500">An internal server error occurred.</response>
-    [HttpGet("{id:guid}/validate", Name = "ValidateInvitationToken")]
+    [HttpGet("validate", Name = "ValidateInvitationToken")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ValidateToken(Guid id, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ValidateToken([FromQuery] string token, CancellationToken cancellationToken = default)
     {
-        var isValid = await invitationService.ValidateInvitationTokenAsync(id, cancellationToken);
+        var isValid = await invitationService.ValidateInvitationTokenAsync(token, cancellationToken);
         return Ok(isValid);
     }
 
@@ -141,11 +141,11 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     /// <param name="token">The invitation token.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>Success status of the acceptance operation.</returns>
-    /// <example>POST /api/organization-invitations/token/abc123def456/accept</example>
+    /// <example>POST /api/organization-invitations/accept?token=QCqPym5vuxi185cq1viT9DlvR4fV9P0ZvptE1qC7Pkf2FdFnNznFhWqYwzmOIYEU</example>
     /// <remarks>
     /// Sample Request:
     ///
-    ///      POST /api/organization-invitations/token/abc123def456/accept
+    ///      POST /api/organization-invitations/accept?token=QCqPym5vuxi185cq1viT9DlvR4fV9P0ZvptE1qC7Pkf2FdFnNznFhWqYwzmOIYEU
     /// </remarks>
     /// <response code="200">Invitation accepted successfully.</response>
     /// <response code="400">Invalid or expired invitation.</response>
@@ -168,14 +168,14 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     /// <summary>
     /// Rejects an invitation to join an organization.
     /// </summary>
-    /// <param name="id">The invitation token Id.</param>
+    /// <param name="token">The invitation token.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>Success status of the rejection operation.</returns>
-    /// <example>POST /api/organization-invitations/token/abc123def456/reject</example>
+    /// <example>POST /api/organization-invitations/reject?token=QCqPym5vuxi185cq1viT9DlvR4fV9P0ZvptE1qC7Pkf2FdFnNznFhWqYwzmOIYEU</example>
     /// <remarks>
     /// Sample Request:
     ///
-    ///      POST /api/organization-invitations/token/abc123def456/reject
+    ///      POST /api/organization-invitations/reject?token=QCqPym5vuxi185cq1viT9DlvR4fV9P0ZvptE1qC7Pkf2FdFnNznFhWqYwzmOIYEU
     /// </remarks>
     /// <response code="200">Invitation rejected successfully.</response>
     /// <response code="400">Invalid or expired invitation.</response>
@@ -183,14 +183,14 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     /// <response code="403">User does not have permission to reject invitations.</response>
     /// <response code="404">Invitation not found.</response>
     /// <response code="500">An internal server error occurred.</response>
-    [HttpPost("{id:guid}/reject", Name = "RejectInvitation")]
+    [HttpPost("reject", Name = "RejectInvitation")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Reject(Guid id, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Reject([FromQuery] string token, CancellationToken cancellationToken = default)
     {
-        var result = await invitationService.RejectInvitationAsync(id, cancellationToken);
+        var result = await invitationService.RejectInvitationAsync(token, cancellationToken);
         return Ok(result);
     }
 

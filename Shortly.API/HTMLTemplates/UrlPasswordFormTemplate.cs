@@ -2,8 +2,37 @@ using System.Web;
 
 namespace Shortly.API.HTMLTemplates;
 
-public class PasswordFormTemplate
+/// <summary>
+/// Provides a template generator for rendering a password-protected short URL form.
+/// </summary>
+/// <remarks>
+/// This class is responsible for generating an HTML form that prompts the user
+/// to enter a password to access a protected short URL. It includes
+/// styling, validation logic, and an optional error message display.
+/// </remarks>
+public static class UrlPasswordFormTemplate
 {
+    /// <summary>
+    /// Generates the HTML form template for a password-protected short URL.
+    /// </summary>
+    /// <param name="errorMessage">
+    /// An optional error message to be displayed above the form.
+    /// If <c>null</c> or empty, no error section will be rendered.
+    /// </param>
+    /// <param name="token">
+    /// The unique token associated with the short URL.
+    /// This value is embedded in a hidden form field to ensure secure
+    /// verification during submission.
+    /// </param>
+    /// <returns>
+    /// A complete HTML string containing the styled password form, 
+    /// including optional error display and client-side validation.
+    /// </returns>
+    /// <remarks>
+    /// The returned HTML includes inline CSS for styling and JavaScript 
+    /// for basic password input validation. This template is intended
+    /// to be served as a full-page response.
+    /// </remarks>
     public static string Generate(string? errorMessage = null, string token = "")
     {
         var error = !string.IsNullOrEmpty(errorMessage)
