@@ -23,7 +23,7 @@ namespace Shortly.Core.Services.UrlManagement;
 /// </remarks>
 public class ShortUrlRedirectService(
     IShortUrlRedirectRepository redirectRepository,
-    IClickTrackingService clickTrackingService,
+    ClickTrackingQueueService clickTrackingQueueService,
     IAuthenticationContextProvider authenticationContext,
     ILogger<ShortUrlRedirectService> logger) : IShortUrlRedirectService
 {
@@ -31,30 +31,27 @@ public class ShortUrlRedirectService(
     public async Task<UrlRedirectResult> GetRedirectInfoByShortCodeAsync(string shortCode, HttpContext context,
         CancellationToken cancellationToken = default)
     {
-        var redirectInfo = await redirectRepository.GetRedirectInfoByShortCodeAsync(shortCode, cancellationToken);
-        if (redirectInfo is null)
+        var shortUrlRedirectInfo = await redirectRepository.GetRedirectInfoByShortCodeAsync(shortCode, cancellationToken);
+        if (shortUrlRedirectInfo is null)
             throw new NotFoundException("ShortUrl", shortCode);
 
-        if (!redirectInfo.CanAccess())
+        if (!shortUrlRedirectInfo.CanAccess())
             throw new ForbiddenException("This link is no longer active.");
-
         
+        // Increment click count
         await IncrementClickCountAsync(shortCode, cancellationToken);
-    
-        var trackingData = ExtractTrackingDataAsync(context, cancellationToken);
-        try
-        {
-            await clickTrackingService.TrackClickAsync(redirectInfo.Id, trackingData);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to track click for redirect {RedirectId}", redirectInfo.Id);
-        }
 
+        // Extract tracking data
+        var trackingData = ExtractTrackingDataAsync(context, cancellationToken);
+
+        // Enqueue the click tracking job for background processing
+        clickTrackingQueueService.EnqueueClick(shortUrlRedirectInfo.Id, trackingData);
+
+        // Return the redirect result immediately, while tracking executes in background
         return new UrlRedirectResult
         (
-            redirectInfo.OriginalUrl,
-            redirectInfo.IsPasswordProtected
+            shortUrlRedirectInfo.OriginalUrl,
+            shortUrlRedirectInfo.IsPasswordProtected
         );
     }
 

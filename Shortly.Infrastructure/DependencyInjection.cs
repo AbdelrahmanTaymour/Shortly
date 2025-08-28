@@ -93,6 +93,7 @@ public static class DependencyInjection
         
         // Register background services
         services.AddHostedService<EmailBackgroundWorker>();
+        services.AddHostedService<ClickTrackingBackgroundWorker>();
 
         return services;
     }

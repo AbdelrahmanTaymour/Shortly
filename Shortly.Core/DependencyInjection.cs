@@ -68,6 +68,7 @@ public static class DependencyInjection
         services.AddScoped<IUserAuditLogService, UserAuditLogService>();
         
         // Click Event
+        services.AddSingleton<ClickTrackingQueueService>();
         services.AddScoped<IClickTrackingService, ClickTrackingService>();
         services.AddScoped<ITrafficSourceAnalyzer, TrafficSourceAnalyzer>();
         services.AddScoped<IUserAgentParsingService, UserAgentParsingService>();
