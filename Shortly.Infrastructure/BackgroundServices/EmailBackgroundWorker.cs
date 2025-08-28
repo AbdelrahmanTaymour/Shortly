@@ -50,6 +50,5 @@ public class EmailBackgroundWorker(
                 logger.LogError(ex, "An error occurred in the email background worker.");
             }
         }
-
     }
 }

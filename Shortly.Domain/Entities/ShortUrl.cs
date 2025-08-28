@@ -8,7 +8,7 @@ namespace Shortly.Domain.Entities;
 public class ShortUrl
 {
     public long Id { get; set; }
-    public string OriginalUrl { get; set; }
+    public required string OriginalUrl { get; set; }
     public string? ShortCode { get; set; }
 
     // User Information

@@ -23,6 +23,7 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
         builder.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()").HasColumnType("datetime2(0)");
         builder.Property(o => o.UpdatedAt).HasDefaultValueSql("GETUTCDATE()").HasColumnType("datetime2(0)");
         builder.Property(o => o.DeletedAt).HasColumnType("datetime2(0)");
+        builder.Property(user => user.SubscriptionPlanId).HasConversion<byte>();
 
         // Indexes
         builder.HasIndex(o => o.OwnerId);
@@ -34,6 +35,11 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
         builder.HasOne(o => o.Owner)
             .WithMany()
             .HasForeignKey(o => o.OwnerId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.HasOne(o => o.SubscriptionPlan)
+            .WithMany()
+            .HasForeignKey(u => u.SubscriptionPlanId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(o => o.Members)

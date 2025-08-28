@@ -24,6 +24,7 @@ public class SQLServerDbContext : DbContext
     public DbSet<UserAuditLog> UserAuditLogs { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Organization> Organizations { get; set; }
+    public DbSet<OrganizationUsage> OrganizationUsage { get; set; }
     public DbSet<OrganizationTeam> OrganizationTeams { get; set; }
     public DbSet<OrganizationMember> OrganizationMembers { get; set; }
     public DbSet<OrganizationTeamMember> OrganizationTeamMembers { get; set; }
@@ -49,6 +50,7 @@ public class SQLServerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new ClickEventConfiguration());
         modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
         modelBuilder.ApplyConfiguration(new OrganizationConfiguration());
+        modelBuilder.ApplyConfiguration(new OrganizationUsageConfiguration());
         modelBuilder.ApplyConfiguration(new OrganizationTeamConfiguration());
         modelBuilder.ApplyConfiguration(new OrganizationMemberConfiguration());
         modelBuilder.ApplyConfiguration(new OrganizationTeamMemberConfiguration());

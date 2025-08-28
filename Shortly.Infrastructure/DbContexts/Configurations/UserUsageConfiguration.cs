@@ -16,7 +16,6 @@ public class UserUsageConfiguration : IEntityTypeConfiguration<UserUsage>
         builder.Property(uu => uu.MonthlyQrCodesCreated).HasDefaultValue(0);
         builder.Property(uu => uu.TotalLinksCreated).HasDefaultValue(0);
         builder.Property(uu => uu.TotalQrCodesCreated).HasDefaultValue(0);
-        builder.Property(uu => uu.MonthlyResetDate)
-            .HasDefaultValueSql("DATEADD(month, 1, GETUTCDATE())");
+        builder.Property(uu => uu.MonthlyResetDate).HasDefaultValueSql("DATEADD(month, 1, GETUTCDATE())");
     }
 }

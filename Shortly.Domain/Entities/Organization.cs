@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Shortly.Domain.Enums;
 
 namespace Shortly.Domain.Entities;
@@ -17,11 +16,13 @@ public class Organization
     public DateTime UpdatedAt { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid OwnerId { get; set; }
+    public enSubscriptionPlan SubscriptionPlanId { get; set; } = enSubscriptionPlan.Enterprise;
     
     public bool IsDeleted => DeletedAt != null;
 
     // Navigation properties
     public User? Owner { get; set; }
+    public SubscriptionPlan? SubscriptionPlan { get; set; }
     public ICollection<OrganizationMember> Members { get; set; }
     public ICollection<OrganizationTeam> Teams { get; set; }
     public ICollection<ShortUrl> ShortUrls { get; set; }

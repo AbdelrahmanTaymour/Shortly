@@ -1,6 +1,6 @@
 namespace Shortly.Domain.Enums;
 
-public enum enSubscriptionPlan
+public enum enSubscriptionPlan : byte
 {
     Free = 1,
     Starter,
