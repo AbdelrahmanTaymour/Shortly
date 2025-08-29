@@ -1,11 +1,9 @@
-using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs.UsersDTOs.Usage;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Domain.Entities;
-using Shortly.Domain.Enums;
 using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.UserManagement;

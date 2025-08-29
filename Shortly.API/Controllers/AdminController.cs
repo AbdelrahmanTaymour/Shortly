@@ -44,7 +44,7 @@ public class AdminController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewAllUsers)]
+    [RequirePermission(enPermissions.ViewUsers)]
     [Time]
     public async Task<ActionResult<BasicUserSearchResponse>> SearchBasicUsers(
         [FromQuery] UserSearchRequest request,

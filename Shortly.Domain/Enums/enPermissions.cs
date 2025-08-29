@@ -27,7 +27,7 @@ public enum enPermissions : long
     CreateCustomAlias       = 1L << 10,  // Create custom aliases
     CreateBrandedLinks      = 1L << 11,  // Create branded links
     SetLinkExpiration       = 1L << 12,  // Set expiration dates
-    SetPasswordProtection   = 1L << 13,  // Password protect links
+    SetPasswordProtection   = 1L << 13,  // Password protects links
     GenerateQrCodes         = 1L << 14,  // Generate QR codes
     ExportLinks             = 1L << 15,  // Export link data
 
@@ -51,55 +51,48 @@ public enum enPermissions : long
     AssignTeamRoles         = 1L << 30,  // Assign roles within team
     TransferTeamOwnership   = 1L << 31,  // Transfer team ownership
 
-    // ===== ORGANIZATION MANAGEMENT (32-39) =====
+    // ===== ORGANIZATION MANAGEMENT (32-38) =====
     ViewOrganization        = 1L << 32,  // View organization details
     UpdateOrganization      = 1L << 33,  // Edit organization settings
     DeleteOrganization      = 1L << 34,  // Delete organization
     ManageOrganization      = 1L << 35,  // Manage organization
     ManageOrgBilling        = 1L << 36,  // Handle billing/subscriptions
-    ManageOrgIntegrations   = 1L << 37,  // Manage third-party integrations
-    ManageOrgMembers        = 1L << 38,  // Manage Organization Members
-    TransferOrgOwnership    = 1L << 39,  // Transfer organization ownership
+    ManageOrgMembers        = 1L << 37,  // Manage Organization Members
+    TransferOrgOwnership    = 1L << 38,  // Transfer organization ownership
 
-    // ===== USER INVITATIONS & MEMBERSHIP (40-47) =====
-    ViewInvitations         = 1L << 40,  // View pending invitations
-    CreateInvitations       = 1L << 41,  // Send invitations
-    CancelInvitations       = 1L << 42,  // Cancel sent invitations
-    ResendInvitations       = 1L << 43,  // Resend invitations
-    AcceptInvitations       = 1L << 44,  // Accept received invitations
-    RejectInvitations       = 1L << 45,  // Reject received invitations
-    ViewMembers             = 1L << 46,  // View organization members
-    RemoveMembers           = 1L << 47,  // Remove members from org
+    // ===== USER INVITATIONS & MEMBERSHIP (39-43) =====
+    ViewInvitations         = 1L << 39,  // View pending invitations
+    CreateInvitations       = 1L << 40,  // Send invitations
+    ManageInvitations       = 1L << 41,  // Manage invitations
+    ViewMembers             = 1L << 42,  // View organization members
+    RemoveMembers           = 1L << 43,  // Remove members from org
 
-    // ===== SELF-MANAGEMENT (48-55) =====
-    ViewOwnProfile          = 1L << 48,  // View own profile
-    UpdateOwnProfile        = 1L << 49,  // Edit own profile
-    ChangeOwnPassword       = 1L << 50,  // Change own password
-    ManageOwnMfa            = 1L << 51,  // Manage own MFA settings
-    ViewOwnUsageStats       = 1L << 52,  // View own usage statistics
-    ManageOwnApiKeys        = 1L << 53,  // Manage own API keys
-    ViewOwnSessions         = 1L << 54,  // View active sessions
-    DeleteOwnAccount        = 1L << 55,  // Delete own account
+    // ===== SELF-MANAGEMENT (44-44) =====
+    ManageOwnAccount        = 1L << 44,  // (View, Edit, Change password, View usage, and Delete) own profile
 
-    // ===== USER ADMINISTRATION (56-62) =====
-    ViewAllUsers            = 1L << 56,  // View all users (admin)
-    ViewUserDetails         = 1L << 57,  // View detailed user info
-    CreateUser              = 1L << 58,  // Create new users
-    UpdateUser              = 1L << 59,  // Edit user details
-    DeactivateUser          = 1L << 60,  // Deactivate user account
-    ReactivateUser          = 1L << 61,  // Reactivate user account
-    ResetUserPassword       = 1L << 62,  // Reset user passwords
+    // ===== USER ADMINISTRATION (45-56) =====
+    ViewUsers               = 1L << 45,  // View all users (admin)
+    ViewUserDetails         = 1L << 46,  // View detailed user info
+    ViewUrlsAnalytics       = 1L << 47,  // View all ShortUrl analytics
+    ReadUrls                = 1L << 48,  // View all ShortUrls
+    CreateUser              = 1L << 49,  // Create new users
+    UpdateUser              = 1L << 50,  // Edit user details
+    DeactivateUser          = 1L << 51,  // Deactivate user account
+    ReactivateUser          = 1L << 52,  // Reactivate user account
+    ResetUserPassword       = 1L << 53,  // Reset user passwords
+    ManageUserAccessibility = 1L << 54,  // Manage user security and accessibility
+    ManageUserUsage         = 1L << 55,  // Manage user usage
+    ManageOrgUsage          = 1L << 56,  // Manage organization usage
 
-    // ===== ADVANCED USER ADMINISTRATION (63-65) =====
-    ViewUserMemberships     = 1L << 63,  // View User Memberships
-    DeleteUser              = 1L << 64,  // Permanently delete users
-    CleanupSystemData       = 1L << 65,  // Cleanup System Data
+    // ===== ADVANCED USER ADMINISTRATION (57-59) =====
+    ViewUserMemberships     = 1L << 57,  // View User Memberships
+    DeleteUser              = 1L << 58,  // Permanently delete users
+    CleanupSystemData       = 1L << 59,  // Cleanup System Data
 
     // ===== COMMON PERMISSION COMBINATIONS =====
     // Basic User Permissions
     BasicUser = CreateLink | ReadOwnLinks | UpdateOwnLinks | DeleteOwnLinks | 
-                ReadOwnAnalytics | ViewOwnProfile | UpdateOwnProfile | 
-                ChangeOwnPassword | ManageOwnMfa | ViewOwnUsageStats,
+                ReadOwnAnalytics | ManageOwnAccount,
 
     // Team Member Permissions
     TeamMember = BasicUser | ReadTeamAnalytics | ViewTeamMembers,
@@ -112,7 +105,7 @@ public enum enPermissions : long
     // Organization Admin Permissions
     OrgAdmin = TeamManager | ReadOrgAnalytics | CreateCustomReports | ExportAnalytics |
                ViewOrganization | UpdateOrganization | ManageOrganization |
-               ViewInvitations | CreateInvitations | CancelInvitations |
+               ViewInvitations | CreateInvitations | ManageInvitations |
                ViewMembers | RemoveMembers | ViewTeams | CreateTeam |
                UpdateTeam | DeleteTeam,
 
@@ -121,9 +114,9 @@ public enum enPermissions : long
                TransferTeamOwnership | ManageOrgBilling | ManageOrgMembers,
 
     // Super Admin Permissions
-    SuperAdmin = OrgOwner | ViewAllUsers | ViewUserDetails | CreateUser | UpdateUser |
+    SuperAdmin = OrgOwner | ViewUsers | ViewUserDetails | CreateUser | UpdateUser |
                  DeactivateUser | ReactivateUser | ResetUserPassword | ViewUserMemberships |
-                 DeleteUser,
+                 DeleteUser | ManageUserAccessibility | ViewUrlsAnalytics | ReadUrls | ManageUserUsage | ManageOrgUsage,
 
     // System Administrator (Full Access)
     SystemAdmin = ~None // All permissions

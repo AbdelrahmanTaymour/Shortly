@@ -7,7 +7,9 @@ using Shortly.Core.Extensions;
 using Shortly.Core.Mappers;
 using Shortly.Core.RepositoryContract.UrlManagement;
 using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.ServiceContracts.OrganizationManagement;
 using Shortly.Core.ServiceContracts.UrlManagement;
+using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 
@@ -24,6 +26,8 @@ namespace Shortly.Core.Services.UrlManagement;
 public class ShortUrlsService(
     IShortUrlRepository shortUrlRepository,
     IAuthenticationContextProvider authenticationContext,
+    IOrganizationUsageService organizationUsageService,
+    IUserUsageService userUsageService,
     ILogger<ShortUrlsService> logger)
     : IShortUrlsService
 {
@@ -188,7 +192,14 @@ public class ShortUrlsService(
     {
         if (!authContext.IsAuthenticated || authContext.UserId == null)
             throw new UnauthorizedAccessException("User must be logged in.");
+        
+        var canCreateMoreLinks =
+            await userUsageService.CanCreateMoreLinksAsync(authContext.UserId.Value, cancellationToken);
 
+        if (canCreateMoreLinks == false)
+            throw new BusinessRuleException(
+                "User has reached its limit for creating short URLs. Please upgrade your plan to create more short URLs.");
+        
         return await CreateShortUrlInternalAsync(request, authContext, cancellationToken);
     }
 
@@ -209,6 +220,12 @@ public class ShortUrlsService(
     {
         if (!authContext.IsAuthenticated || authContext.OrganizationId == null || authContext.MemberId == null)
             throw new UnauthorizedAccessException("Organization member credentials are required.");
+
+        var canCreateMoreLinks =
+            await organizationUsageService.CanCreateMoreLinksAsync(authContext.OrganizationId.Value, cancellationToken);
+
+        if (canCreateMoreLinks == false)
+            throw new BusinessRuleException("Organization has reached its limit for creating short URLs.");
 
         return await CreateShortUrlInternalAsync(request, authContext, cancellationToken);
     }

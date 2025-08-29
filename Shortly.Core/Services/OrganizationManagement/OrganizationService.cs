@@ -21,6 +21,7 @@ namespace Shortly.Core.Services.OrganizationManagement;
 /// <param name="logger">The logger instance for recording operation details and errors.</param>
 public class OrganizationService(
     IOrganizationRepository organizationRepository,
+    IOrganizationUsageRepository organizationUsageRepository,
     IOrganizationMemberRepository memberRepository,
     IUserService userService,
     ILogger<OrganizationService> logger) : IOrganizationService
@@ -66,6 +67,7 @@ public class OrganizationService(
         if(!userExists)
             throw new NotFoundException("User", ownerId);
 
+        // Create Organization
         var organization = new Organization
         {
             Name = dto.Name,
@@ -78,6 +80,18 @@ public class OrganizationService(
             UpdatedAt = DateTime.UtcNow
         };
         var createdOrg = await organizationRepository.AddAsync(organization);
+        
+        // Create Organization Usage
+        var organizationUsage = new OrganizationUsage
+        {
+            OrganizationId = createdOrg.Id,
+            MonthlyLinksCreated = 0,
+            MonthlyQrCodesCreated = 0,
+            TotalLinksCreated = 0,
+            TotalQrCodesCreated = 0,
+            MonthlyResetDate = DateTime.UtcNow.AddMonths(1)
+        };
+        await organizationUsageRepository.CreateOrganizationUsageAsync(organizationUsage);
         
         // Add an owner as the first member with an OrgOwner role
         await memberRepository.AddAsync(new OrganizationMember

@@ -75,6 +75,7 @@ public static class DependencyInjection
         
         // Organization Management
         services.AddScoped<IOrganizationService, OrganizationService>();
+        services.AddScoped<IOrganizationUsageService, OrganizationUsageService>();
         services.AddScoped<IOrganizationMemberService, OrganizationMemberService>();
         services.AddScoped<IOrganizationTeamService, OrganizationTeamService>();
         services.AddScoped<IOrganizationInvitationService, OrganizationInvitationService>();

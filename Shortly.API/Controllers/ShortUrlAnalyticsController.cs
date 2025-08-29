@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
 using Shortly.Core.DTOs.ExceptionsDTOs;
 using Shortly.Core.DTOs.ShortUrlDTOs;
 using Shortly.Core.ServiceContracts.UrlManagement;
+using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
 
@@ -11,7 +13,6 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-
 public class ShortUrlAnalyticsController(IShortUrlAnalyticsService analyticsService) : ControllerApiBase
 {
     /// <summary>
@@ -39,7 +40,7 @@ public class ShortUrlAnalyticsController(IShortUrlAnalyticsService analyticsServ
     [HttpGet("total-count", Name = "GetTotalUrlCount")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadAnalytics)]
+    [RequirePermission(enPermissions.ViewUrlsAnalytics)]
     public async Task<IActionResult> GetTotalCount([FromQuery] bool activeOnly = false, CancellationToken cancellationToken = default)
     {
         var totalCount = await analyticsService.GetTotalCountAsync(activeOnly, cancellationToken);
@@ -71,7 +72,7 @@ public class ShortUrlAnalyticsController(IShortUrlAnalyticsService analyticsServ
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadAnalytics)]
+    [RequirePermission(enPermissions.ReadOwnAnalytics | enPermissions.ReadTeamAnalytics | enPermissions.ReadOrgAnalytics)]
     public async Task<IActionResult> GetTotalClicks(long shortUrlId, CancellationToken cancellationToken = default)
     {
         var totalClicks = await analyticsService.GetTotalClicksAsync(shortUrlId, cancellationToken);
@@ -110,7 +111,7 @@ public class ShortUrlAnalyticsController(IShortUrlAnalyticsService analyticsServ
     [ProducesResponseType(typeof(IEnumerable<ShortUrlDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadAnalytics)]
+    [RequirePermission(enPermissions.ReadOwnAnalytics | enPermissions.ReadTeamAnalytics | enPermissions.ReadOrgAnalytics)]
     public async Task<IActionResult> GetMostPopular([FromQuery] int topCount = 10, [FromQuery] int? timeframeDays = null, [FromQuery] Guid? userId = null, CancellationToken cancellationToken = default)
     {
         if (topCount < 1 || topCount > 100)
@@ -125,7 +126,7 @@ public class ShortUrlAnalyticsController(IShortUrlAnalyticsService analyticsServ
     }
 
     /// <summary>
-    /// Retrieves comprehensive analytics summary for a specific user.
+    /// Retrieves a comprehensive analytics summary for a specific user.
     /// </summary>
     /// <param name="userId">The unique identifier of the user to get analytics for.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
@@ -157,7 +158,7 @@ public class ShortUrlAnalyticsController(IShortUrlAnalyticsService analyticsServ
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadUserAnalytics)]
+    [RequirePermission(enPermissions.ReadOwnAnalytics)]
     public async Task<IActionResult> GetUserAnalytics(Guid userId, CancellationToken cancellationToken = default)
     {
         var userAnalytics = await analyticsService.GetUserAnalyticsAsync(userId, cancellationToken);
@@ -199,7 +200,7 @@ public class ShortUrlAnalyticsController(IShortUrlAnalyticsService analyticsServ
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadOrgAnalytics)]
+    [RequirePermission(enPermissions.ReadOrgAnalytics)]
     public async Task<IActionResult> GetOrganizationAnalytics(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var orgAnalytics = await analyticsService.GetOrganizationAnalyticsAsync(organizationId, cancellationToken);
@@ -243,7 +244,7 @@ public class ShortUrlAnalyticsController(IShortUrlAnalyticsService analyticsServ
     [ProducesResponseType(typeof(IEnumerable<ShortUrlDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadAnalytics)]
+    [RequirePermission(enPermissions.ReadOwnAnalytics | enPermissions.ReadTeamAnalytics | enPermissions.ReadOrgAnalytics)]
     public async Task<IActionResult> GetApproachingLimit([FromQuery] double warningThreshold = 0.8, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
         if (warningThreshold < 0.1 || warningThreshold > 1.0)

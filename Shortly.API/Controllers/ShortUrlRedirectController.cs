@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
 using Shortly.API.HTMLTemplates;
@@ -34,6 +35,7 @@ public class ShortUrlRedirectController(IShortUrlRedirectService redirectService
     [ProducesResponseType(StatusCodes.Status302Found)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
+    [AllowAnonymous]
     public async Task<IActionResult> RedirectToUrl(string shortCode, CancellationToken cancellationToken)
     {
         var result = await redirectService.GetRedirectInfoByShortCodeAsync(shortCode, HttpContext, cancellationToken);

@@ -135,8 +135,8 @@ public class SQLServerDbContext : DbContext
                 Description = "Read-only access to resources.",
                 DefaultPermissions = (long)(
                     enPermissions.ReadOwnAnalytics |
-                    enPermissions.ViewOwnProfile |
-                    enPermissions.ViewOwnUsageStats)
+                    enPermissions.ReadTeamAnalytics |
+                    enPermissions.ReadOrgAnalytics)
             },
             new Role
             {

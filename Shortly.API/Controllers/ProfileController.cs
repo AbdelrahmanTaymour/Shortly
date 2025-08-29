@@ -21,6 +21,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
+[RequirePermission(enPermissions.ManageOwnAccount)]
 public class ProfileController(IUserProfileService profileService) : ControllerApiBase
 {
     /// <summary>
@@ -39,7 +40,6 @@ public class ProfileController(IUserProfileService profileService) : ControllerA
     ///     GET /api/profile
     /// </example>
     [HttpGet(Name = "GetProfile")]
-    [RequirePermission(enPermissions.ViewOwnProfile)]
     [ProducesResponseType(typeof(UserProfileResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
@@ -67,7 +67,6 @@ public class ProfileController(IUserProfileService profileService) : ControllerA
     ///     GET /api/profile/quota-status
     /// </example>
     [HttpGet("quota-status", Name = "GetMonthlyQuotaStatus")]
-    [RequirePermission(enPermissions.ViewOwnUsageStats)]
     [ProducesResponseType(typeof(QuotaStatusResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
@@ -97,7 +96,6 @@ public class ProfileController(IUserProfileService profileService) : ControllerA
     ///     PUT /api/profile/update
     /// </example>
     [HttpPut("update", Name = "UpdateProfile")]
-    [RequirePermission(enPermissions.UpdateOwnProfile)]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
@@ -135,7 +133,6 @@ public class ProfileController(IUserProfileService profileService) : ControllerA
     ///     DELETE /api/profile
     /// </example>
     [HttpDelete(Name = "RequestAccountDeletion")]
-    [RequirePermission(enPermissions.DeleteOwnAccount)]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

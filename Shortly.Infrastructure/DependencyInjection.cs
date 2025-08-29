@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Quartz;
+using Quartz.Impl;
+using Quartz.Spi;
 using Shortly.Core.Models;
 using Shortly.Core.RepositoryContract;
 using Shortly.Core.RepositoryContract.ClickTracking;
@@ -15,6 +18,7 @@ using Shortly.Infrastructure.Repositories.ClickTracking;
 using Shortly.Infrastructure.Repositories.OrganizationManagement;
 using Shortly.Infrastructure.Repositories.UrlManagement;
 using Shortly.Infrastructure.Repositories.UserManagement;
+using Shortly.Infrastructure.ScheduledJobs;
 using Shortly.Infrastructure.Services;
 
 namespace Shortly.Infrastructure;
@@ -45,7 +49,6 @@ public static class DependencyInjection
         
         // Register an email provider (can be configured to use different providers)
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
-
         var emailProvider = configuration["EmailSettings:Provider"]?.ToLower() ?? "smtp";
         switch (emailProvider)
         {
@@ -57,6 +60,29 @@ public static class DependencyInjection
                 services.AddScoped<IEmailProvider, SmtpEmailProvider>();
                 break;
         }
+        
+        // Register Quartz services
+        services.AddQuartz(q =>
+        {
+            // Use Microsoft DI for Quartz
+            q.UseMicrosoftDependencyInjectionJobFactory();
+
+            // Register the MonthlyUsageResetJob with a Cron trigger
+            q.ScheduleJob<MonthlyUsageResetJob>(trigger => trigger
+                .WithIdentity("MonthlyUsageResetTrigger")
+                .StartNow()
+                .WithCronSchedule("0 0 1 * * ?")); // The first day of every month at 00:00
+        });
+
+        // Add Quartz.NET hosted service
+        services.AddQuartzHostedService(options =>
+        {
+            options.WaitForJobsToComplete = true; // Wait for jobs to complete on shutdown
+        });
+
+        // Register the MonthlyUsageResetJob
+        services.AddScoped<MonthlyUsageResetJob>();
+
 
         // User Management
         services.AddScoped<IUserRepository, UserRepository>();
@@ -83,6 +109,7 @@ public static class DependencyInjection
 
         // Organization Management
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+        services.AddScoped<IOrganizationUsageRepository, OrganizationUsageRepository>();
         services.AddScoped<IOrganizationMemberRepository, OrganizationMemberRepository>();
         services.AddScoped<IOrganizationTeamRepository, OrganizationTeamRepository>();
         services.AddScoped<IOrganizationTeamMemberRepository, OrganizationTeamMemberRepository>();

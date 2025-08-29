@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
+using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
 using Shortly.Core.DTOs.ExceptionsDTOs;
 using Shortly.Core.DTOs.UsersDTOs.Security;
 using Shortly.Core.ServiceContracts.UserManagement;
+using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
 
@@ -21,6 +23,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+[RequirePermission(enPermissions.ManageUserAccessibility)]
 public class SecurityController(IUserSecurityService securityService) : ControllerApiBase
 {
 
@@ -50,7 +53,6 @@ public class SecurityController(IUserSecurityService securityService) : Controll
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserSecurity)]
     public async Task<IActionResult> GetUserSecurityStatus([FromRoute] Guid userId,
         CancellationToken cancellationToken = default)
     {
@@ -84,7 +86,6 @@ public class SecurityController(IUserSecurityService securityService) : Controll
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserSecurity)]
     public async Task<IActionResult> RecordFailedLoginAttempt([FromRoute] Guid userId,
         CancellationToken cancellationToken = default)
     {
@@ -117,7 +118,6 @@ public class SecurityController(IUserSecurityService securityService) : Controll
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserSecurity)]
     public async Task<IActionResult> ResetFailedLoginAttempts([FromRoute] Guid userId,
         CancellationToken cancellationToken = default)
     {
@@ -150,7 +150,6 @@ public class SecurityController(IUserSecurityService securityService) : Controll
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserSecurity)]
     public async Task<IActionResult> IsUserLocked([FromRoute] Guid userId,
         CancellationToken cancellationToken = default)
     {
@@ -191,7 +190,6 @@ public class SecurityController(IUserSecurityService securityService) : Controll
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-   // [RequirePermission(enPermissions.ManageUserSecurity)]
     public async Task<IActionResult> LockUser([FromRoute] Guid userId,
         [FromBody] [Required] LockUserRequest request, CancellationToken cancellationToken = default)
     {
@@ -226,7 +224,6 @@ public class SecurityController(IUserSecurityService securityService) : Controll
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-  //  [RequirePermission(enPermissions.ManageUserSecurity)]
     public async Task<IActionResult> UnlockUser([FromRoute] Guid userId, CancellationToken cancellationToken = default)
     {
         var result = await securityService.UnlockUserAsync(userId, cancellationToken);

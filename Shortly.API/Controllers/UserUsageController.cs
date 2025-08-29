@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
 using Shortly.Core.DTOs.ExceptionsDTOs;
 using Shortly.Core.DTOs.UsersDTOs.Usage;
 using Shortly.Core.ServiceContracts.UserManagement;
+using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
 
@@ -16,7 +18,8 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-public class UsageController(IUserUsageService usageService) : ControllerApiBase
+[RequirePermission(enPermissions.ManageUserUsage)]
+public class UserUsageController(IUserUsageService usageService) : ControllerApiBase
 {
     /// <summary>
     ///     Retrieves comprehensive usage statistics for a specific user.
@@ -38,7 +41,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [ProducesResponseType(typeof(UserUsageDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUserUsage)]
     public async Task<IActionResult> GetUserUsageStats(Guid userId, CancellationToken cancellationToken = default)
     {
         var result = await usageService.GetUsageStatsAsync(userId, cancellationToken);
@@ -65,7 +67,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [ProducesResponseType(typeof(UserUsageDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserUsage)]
     public async Task<IActionResult> TrackLinkCreation(Guid userId, CancellationToken cancellationToken = default)
     {
         var success = await usageService.TrackLinkCreationAsync(userId, cancellationToken);
@@ -89,7 +90,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [HttpPost("{userId:guid}/track-qr", Name = "TrackQrCodeCreation")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserUsage)]
     public async Task<IActionResult> TrackQrCodeCreation(Guid userId, CancellationToken cancellationToken)
     {
         var success = await usageService.TrackQrCodeCreationAsync(userId, cancellationToken);
@@ -115,7 +115,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUserUsage)]
     public async Task<IActionResult> CanCreateMoreLinks(Guid userId, CancellationToken cancellationToken = default)
     {
         var result = await usageService.CanCreateMoreLinksAsync(userId, cancellationToken);
@@ -141,7 +140,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUserUsage)]
     public async Task<IActionResult> CanCreateMoreQrCodes(Guid userId, CancellationToken cancellationToken)
     {
         var canCreate = await usageService.CanCreateMoreQrCodesAsync(userId, cancellationToken);
@@ -167,7 +165,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUserUsage)]
     public async Task<IActionResult> GetRemainingLinks(Guid userId, CancellationToken cancellationToken)
     {
         var remaining = await usageService.GetRemainingLinksAsync(userId, cancellationToken);
@@ -193,7 +190,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUserUsage)]
     public async Task<IActionResult> GetRemainingQrCodes(Guid userId, CancellationToken cancellationToken)
     {
         var remaining = await usageService.GetRemainingQrCodesAsync(userId, cancellationToken);
@@ -219,7 +215,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUserUsage)]
     public async Task<IActionResult> HasExceededLimits(Guid userId, CancellationToken cancellationToken)
     {
         var exceeded = await usageService.HasExceededLimitsAsync(userId, cancellationToken);
@@ -243,7 +238,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [HttpPut("{userId:guid}/reset", Name = "ResetMonthlyUsage")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserUsage)]
     public async Task<IActionResult> ResetMonthlyUsage(Guid userId, CancellationToken cancellationToken)
     {
         var success = await usageService.ResetMonthlyUsageAsync(userId, cancellationToken);
@@ -266,7 +260,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [HttpPut("reset-all", Name = "ResetMonthlyUsageForAll")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserUsage)]
     public async Task<IActionResult> ResetMonthlyUsageForAll(CancellationToken cancellationToken)
     {
         var success = await usageService.ResetMonthlyUsageForAllAsync(cancellationToken);
@@ -293,7 +286,6 @@ public class UsageController(IUserUsageService usageService) : ControllerApiBase
     [HttpGet("report", Name = "GetUsageReport")]
     [ProducesResponseType(typeof(IEnumerable<UserUsageDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUserUsage)]
     public async Task<IActionResult> GetUsageReport(DateTime from, DateTime to, CancellationToken cancellationToken)
     {
         var report = await usageService.GetUsageReportAsync(from, to, cancellationToken);

@@ -2,10 +2,12 @@ using System.ComponentModel.DataAnnotations;
 using MethodTimer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
 using Shortly.Core.DTOs.ExceptionsDTOs;
 using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Core.ServiceContracts.UserManagement;
+using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
 
@@ -43,7 +45,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUsers)]
+    [RequirePermission(enPermissions.ViewUsers)]
     [Time]
     public async Task<IActionResult> GetUserById(Guid userId, CancellationToken cancellationToken = default)
     {
@@ -74,7 +76,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUsers)]
+    [RequirePermission(enPermissions.ViewUsers)]
     [Time]
     public async Task<IActionResult> GetUserByEmail([FromQuery] [EmailAddress] string email, CancellationToken cancellationToken = default)
     {
@@ -105,7 +107,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ViewUsers)]
+    [RequirePermission(enPermissions.ViewUsers)]
     [Time]
     public async Task<IActionResult> GetUserByUsername([FromQuery] string username, CancellationToken cancellationToken = default)
     {
@@ -137,7 +139,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    // [RequirePermission(enPermissions.AddUser)]
+    [RequirePermission(enPermissions.CreateUser)]
     public async Task<IActionResult> CreateNewUser([FromBody] CreateUserRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -169,7 +171,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    // [RequirePermission(enPermissions.UpdateUser)]
+    [RequirePermission(enPermissions.UpdateUser)]
     public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] UpdateUserRequest request)
     {
         var updatedUser = await userService.UpdateAsync(userId, request);
@@ -204,7 +206,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.SoftDeleteUser)]   
+    [RequirePermission(enPermissions.DeleteUser)]   
     public async Task<IActionResult> DeleteUser(Guid userId, CancellationToken cancellationToken = default)
     {
         var deletedBy = GetCurrentUserId();
@@ -235,7 +237,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserActivation)]
+    [RequirePermission(enPermissions.ReactivateUser)]
     public async Task<IActionResult> ActivateUser(Guid userId, CancellationToken cancellationToken = default)
     {
         await userService.ActivateUserAsync(userId, cancellationToken);
@@ -265,7 +267,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserActivation)]
+    [RequirePermission(enPermissions.DeactivateUser)]
     public async Task<IActionResult> DeactivateUser(Guid userId, CancellationToken cancellationToken = default)
     {
         await userService.DeactivateUserAsync(userId, cancellationToken);
@@ -293,7 +295,7 @@ public class UserController(IUserService userService) : ControllerApiBase
     [ProducesResponseType(typeof(bool),StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ManageUserAvailability)]
+    [RequirePermission(enPermissions.ManageUserAccessibility)]
     public async Task<IActionResult> IsUserExists(Guid userId, CancellationToken cancellationToken = default)
     {
         var isExists = await userService.ExistsAsync(userId, cancellationToken);

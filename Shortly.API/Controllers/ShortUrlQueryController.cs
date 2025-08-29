@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
 using Shortly.Core.DTOs.ExceptionsDTOs;
 using Shortly.Core.DTOs.ShortUrlDTOs;
 using Shortly.Core.ServiceContracts.UrlManagement;
+using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
 
@@ -39,7 +41,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService) : Contr
     [ProducesResponseType(typeof(IEnumerable<ShortUrlDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadUrl)]
+    [RequirePermission(enPermissions.ReadOwnLinks)]
     public async Task<IActionResult> GetByUserId(Guid userId, [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
@@ -77,7 +79,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService) : Contr
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadOrganizationUrl)]
+    [RequirePermission(enPermissions.ReadOrgLinks)]
     public async Task<IActionResult> GetByOrganizationId(Guid organizationId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
         ValidatePage(pageNumber, pageSize);
@@ -113,7 +115,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService) : Contr
     [ProducesResponseType(typeof(IEnumerable<ShortUrlDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadUrl)]
+    [RequirePermission(enPermissions.ReadUrls)]
     public async Task<IActionResult> GetAnonymousUrlsByDateRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
         ValidatePage(pageNumber, pageSize);
@@ -148,7 +150,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService) : Contr
     [ProducesResponseType(typeof(IEnumerable<ShortUrlDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadUrl)]
+    [RequirePermission(enPermissions.ReadUrls | enPermissions.ReadOrgLinks | enPermissions.ReadOwnLinks)]
     public async Task<IActionResult> GetExpired([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
         ValidatePage(pageNumber, pageSize);
@@ -183,7 +185,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService) : Contr
     [ProducesResponseType(typeof(IEnumerable<ShortUrlDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadUrl)]
+    [RequirePermission(enPermissions.ReadUrls | enPermissions.ReadOrgLinks | enPermissions.ReadOwnLinks)]
     public async Task<IActionResult> GetPrivateLinks(Guid userId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
         ValidatePage(pageNumber, pageSize);
@@ -219,7 +221,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService) : Contr
     [ProducesResponseType(typeof(IEnumerable<ShortUrlDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadUrl)]
+    [RequirePermission(enPermissions.ReadUrls)]
     public async Task<IActionResult> GetByDateRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
        ValidatePage(pageNumber, pageSize);
@@ -258,7 +260,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService) : Contr
     [ProducesResponseType(typeof(IEnumerable<DuplicatesUrlsResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadUrl)]
+    [RequirePermission(enPermissions.ReadUrls | enPermissions.ReadOrgLinks | enPermissions.ReadOwnLinks)]
     public async Task<IActionResult> GetDuplicateUrls([FromQuery] Guid? userId = null, [FromQuery] Guid? organizationId = null, CancellationToken cancellationToken = default)
     {
         var duplicates = await queryService.GetDuplicateUrlsAsync(userId, organizationId, cancellationToken);
@@ -295,7 +297,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService) : Contr
     [ProducesResponseType(typeof(IEnumerable<ShortUrlDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    //[RequirePermission(enPermissions.ReadUrl)]
+    [RequirePermission(enPermissions.ReadUrls | enPermissions.ReadOrgLinks | enPermissions.ReadOwnLinks)]
     public async Task<IActionResult> GetUnusedUrls([FromQuery] int? olderThanDays = null, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
         if (olderThanDays is < 0)

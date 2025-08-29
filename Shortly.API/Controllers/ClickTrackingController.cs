@@ -236,7 +236,7 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ReadOwnAnalytics | enPermissions.ReadTeamAnalytics)]
+    [RequirePermission(enPermissions.ReadOwnAnalytics | enPermissions.ReadTeamAnalytics | enPermissions.ReadOrgAnalytics | enPermissions.ViewRealTimeStats)]
     public async Task<IActionResult> GetRecentClicks(long shortUrlId, [FromQuery] int count = 10, CancellationToken cancellationToken = default)
     {
         if (count < 1 || count > 100)
