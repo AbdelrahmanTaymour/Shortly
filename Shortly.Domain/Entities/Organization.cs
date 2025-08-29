@@ -22,7 +22,8 @@ public class Organization
 
     // Navigation properties
     public User? Owner { get; set; }
-    public SubscriptionPlan? SubscriptionPlan { get; set; }
+    public SubscriptionPlan SubscriptionPlan { get; set; }
+    public OrganizationUsage OrganizationUsage { get; set; }
     public ICollection<OrganizationMember> Members { get; set; }
     public ICollection<OrganizationTeam> Teams { get; set; }
     public ICollection<ShortUrl> ShortUrls { get; set; }

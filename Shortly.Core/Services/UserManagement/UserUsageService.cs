@@ -95,7 +95,7 @@ public class UserUsageService(IUserUsageRepository usageRepository, ILogger<User
     }
 
     /// <inheritdoc/>
-    public async Task<bool> ResetMonthlyUsageForAllAsync(CancellationToken cancellationToken = default)
+    public async Task<int> ResetMonthlyUsageForAllAsync(CancellationToken cancellationToken = default)
     {
         var resetDate = DateTime.UtcNow;
 
@@ -105,13 +105,9 @@ public class UserUsageService(IUserUsageRepository usageRepository, ILogger<User
         {
             logger.LogInformation("{Count} user usage records were reset successfully on {ResetDate}.",
                 affectedUsersCount, resetDate.Date);
-            return true;
         }
 
-        logger.LogWarning(
-            "No user usage records were reset. Possibly no users matched the reset criteria as of {ResetDate}.",
-            resetDate.Date);
-        return false;
+        return affectedUsersCount;
     }
 
     /// <inheritdoc/>

@@ -41,6 +41,11 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
             .WithMany()
             .HasForeignKey(u => u.SubscriptionPlanId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.HasOne(o => o.OrganizationUsage)
+            .WithOne(ou => ou.Organization)
+            .HasForeignKey<OrganizationUsage>(ou => ou.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(o => o.Members)
             .WithOne(m => m.Organization)
