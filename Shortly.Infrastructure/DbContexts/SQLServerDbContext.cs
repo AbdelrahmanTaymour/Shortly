@@ -21,6 +21,7 @@ public class SQLServerDbContext : DbContext
     public DbSet<UserProfile> UserProfiles { get; set; }
     public DbSet<UserSecurity> UserSecurity { get; set; }
     public DbSet<UserUsage> UserUsage { get; set; }
+    public DbSet<UserActionToken> UserActionTokens { get; set; }
     public DbSet<UserAuditLog> UserAuditLogs { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Organization> Organizations { get; set; }
@@ -45,6 +46,7 @@ public class SQLServerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new UserProfileConfiguration());
         modelBuilder.ApplyConfiguration(new UserSecurityConfiguration());
         modelBuilder.ApplyConfiguration(new UserUsageConfiguration());
+        modelBuilder.ApplyConfiguration(new UserActionTokenConfiguration());
         modelBuilder.ApplyConfiguration(new UserAuditLogConfiguration());
         modelBuilder.ApplyConfiguration(new ShortUrlConfiguration());
         modelBuilder.ApplyConfiguration(new ClickEventConfiguration());
