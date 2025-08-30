@@ -11,6 +11,10 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Core.Services.Tokens;
 
+/// <inheritdoc />
+/// <param name="userActionTokenRepository">Repository for token data access operations.</param>
+/// <param name="configuration">Configuration provider for token settings.</param>
+/// <param name="logger">Logger instance for tracking operations and errors.</param>
 public class UserActionTokenService(
     IUserActionTokenRepository userActionTokenRepository,
     IConfiguration configuration,
@@ -19,6 +23,7 @@ public class UserActionTokenService(
 {
     private readonly IConfigurationSection _tokensSection = configuration.GetSection("AppSettings:Tokens");
     
+    /// <inheritdoc />
     public async Task<UserActionTokenDto> GenerateTokenAsync(Guid userId, enUserActionTokenType tokenType, TimeSpan? customExpiration = null, CancellationToken cancellationToken = default)
     {
         // Invalidate any existing active tokens of the same type for this user
@@ -44,6 +49,7 @@ public class UserActionTokenService(
         return createdToken.MapToUserActionTokenDto(plainToken);
     }
     
+    /// <inheritdoc />
     public async Task<bool> ValidateTokenAsync(string tokenHash, enUserActionTokenType expectedTokenType, CancellationToken cancellationToken = default)
     {
         var storedToken = await userActionTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
@@ -75,6 +81,7 @@ public class UserActionTokenService(
         return true;
     }
 
+    /// <inheritdoc />
     public async Task<UserActionTokenDto> GetTokenDetailsAsync(string token, CancellationToken cancellationToken = default)
     {
         var tokenHash = Sha256Extensions.ComputeHash(token);
@@ -85,6 +92,7 @@ public class UserActionTokenService(
         return storedToken.MapToUserActionTokenDto(token);
     }
 
+    /// <inheritdoc />
     public async Task<bool> ConsumeTokenAsync(string token, enUserActionTokenType tokenType, CancellationToken cancellationToken = default)
     {
         var tokenHash = Sha256Extensions.ComputeHash(token);
@@ -93,36 +101,62 @@ public class UserActionTokenService(
         return await userActionTokenRepository.ConsumeTokenAsync(tokenHash, tokenType, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<bool> InvalidateUserTokensAsync(Guid userId, enUserActionTokenType tokenType, CancellationToken cancellationToken = default)
     {
         return await userActionTokenRepository.InvalidateUserTokensAsync(userId, tokenType, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<int> CleanupExpiredTokensAsync(CancellationToken cancellationToken = default)
     {
         return await userActionTokenRepository.DeleteExpiredTokensAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<bool> HasActiveTokenAsync(Guid userId, enUserActionTokenType tokenType, CancellationToken cancellationToken = default)
     {
         return await userActionTokenRepository.HasActiveTokenAsync(userId, tokenType, cancellationToken);
     }
 
+    /// <summary>
+    /// Gets the default expiration time for a specific token type from configuration.
+    /// </summary>
+    /// <param name="tokenType">The token type to get expiration for.</param>
+    /// <returns>
+    /// The configured expiration TimeSpan for the token type, or a default value if not configured.
+    /// </returns>
+    /// <remarks>
+    /// This method reads from the configuration section "AppSettings:Tokens" and looks for
+    /// type-specific expiration settings. Falls back to 24 hours if no configuration is found.
+    /// </remarks>
     private TimeSpan _GetExpirationForTokenType(enUserActionTokenType tokenType)
     {
         return tokenType switch
         {
             enUserActionTokenType.EmailVerification =>
-                GetConfiguredTimeSpan("EmailVerificationExpiryHours", 24),
+                _GetConfiguredTimeSpan("EmailVerificationExpiryHours", 24),
         
             enUserActionTokenType.PasswordReset =>
-                GetConfiguredTimeSpan("PasswordResetExpiryHours", 1),
+                _GetConfiguredTimeSpan("PasswordResetExpiryHours", 1),
         
             _ => TimeSpan.FromDays(1)
         };
     }
 
-    private TimeSpan GetConfiguredTimeSpan(string configKey, int defaultHours)
+    /// <summary>
+    /// Retrieves a configured time span value or returns a default if configuration is invalid.
+    /// </summary>
+    /// <param name="configKey">The configuration key to look up.</param>
+    /// <param name="defaultHours">The default number of hours to use if the configuration is missing or invalid.</param>
+    /// <returns>
+    /// A TimeSpan representing the configured or default expiration time.
+    /// </returns>
+    /// <remarks>
+    /// This method handles configuration parsing and validation, logging warnings
+    /// when invalid or missing configuration values are encountered.
+    /// </remarks>
+    private TimeSpan _GetConfiguredTimeSpan(string configKey, int defaultHours)
     {
         var configValue = _tokensSection[configKey];
         if (string.IsNullOrEmpty(configValue) || !double.TryParse(configValue, out var hours))

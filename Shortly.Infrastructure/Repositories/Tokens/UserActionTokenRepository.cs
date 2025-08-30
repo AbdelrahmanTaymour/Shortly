@@ -8,8 +8,12 @@ using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.Tokens;
 
+/// <inheritdoc />
+/// <param name="dbContext">The database context for accessing UserActionTokens.</param>
+/// <param name="logger">Logger instance for tracking operations and errors.</param>
 public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<UserActionTokenRepository> logger) : IUserActionTokenRepository
 {
+    /// <inheritdoc />
     public async Task<UserActionToken?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -25,6 +29,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<UserActionToken?> GetByTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default)
     {
         try
@@ -40,6 +45,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<UserActionToken?> GetActiveTokenAsync(Guid userId, enUserActionTokenType tokenType, CancellationToken cancellationToken = default)
     {
         try
@@ -58,6 +64,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<UserActionToken>> GetActiveTokensByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
@@ -74,6 +81,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<UserActionToken>> GetExpiredTokensAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -90,6 +98,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<UserActionToken> CreateAsync(UserActionToken token, CancellationToken cancellationToken = default)
     {
         try
@@ -105,6 +114,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<UserActionToken> UpdateAsync(UserActionToken token, CancellationToken cancellationToken = default)
     {
         try
@@ -120,6 +130,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> ConsumeTokenAsync(string tokenHash, enUserActionTokenType tokenType,
         CancellationToken cancellationToken = default)
     {
@@ -138,6 +149,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
@@ -155,6 +167,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<int> DeleteExpiredTokensAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -170,6 +183,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> InvalidateUserTokensAsync(Guid userId, enUserActionTokenType tokenType,
         CancellationToken cancellationToken = default)
     {
@@ -188,6 +202,7 @@ public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<Use
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> HasActiveTokenAsync(Guid userId, enUserActionTokenType tokenType, CancellationToken cancellationToken)
     {
         try
