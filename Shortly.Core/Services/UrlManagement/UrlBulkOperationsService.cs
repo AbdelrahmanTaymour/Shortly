@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Shortly.Core.DTOs;
+using Shortly.Core.Models;
 using Shortly.Core.DTOs.ShortUrlDTOs;
 using Shortly.Core.Extensions;
 using Shortly.Core.RepositoryContract.UrlManagement;

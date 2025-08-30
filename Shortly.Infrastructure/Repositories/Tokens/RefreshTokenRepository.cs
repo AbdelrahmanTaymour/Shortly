@@ -2,64 +2,69 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
-using Shortly.Core.RepositoryContract;
+using Shortly.Core.RepositoryContract.Tokens;
 using Shortly.Infrastructure.DbContexts;
 
-namespace Shortly.Infrastructure.Repositories;
+namespace Shortly.Infrastructure.Repositories.Tokens;
 
 public class RefreshTokenRepository(SQLServerDbContext dbContext, ILogger<RefreshTokenRepository> logger) : IRefreshTokenRepository
 {
-    private readonly SQLServerDbContext _dbContext = dbContext;
-
     public async Task<RefreshToken?> AddRefreshTokenAsync(RefreshToken refreshToken)
     {
-        var refreshTokenEntity = await _dbContext.RefreshTokens.AddAsync(refreshToken);
-        await _dbContext.SaveChangesAsync();
+        var refreshTokenEntity = await dbContext.RefreshTokens.AddAsync(refreshToken);
+        await dbContext.SaveChangesAsync();
         return refreshTokenEntity.Entity;
     }
 
     public async Task<RefreshToken?> GetRefreshTokenAsync(string token)
     {
-        return await _dbContext.RefreshTokens
+        return await dbContext.RefreshTokens
+            .AsNoTracking()
             .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.TokenHash == token);
     }
 
     public async Task<RefreshToken?> GetActiveRefreshTokenByUserIdAsync(Guid userId)
     {
-        var refreshToken = await _dbContext.RefreshTokens
+        return await dbContext.RefreshTokens
             .Where(rt => rt.UserId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(rt => rt.CreatedAt)
             .FirstOrDefaultAsync();
-
-        return refreshToken;
     }
 
-    public async Task<List<RefreshToken>?> GetAllActiveRefreshTokensByUserIdAsync(Guid userId)
+    public async Task<IEnumerable<RefreshToken>> GetAllActiveRefreshTokensByUserIdAsync(Guid userId)
     {
-        var refreshTokens = await _dbContext.RefreshTokens
+        return await dbContext.RefreshTokens
             .Where(r => r.UserId == userId && !r.IsRevoked && r.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(rt => rt.CreatedAt)
             .ToListAsync();
-
-        return refreshTokens;
     }
 
-    public async Task UpdateRefreshTokenAsync(RefreshToken refreshToken)
+    public async Task<bool> UpdateRefreshTokenAsync(RefreshToken refreshToken)
     {
-        _dbContext.RefreshTokens.Update(refreshToken);
-        await _dbContext.SaveChangesAsync();
+        dbContext.RefreshTokens.Update(refreshToken);
+        return await dbContext.SaveChangesAsync() > 0;
+    }
+
+    public async Task<bool> ResetRefreshTokenAsync(Guid id, string newRefreshToken, DateTime expiresAt)
+    {
+        return await dbContext.RefreshTokens
+            .AsNoTracking()
+            .Where(rt => rt.Id == id)
+            .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(rt => rt.TokenHash, newRefreshToken)
+                    .SetProperty(rt => rt.ExpiresAt, expiresAt)) > 0;
     }
 
     public async Task RemoveRefreshTokenAsync(RefreshToken refreshToken)
     {
-        _dbContext.RefreshTokens.Remove(refreshToken);
-        await _dbContext.SaveChangesAsync();
+        dbContext.RefreshTokens.Remove(refreshToken);
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<bool> RevokeRefreshTokenAsync(string token, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.RefreshTokens
+        return await dbContext.RefreshTokens
             .AsNoTracking()
             .Where(rf => rf.TokenHash == token && !rf.IsRevoked)
             .ExecuteUpdateAsync(setters => setters
@@ -72,7 +77,7 @@ public class RefreshTokenRepository(SQLServerDbContext dbContext, ILogger<Refres
     {
         try
         {
-            var rawAffected = await _dbContext.RefreshTokens
+            var rawAffected = await dbContext.RefreshTokens
                 .Where(rt => rt.UserId == userId && !rt.IsRevoked)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(rt => rt.IsRevoked, true)
@@ -86,27 +91,16 @@ public class RefreshTokenRepository(SQLServerDbContext dbContext, ILogger<Refres
             throw new DatabaseException("Failed to delete user", ex);
         }
     }
-
-    public async Task<User?> GetUserFromRefreshTokenAsync(Guid userId)
-    {
-        return await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
-    }
-
     public async Task<bool> IsRefreshTokenActiveAsync(string token)
     {
-        return await _dbContext.RefreshTokens
+        return await dbContext.RefreshTokens
             .AnyAsync(rt => rt.TokenHash == token && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow);
     }
 
-    public async Task CleanupExpiredTokensAsync()
+    public async Task<int> CleanupExpiredTokensAsync()
     {
-        await _dbContext.RefreshTokens
+       return await dbContext.RefreshTokens
             .Where(rt => rt.ExpiresAt <= DateTime.UtcNow)
             .ExecuteDeleteAsync();
-    }
-
-    public async Task SaveChangesAsync()
-    {
-        await _dbContext.SaveChangesAsync();
     }
 }

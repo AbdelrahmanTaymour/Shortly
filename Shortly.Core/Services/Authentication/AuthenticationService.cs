@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
-using Shortly.Core.RepositoryContract;
+using Shortly.Core.RepositoryContract.Tokens;
 using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Core.ServiceContracts.Authentication;
 using Shortly.Domain.Entities;
@@ -29,9 +29,8 @@ public class AuthenticationService(
 
         // Generate access and refresh tokens
         var tokensResponse = await tokenService.GenerateTokensAsync(user);
-
         logger.LogInformation("User with id {userId} logged in successfully.", user.Id);
-        ;
+        
         return new AuthenticationResponse(user.Id, user.Email, tokensResponse, true, !user.IsEmailConfirmed);
     }
 
@@ -59,6 +58,7 @@ public class AuthenticationService(
         if (user == null) throw new DatabaseException("Failed to create user. Please try again later.");
 
         var tokensResponse = await tokenService.GenerateTokensAsync(user);
+        
         return new AuthenticationResponse(user.Id, user.Email, tokensResponse, true, !user.IsEmailConfirmed);
     }
 

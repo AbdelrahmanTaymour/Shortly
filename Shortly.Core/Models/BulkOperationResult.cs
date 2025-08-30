@@ -1,4 +1,4 @@
-namespace Shortly.Core.DTOs;
+namespace Shortly.Core.Models;
 
 public record BulkOperationResult(
     int TotalProcessed,

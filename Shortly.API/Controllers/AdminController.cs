@@ -2,7 +2,7 @@ using MethodTimer;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs;
+using Shortly.Core.Models;
 using Shortly.Core.DTOs.ExceptionsDTOs;
 using Shortly.Core.DTOs.UsersDTOs.Search;
 using Shortly.Core.DTOs.UsersDTOs.User;

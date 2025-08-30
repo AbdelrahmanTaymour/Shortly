@@ -1,7 +1,7 @@
 namespace Shortly.Core.DTOs.UsersDTOs.Security;
 
 public record UpdateUserSecurityDto(
-    int FailedLoginAttempts,
+    int? FailedLoginAttempts,
     DateTime? LockedUntil,
     bool TwoFactorEnabled,
     string? TwoFactorSecret,

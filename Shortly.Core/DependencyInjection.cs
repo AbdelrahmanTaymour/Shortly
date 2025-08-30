@@ -6,12 +6,14 @@ using Shortly.Core.ServiceContracts.Authentication;
 using Shortly.Core.ServiceContracts.ClickTracking;
 using Shortly.Core.ServiceContracts.Email;
 using Shortly.Core.ServiceContracts.OrganizationManagement;
+using Shortly.Core.ServiceContracts.Tokens;
 using Shortly.Core.ServiceContracts.UrlManagement;
 using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Core.Services.Authentication;
 using Shortly.Core.Services.ClickTracking;
 using Shortly.Core.Services.Email;
 using Shortly.Core.Services.OrganizationManagement;
+using Shortly.Core.Services.Tokens;
 using Shortly.Core.Services.UrlManagement;
 using Shortly.Core.Services.UserManagement;
 using Shortly.Core.Validators.Auth;
@@ -50,6 +52,7 @@ public static class DependencyInjection
         // Auth
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IUserActionTokenService, UserActionTokenService>();
         
         // URL Management
         services.AddScoped<IShortUrlsService, ShortUrlsService>();

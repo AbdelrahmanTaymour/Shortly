@@ -106,7 +106,7 @@ public class Program
             options.AddDefaultPolicy(policyBuilder =>
             {
                 policyBuilder.WithOrigins("http://localhost:3000", "https://localhost:3000", 
-                        "http://127.0.0.1:5501", "https://127.0.0.1:5501") // Add your frontend URLs
+                        "http://127.0.0.1:5501", "https://127.0.0.1:5501", "http://localhost:63343") // Add your frontend URLs
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials(); // Only if you need cookies/sessions

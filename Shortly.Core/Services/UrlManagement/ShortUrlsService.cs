@@ -64,9 +64,13 @@ public class ShortUrlsService(
         {
             enShortUrlOwnerType.Anonymous =>
                 await HandleAnonymousCreationAsync(request, authContext, cancellationToken),
-            enShortUrlOwnerType.User => await HandleUserCreationAsync(request, authContext, cancellationToken),
-            enShortUrlOwnerType.Organization => await HandleOrganizationMemberCreationAsync(request, authContext,
-                cancellationToken),
+            
+            enShortUrlOwnerType.User => 
+                await HandleUserCreationAsync(request, authContext, cancellationToken),
+            
+            enShortUrlOwnerType.Organization => 
+                await HandleOrganizationMemberCreationAsync(request, authContext, cancellationToken),
+            
             _ => throw new InvalidOperationException("Unsupported owner type.")
         };
     }

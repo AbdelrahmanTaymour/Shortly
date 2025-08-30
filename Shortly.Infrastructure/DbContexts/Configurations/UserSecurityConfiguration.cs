@@ -16,7 +16,6 @@ public class UserSecurityConfiguration : IEntityTypeConfiguration<UserSecurity>
         builder.Property(us => us.LockoutReason).HasMaxLength(100);
         builder.Property(us => us.TwoFactorEnabled).HasDefaultValue(false);
         builder.Property(us => us.TwoFactorSecret).HasMaxLength(150);
-        builder.Property(us => us.PasswordResetToken).HasMaxLength(256);
         builder.Property(us => us.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
 
         // Foreign Key
@@ -24,8 +23,5 @@ public class UserSecurityConfiguration : IEntityTypeConfiguration<UserSecurity>
             .WithOne(u => u.UserSecurity)
             .HasForeignKey<UserSecurity>(us => us.UserId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // Index
-        builder.HasIndex(us => us.PasswordResetToken);
     }
 }

@@ -65,8 +65,6 @@ public static class UserMapper
             security.LockedUntil,
             security.TwoFactorEnabled,
             security.TwoFactorSecret,
-            security.PasswordResetToken,
-            security.TokenExpiresAt,
             security.UpdatedAt
         );
     }

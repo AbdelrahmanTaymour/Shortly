@@ -1,7 +1,7 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Shortly.Core.DTOs;
+using Shortly.Core.Models;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.RepositoryContract.UrlManagement;
 using Shortly.Domain.Entities;

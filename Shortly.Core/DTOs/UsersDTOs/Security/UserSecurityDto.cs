@@ -5,7 +5,5 @@ public sealed record UserSecurityDto(
     DateTime? LockedUntil,
     bool TwoFactorEnabled,
     string? TwoFactorSecret,
-    string? PasswordResetToken,
-    DateTime? TokenExpiresAt,
     DateTime UpdatedAt
 );

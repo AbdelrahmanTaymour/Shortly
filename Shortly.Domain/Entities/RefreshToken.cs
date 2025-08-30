@@ -4,7 +4,7 @@ public class RefreshToken
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; } // Foreign key to your user table
-    public string TokenHash { get; set; } // Store full refresh token string
+    public required string TokenHash { get; set; } // Store full refresh token string
     public DateTime ExpiresAt { get; set; }
     public bool IsRevoked { get; set; }
     public DateTime? RevokedAt { get; set; }

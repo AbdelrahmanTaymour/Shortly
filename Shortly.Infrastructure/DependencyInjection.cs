@@ -2,10 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
-using Quartz.Impl;
-using Quartz.Spi;
 using Shortly.Core.Models;
-using Shortly.Core.RepositoryContract;
+using Shortly.Core.RepositoryContract.Tokens;
 using Shortly.Core.RepositoryContract.ClickTracking;
 using Shortly.Core.RepositoryContract.EmailService;
 using Shortly.Core.RepositoryContract.UrlManagement;
@@ -13,7 +11,7 @@ using Shortly.Core.RepositoryContract.OrganizationManagement;
 using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Infrastructure.BackgroundServices;
 using Shortly.Infrastructure.DbContexts;
-using Shortly.Infrastructure.Repositories;
+using Shortly.Infrastructure.Repositories.Tokens;
 using Shortly.Infrastructure.Repositories.ClickTracking;
 using Shortly.Infrastructure.Repositories.OrganizationManagement;
 using Shortly.Infrastructure.Repositories.UrlManagement;
@@ -91,6 +89,8 @@ public static class DependencyInjection
         services.AddScoped<IUserUsageRepository, UserUsageRepository>();
         services.AddScoped<IUserAuditLogRepository, UserAuditLogRepository>();
         services.AddScoped<IUserAdministrationRepository, UserAdministrationRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IUserActionTokenRepository, UserActionTokenRepository>();
         
         // Url Management
         services.AddScoped<IShortUrlRepository, ShortUrlRepository>();
@@ -115,7 +115,7 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationTeamMemberRepository, OrganizationTeamMemberRepository>();
         services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
 
-        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        
         
         
         // Register background services

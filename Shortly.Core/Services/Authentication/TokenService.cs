@@ -6,10 +6,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core.DTOs.AuthDTOs;
+using Shortly.Core.DTOs.RefreshTokenDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Extensions;
-using Shortly.Core.RepositoryContract;
+using Shortly.Core.Mappers;
+using Shortly.Core.RepositoryContract.Tokens;
 using Shortly.Core.ServiceContracts.Authentication;
 using Shortly.Domain.Entities;
 
@@ -28,24 +30,20 @@ public class TokenService(
     /// <inheritdoc />
     public async Task<TokenResponse> GenerateTokensAsync(User user)
     {
-        // Revoke any existing active refresh tokens for this user
-        await RevokeAllUserTokensAsync(user.Id);
-
         // Generate an access token
         var accessToken = GenerateAccessToken(user);
-        var accessTokenExpiry =
-            DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"]));
+        var accessTokenExpiry = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"]));
 
         // Generate refresh token
-        var refreshToken = await CreateRefreshTokenAsync(user.Id);
+        var refreshTokenDto = await CreateRefreshTokenAsync(user.Id);
 
         logger.LogInformation("Tokens generated successfully for user {UserId}", user.Id);
         return new TokenResponse
         (
             accessToken,
-            refreshToken.TokenHash,
+            refreshTokenDto.Token,
             accessTokenExpiry,
-            refreshToken.ExpiresAt
+            refreshTokenDto.ExpiresAt
         );
     }
 
@@ -53,40 +51,28 @@ public class TokenService(
     public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken)
     {
         var storedRefreshToken = await refreshTokenRepository
-            .GetRefreshTokenAsync(Sha256Extensions.ComputeHash(refreshToken));
+            .GetRefreshTokenAsync(Sha256Extensions.ComputeHash(refreshToken)) 
+                                 ?? throw new NotFoundException("Refresh token is invalid.");
+        
+        // Validate the refresh token
+        await ValidateRefreshTokenRequestAsync(storedRefreshToken);
 
-        // Validate refresh token
-        if (storedRefreshToken == null)
-        {
-            logger.LogWarning("Invalid refresh token attempted");
-            throw new UnauthorizedException("Refresh token is invalid or has expired.");
-        }
-
-        // Remove the Invalid refresh token
-        if (!storedRefreshToken.IsActive)
-        {
-            logger.LogWarning("Inactive refresh token attempted for user {UserId}", storedRefreshToken.UserId);
-            await refreshTokenRepository.RemoveRefreshTokenAsync(storedRefreshToken);
-            throw new UnauthorizedException("Refresh token is no longer active.");
-        }
-
-        // Generate a new refresh token string
+        // Generate a new refresh token
         var newRefreshToken = GenerateRefreshTokenString();
-
-        // Update Refresh Token entity
-        storedRefreshToken.TokenHash = Sha256Extensions.ComputeHash(newRefreshToken);
-        await refreshTokenRepository.SaveChangesAsync();
-
+        var refreshTokenExpiry = await ResetRefreshTokenAsync(storedRefreshToken.Id, newRefreshToken);
+        
         // Generate new tokens
         var newAccessToken = GenerateAccessToken(storedRefreshToken.User);
+        var accessTokenExpiry =
+            DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"]));
 
         logger.LogInformation("Tokens refreshed successfully for user {UserId}", storedRefreshToken.User.Id);
         return new TokenResponse
         (
             newAccessToken,
             newRefreshToken,
-            DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"])),
-            storedRefreshToken.ExpiresAt
+            accessTokenExpiry,
+            refreshTokenExpiry
         );
     }
 
@@ -177,7 +163,46 @@ public class TokenService(
         }
     }
 
+    
+    
+    
     #region Private Methods
+
+    /// <summary>
+    /// Validates the provided refresh token to ensure it is active and not revoked.
+    /// If the token is inactive, it will be removed, and an exception will be thrown.
+    /// </summary>
+    /// <param name="refreshToken">The refresh token to validate.</param>
+    /// <exception cref="UnauthorizedException">Thrown if the refresh token is no longer active.</exception>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task ValidateRefreshTokenRequestAsync(RefreshToken refreshToken)
+    {
+        // Remove the Invalid refresh token
+        if (!refreshToken.IsActive)
+        {
+            logger.LogWarning("Inactive refresh token attempted for user {UserId}", refreshToken.UserId);
+            await refreshTokenRepository.RemoveRefreshTokenAsync(refreshToken);
+            throw new UnauthorizedException("Refresh token is no longer active.");
+        }
+    }
+
+    /// <summary>
+    /// Resets a refresh token for the specified user and updates its expiration date.
+    /// </summary>
+    /// <param name="id">The unique identifier of the refresh token to reset.</param>
+    /// <param name="newRefreshToken">The new refresh token string to associate with the user.</param>
+    /// <returns>The expiration date and time of the newly assigned refresh token.</returns>
+    private async Task<DateTime> ResetRefreshTokenAsync(Guid id, string newRefreshToken)
+    {
+        var refreshTokenHashed = Sha256Extensions.ComputeHash(newRefreshToken);
+        
+        // set the expiration to 15 days if the configuration is missing
+        var expiresAt = DateTime.UtcNow
+            .AddDays(double.Parse(configuration["Jwt:RefreshTokenExpirationDays"] ?? "15")); // set the expiration to 15 days if the configuration is missing
+        
+        await refreshTokenRepository.ResetRefreshTokenAsync(id, refreshTokenHashed, expiresAt);
+        return expiresAt;
+    }
     
     /// <summary>
     /// Generates a JWT access token for the specified user.
@@ -258,10 +283,10 @@ public class TokenService(
     /// Creates and stores a hashed refresh token for the given user ID.
     /// </summary>
     /// <param name="userId">The ID of the user to associate with the token.</param>
-    /// <returns>The saved refresh token entity, with an unhashed token in the TokenHash property.</returns>
+    /// <returns>The saved refresh token entity, with an unhashed token in the Token property.</returns>
     /// <exception cref="DatabaseException">Thrown if storing the refresh token fails.</exception>
     /// <exception cref="ConfigurationException">Thrown if the refresh token expiration config is missing.</exception>
-    private async Task<RefreshToken> CreateRefreshTokenAsync(Guid userId)
+    private async Task<RefreshTokenDto> CreateRefreshTokenAsync(Guid userId)
     {
         var refreshTokenString = GenerateRefreshTokenString();
 
@@ -269,9 +294,7 @@ public class TokenService(
         {
             Id = Guid.NewGuid(),
             TokenHash = Sha256Extensions.ComputeHash(refreshTokenString), // Hash to store in the database
-            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(configuration["Jwt:RefreshTokenExpirationDays"]
-                                                             ?? throw new ConfigurationException(
-                                                                 "JWT:RefreshTokenExpirationDays config is missing."))),
+            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(configuration["Jwt:RefreshTokenExpirationDays"] ?? "15")),
             CreatedAt = DateTime.UtcNow,
             UserId = userId,
             IsRevoked = false
@@ -280,9 +303,11 @@ public class TokenService(
         var savedToken = await refreshTokenRepository.AddRefreshTokenAsync(refreshToken);
         if (savedToken == null)
             throw new DatabaseException("Failed to persist refresh token.");
-
-        savedToken.TokenHash = refreshTokenString; // Re-assign the token with unhashed token
-        return savedToken;
+        
+        logger.LogInformation("Refresh token created for user {UserId}", userId);
+        
+        // Return the refresh token with the unhashed token
+        return savedToken.MapToRefreshTokenDto(refreshTokenString);
     }
 
     /// <summary>

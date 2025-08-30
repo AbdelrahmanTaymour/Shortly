@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Shortly.Core.DTOs;
+using Shortly.Core.Models;
 using Shortly.Core.DTOs.UsersDTOs.Profile;
 using Shortly.Core.DTOs.UsersDTOs.Security;
 using Shortly.Core.DTOs.UsersDTOs.Usage;
@@ -292,8 +292,6 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
         security.LockedUntil = dto.LockedUntil;
         security.TwoFactorEnabled = dto.TwoFactorEnabled;
         security.TwoFactorSecret = dto.TwoFactorSecret;
-        security.PasswordResetToken = dto.PasswordResetToken;
-        security.TokenExpiresAt = dto.TokenExpiresAt;
         security.UpdatedAt = dto.UpdatedAt;
     }
 

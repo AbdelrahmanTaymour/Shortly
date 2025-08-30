@@ -19,7 +19,7 @@ public class EmailNotificationService(
     : IEmailNotificationService
 {
     /// <inheritdoc />
-    public void SendEmailVerificationAsync(string email, string userName, string verificationToken)
+    public void EnqueueSendEmailVerificationAsync(string email, string userName, string verificationToken)
     {
         var baseUrl = configuration["AppSettings:BaseUrl"];
         var verificationLink = $"{baseUrl}/verify-email?token={verificationToken}&email={Uri.EscapeDataString(email)}";
@@ -39,7 +39,7 @@ public class EmailNotificationService(
     }
 
     /// <inheritdoc />
-    public void SendPasswordResetAsync(string email, string userName, string resetToken)
+    public void EnqueueSendPasswordResetAsync(string email, string userName, string resetToken)
     {
         var baseUrl = configuration["AppSettings:BaseUrl"];
         var resetLink = $"{baseUrl}/reset-password?token={resetToken}&email={Uri.EscapeDataString(email)}";

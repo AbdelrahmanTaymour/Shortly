@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Shortly.Core.DTOs;
+using Shortly.Core.Models;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 

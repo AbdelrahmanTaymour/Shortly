@@ -12,7 +12,7 @@ public interface IEmailNotificationService
     /// <param name="email">The recipient's email address.</param>
     /// <param name="userName">The recipient's display name or username.</param>
     /// <param name="verificationToken">The unique verification token associated with the user.</param>
-    void SendEmailVerificationAsync(string email, string userName, string verificationToken);
+    void EnqueueSendEmailVerificationAsync(string email, string userName, string verificationToken);
    
     /// <summary>
     /// Sends a password-reset email to a user who requested a password change.
@@ -20,7 +20,7 @@ public interface IEmailNotificationService
     /// <param name="email">The recipient's email address.</param>
     /// <param name="userName">The recipient's display name or username.</param>
     /// <param name="resetToken">The unique reset token generated for the user.</param>
-    void SendPasswordResetAsync(string email, string userName, string resetToken);
+    void EnqueueSendPasswordResetAsync(string email, string userName, string resetToken);
   
     /// <summary>
     /// Sends an invitation email to a new user to join an organization.

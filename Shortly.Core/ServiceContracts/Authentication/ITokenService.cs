@@ -65,7 +65,7 @@ public interface ITokenService
     /// var token = tokenService.GenerateRedirectToken("abc123", TimeSpan.FromMinutes(5));
     /// </code>
     /// </example>
-    /// <exception cref="InvalidOperationException"> Thrown if the signing key is not found in configuration.</exception>
+    /// <exception cref="InvalidOperationException"> Thrown if the signing key is not found in the configuration.</exception>
     string GenerateRedirectToken(string shortCode, TimeSpan lifetime);
 
     /// <summary>

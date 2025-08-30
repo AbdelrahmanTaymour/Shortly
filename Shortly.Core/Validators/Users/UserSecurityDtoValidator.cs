@@ -35,27 +35,7 @@ public class UserSecurityDtoValidator : AbstractValidator<UserSecurityDto>
                 .Null()
                 .WithMessage("Two-factor secret must be null when two-factor authentication is disabled");
         });
-
-        RuleFor(x => x.PasswordResetToken)
-            .Length(32, 256)
-            .WithMessage("Password reset token must be between 32 and 256 characters")
-            .When(x => !string.IsNullOrEmpty(x.PasswordResetToken));
-
-        When(x => !string.IsNullOrEmpty(x.PasswordResetToken), () =>
-        {
-            RuleFor(x => x.TokenExpiresAt)
-                .NotNull()
-                .WithMessage("Token expiration date is required when password reset token is present")
-                .GreaterThan(DateTime.UtcNow)
-                .WithMessage("Password reset token should not be expired");
-        });
-
-        When(x => string.IsNullOrEmpty(x.PasswordResetToken), () =>
-        {
-            RuleFor(x => x.TokenExpiresAt)
-                .Null()
-                .WithMessage("Token expiration date must be null when no password reset token is present");
-        });
+        
 
         RuleFor(x => x.UpdatedAt)
             .LessThanOrEqualTo(DateTime.UtcNow)

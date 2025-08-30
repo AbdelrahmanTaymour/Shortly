@@ -1,4 +1,4 @@
-using Shortly.Core.DTOs;
+using Shortly.Core.Models;
 using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
