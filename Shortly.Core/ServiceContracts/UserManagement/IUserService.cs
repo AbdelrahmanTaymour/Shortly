@@ -70,6 +70,14 @@ public interface IUserService
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> SoftDeleteAsync(Guid userId, Guid deletedBy, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Marks the email associated with a specific user as confirmed.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user whose email will be marked as confirmed.</param>
+    /// <param name="cancellationToken">A token to cancel the operation if needed.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains a boolean indicating whether the email confirmation was successful.</returns>
+    /// <exception cref="DatabaseException">Thrown when a database operation fails.</exception>
+     Task<bool> MarkEmailAsConfirmedAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Activates a user account by setting the <c>IsActive</c> flag to true.

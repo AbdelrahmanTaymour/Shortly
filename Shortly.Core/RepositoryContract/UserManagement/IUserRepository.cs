@@ -167,6 +167,15 @@ public interface IUserRepository
     Task<bool> DeactivateUserAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Marks the user's email as confirmed in the system.
+    /// </summary>
+    /// <param name="id">The unique identifier of the user whose email is being confirmed.</param>
+    /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
+    /// <returns>True if the operation was successful; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when a database operation fails.</exception>
+    Task<bool> MarkEmailAsConfirmedAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Checks if a user exists and is not deleted.
     /// </summary>
     /// <param name="id">The unique identifier of the user to check.</param>
@@ -247,8 +256,7 @@ public interface IUserRepository
     ///     </list>
     /// </returns>
     /// <exception cref="ValidationException">
-    ///     Thrown when <paramref name="page" /> or <paramref name="pageSize" /> are outside
-    ///     valid bounds.
+    ///     Thrown when <paramref name="request" /> is invalid
     /// </exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<(IEnumerable<IUserSearchResult> Users, int TotalCount)> SearchUsers(UserSearchRequest request,

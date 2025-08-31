@@ -20,6 +20,7 @@ namespace Shortly.API.Controllers;
 /// </remarks>
 [ApiController]
 [Route("api/admin")]
+[Produces("application/json")]
 public class AdminController(
     IUserQueryService queryService, 
     IUserAdministrationService adminService) : ControllerApiBase

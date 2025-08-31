@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs.UsersDTOs.Security;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.RepositoryContract.UserManagement;
-using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.ServiceContracts.Tokens;
 using Shortly.Core.ServiceContracts.UserManagement;
 
 namespace Shortly.Core.Services.UserManagement;

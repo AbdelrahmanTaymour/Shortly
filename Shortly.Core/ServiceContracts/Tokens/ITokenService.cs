@@ -2,7 +2,7 @@ using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Domain.Entities;
 
-namespace Shortly.Core.ServiceContracts.Authentication;
+namespace Shortly.Core.ServiceContracts.Tokens;
 
 /// <summary>
 /// Defines methods for generating, validating, and revoking access and refresh tokens.

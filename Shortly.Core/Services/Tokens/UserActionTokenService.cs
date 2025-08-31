@@ -50,8 +50,9 @@ public class UserActionTokenService(
     }
     
     /// <inheritdoc />
-    public async Task<bool> ValidateTokenAsync(string tokenHash, enUserActionTokenType expectedTokenType, CancellationToken cancellationToken = default)
+    public async Task<UserActionTokenDto> ValidateTokenAsync(string token, enUserActionTokenType expectedTokenType, CancellationToken cancellationToken = default)
     {
+        var tokenHash = Sha256Extensions.ComputeHash(token);
         var storedToken = await userActionTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
 
         if (storedToken == null)
@@ -78,7 +79,7 @@ public class UserActionTokenService(
             throw new ForbiddenException("This verification link has expired.");
         }
 
-        return true;
+        return storedToken.MapToUserActionTokenDto(token);
     }
 
     /// <inheritdoc />
@@ -93,12 +94,15 @@ public class UserActionTokenService(
     }
 
     /// <inheritdoc />
-    public async Task<bool> ConsumeTokenAsync(string token, enUserActionTokenType tokenType, CancellationToken cancellationToken = default)
+    public async Task<UserActionTokenDto> ConsumeTokenAsync(string token, enUserActionTokenType tokenType,
+        CancellationToken cancellationToken = default)
     {
-        var tokenHash = Sha256Extensions.ComputeHash(token);
-        await ValidateTokenAsync(tokenHash, tokenType, cancellationToken);
-
-        return await userActionTokenRepository.ConsumeTokenAsync(tokenHash, tokenType, cancellationToken);
+        var storedToken = await ValidateTokenAsync(token, tokenType, cancellationToken);
+        
+        await userActionTokenRepository.ConsumeTokenAsync(token, tokenType, cancellationToken);
+        logger.LogInformation("Consumed {TokenType} token for user {UserId}", tokenType, storedToken.UserId);
+        
+        return storedToken;
     }
 
     /// <inheritdoc />

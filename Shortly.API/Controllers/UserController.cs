@@ -21,6 +21,7 @@ namespace Shortly.API.Controllers;
 /// </remarks>
 [ApiController]
 [Route("api/user")]
+[Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
 public class UserController(IUserService userService) : ControllerApiBase

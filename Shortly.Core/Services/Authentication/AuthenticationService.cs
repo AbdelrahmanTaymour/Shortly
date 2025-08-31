@@ -2,10 +2,13 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
-using Shortly.Core.RepositoryContract.Tokens;
+using Shortly.Core.Extensions;
 using Shortly.Core.RepositoryContract.UserManagement;
 using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.ServiceContracts.Email;
+using Shortly.Core.ServiceContracts.Tokens;
 using Shortly.Domain.Entities;
+using Shortly.Domain.Enums;
 
 namespace Shortly.Core.Services.Authentication;
 
@@ -14,18 +17,17 @@ namespace Shortly.Core.Services.Authentication;
 /// </summary>
 public class AuthenticationService(
     IUserRepository userRepository,
-    IRefreshTokenRepository refreshTokenRepository,
-    ILogger<AuthenticationService> logger,
-    ITokenService tokenService) : IAuthenticationService
+    ITokenService tokenService,
+    IUserActionTokenService userActionTokenService,
+    IEmailNotificationService notificationService,
+    ILogger<AuthenticationService> logger
+    ) : IAuthenticationService
 {
-    private readonly IUserRepository _userRepository = userRepository;
-
     /// <inheritdoc />
     public async Task<AuthenticationResponse?> Login(LoginRequest loginRequest,
         CancellationToken cancellationToken = default)
     {
-        var user = await ValidateCredentialsAsync(loginRequest.EmailOrUsername, loginRequest.Password,
-            cancellationToken);
+        var user = await ValidateCredentialsAsync(loginRequest.EmailOrUsername, loginRequest.Password, cancellationToken);
 
         // Generate access and refresh tokens
         var tokensResponse = await tokenService.GenerateTokensAsync(user);
@@ -37,11 +39,10 @@ public class AuthenticationService(
     /// <inheritdoc />
     /// <exception cref="ConflictException">Thrown when the email or username already exists.</exception>
     /// <exception cref="DatabaseException">Thrown when user creation fails.</exception>
-    public async Task<AuthenticationResponse?> Register(RegisterRequest registerRequest,
-        CancellationToken cancellationToken = default)
+    public async Task<AuthenticationResponse?> Register(RegisterRequest registerRequest, CancellationToken cancellationToken = default)
     {
         var userExists =
-            await _userRepository.EmailOrUsernameExistsAsync(registerRequest.Email, registerRequest.Username,
+            await userRepository.EmailOrUsernameExistsAsync(registerRequest.Email, registerRequest.Username,
                 cancellationToken);
 
         if (userExists) throw new ConflictException("user", "email or username");
@@ -54,9 +55,14 @@ public class AuthenticationService(
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password, 10) // Hash the PasswordHash
         };
 
-        user = await _userRepository.CreateAsync(user);
+        user = await userRepository.CreateAsync(user);
         if (user == null) throw new DatabaseException("Failed to create user. Please try again later.");
-
+        
+        // Send email verification
+        var userActionToken = await userActionTokenService.GenerateTokenAsync(user.Id,
+            enUserActionTokenType.EmailVerification, cancellationToken: cancellationToken);
+        notificationService.EnqueueSendEmailVerificationAsync(user.Email, user.Username, Sha256Extensions.Encrypt(userActionToken.PlainToken));
+        
         var tokensResponse = await tokenService.GenerateTokensAsync(user);
         
         return new AuthenticationResponse(user.Id, user.Email, tokensResponse, true, !user.IsEmailConfirmed);
@@ -72,7 +78,7 @@ public class AuthenticationService(
     public async Task<User> ValidateCredentialsAsync(string emailOrUsername, string password,
         CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.GetByEmailOrUsernameAsync(emailOrUsername, cancellationToken);
+        var user = await userRepository.GetByEmailOrUsernameAsync(emailOrUsername, cancellationToken);
         if (user == null)
             throw new NotFoundException("User with the specified email was not found.");
 

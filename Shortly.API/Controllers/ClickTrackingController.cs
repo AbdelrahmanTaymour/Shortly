@@ -12,7 +12,7 @@ using Shortly.Domain.Enums;
 namespace Shortly.API.Controllers;
 
 [ApiController]
-[Route("api/short-urls/tracking")]
+[Route("api/urls/tracking")]
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -23,13 +23,13 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// </summary>
     /// <param name="shortUrlId">The unique identifier of the short URL that was clicked.</param>
     /// <returns>The recorded click event with all tracking information.</returns>
-    /// <example>POST /api/short-urls/tracking/123456789/click</example>
+    /// <example>POST /api/urls/tracking/123456789/click</example>
     /// <remarks>
-    /// <para><strong>Access:</strong> [AllowAnonymous] This endpoint is accessible to everyone to enable click tracking for all users.</para>
-    /// 
+    /// **Access:** [AllowAnonymous] This endpoint is accessible to everyone to enable click tracking for all users.
+    ///
     /// Sample Request:
     ///
-    ///     POST /api/short-urls/tracking/123456789/click
+    ///     POST /api/urls/tracking/123456789/click
     ///
     /// This endpoint automatically captures and records comprehensive click analytics including:
     /// - **Geographic Information**: Country and city based on IP address
@@ -78,13 +78,13 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// <param name="endDate">Optional. The end date for analytics filtering (inclusive). If not provided, includes data up to the current date.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>Comprehensive analytics including click counts, geographic breakdown, device information, and traffic sources.</returns>
-    /// <example>GET /api/short-urls/tracking/123456789/analytics?startDate=2024-01-01T00:00:00Z&amp;endDate=2024-12-31T23:59:59Z</example>
+    /// <example>GET /api/urls/tracking/123456789/analytics?startDate=2024-01-01T00:00:00Z&amp;endDate=2024-12-31T23:59:59Z</example>
     /// <remarks>
     /// Sample Requests:
     ///
-    ///     GET /api/short-urls/tracking/123456789/analytics
-    ///     GET /api/short-urls/tracking/123456789/analytics?startDate=2024-01-01T00:00:00Z
-    ///     GET /api/short-urls/tracking/123456789/analytics?startDate=2024-01-01T00:00:00Z&amp;endDate=2024-12-31T23:59:59Z
+    ///     GET /api/urls/tracking/123456789/analytics
+    ///     GET /api/urls/tracking/123456789/analytics?startDate=2024-01-01T00:00:00Z
+    ///     GET /api/urls/tracking/123456789/analytics?startDate=2024-01-01T00:00:00Z&amp;endDate=2024-12-31T23:59:59Z
     /// 
     /// This endpoint provides comprehensive analytics insights including:
     /// 
@@ -138,11 +138,11 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// <param name="shortUrlId">The unique identifier of the short URL to get real-time analytics for.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>Real-time analytics data for the last 24 hours including recent click patterns and trends.</returns>
-    /// <example>GET /api/short-urls/tracking/123456789/real-time</example>
+    /// <example>GET /api/urls/tracking/123456789/real-time</example>
     /// <remarks>
     /// Sample Request:
     ///
-    ///     GET /api/short-urls/tracking/123456789/real-time
+    ///     GET /api/urls/tracking/123456789/real-time
     /// 
     /// This endpoint provides live analytics insights for monitoring immediate URL performance.
     /// It automatically analyzes data from the last 24 hours to show:
@@ -191,13 +191,13 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// <param name="count">The number of recent clicks to retrieve. Default is 10, maximum is 100.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A list of the most recent click events ordered by click time (most recent first).</returns>
-    /// <example>GET /api/short-urls/tracking/123456789/recent-clicks?count=20</example>
+    /// <example>GET /api/urls/tracking/123456789/recent-clicks?count=20</example>
     /// <remarks>
     /// Sample Requests:
     ///
-    ///     GET /api/short-urls/tracking/123456789/recent-clicks
-    ///     GET /api/short-urls/tracking/123456789/recent-clicks?count=20
-    ///     GET /api/short-urls/tracking/123456789/recent-clicks?count=50
+    ///     GET /api/urls/tracking/123456789/recent-clicks
+    ///     GET /api/urls/tracking/123456789/recent-clicks?count=20
+    ///     GET /api/urls/tracking/123456789/recent-clicks?count=50
     /// 
     /// This endpoint provides immediate visibility into recent user activity and engagement.
     /// Each click event contains detailed information including:
@@ -254,14 +254,14 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// <param name="pageSize">The number of items per page. Default is 50, maximum is 100.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>A paginated result containing click events and pagination metadata.</returns>
-    /// <example>GET /api/short-urls/tracking/123456789/click-history?pageNumber=1&amp;pageSize=25</example>
+    /// <example>GET /api/urls/tracking/123456789/click-history?pageNumber=1&amp;pageSize=25</example>
     /// <remarks>
     /// Sample Requests:
     ///
-    ///     GET /api/short-urls/tracking/123456789/click-history
-    ///     GET /api/short-urls/tracking/123456789/click-history?pageNumber=2
-    ///     GET /api/short-urls/tracking/123456789/click-history?pageNumber=1&amp;pageSize=25
-    ///     GET /api/short-urls/tracking/123456789/click-history?pageNumber=3&amp;pageSize=100
+    ///     GET /api/urls/tracking/123456789/click-history
+    ///     GET /api/urls/tracking/123456789/click-history?pageNumber=2
+    ///     GET /api/urls/tracking/123456789/click-history?pageNumber=1&amp;pageSize=25
+    ///     GET /api/urls/tracking/123456789/click-history?pageNumber=3&amp;pageSize=100
     /// 
     /// This endpoint provides comprehensive access to all historical click data with efficient pagination.
     /// The response includes both the click events and pagination metadata:
@@ -324,15 +324,17 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// <param name="retentionDays">The number of days to retain click data. Data older than this will be permanently deleted. Must be a positive value.</param>
     /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
     /// <returns>The number of click events that were deleted during the cleanup operation.</returns>
-    /// <example>DELETE /api/short-urls/tracking/cleanup?retentionDays=365</example>
+    /// <example>DELETE /api/urls/tracking/cleanup?retentionDays=365</example>
     /// <remarks>
     /// Sample Requests:
     ///
-    ///     DELETE /api/short-urls/tracking/cleanup?retentionDays=365
-    ///     DELETE /api/short-urls/tracking/cleanup?retentionDays=180
-    ///     DELETE /api/short-urls/tracking/cleanup?retentionDays=90
+    ///         DELETE /api/urls/tracking/cleanup?retentionDays=365
+    ///         DELETE /api/urls/tracking/cleanup?retentionDays=180
+    ///         DELETE /api/urls/tracking/cleanup?retentionDays=90
+    ///
+    ///
     /// 
-    /// **⚠️ WARNING: This operation permanently deletes old click data and cannot be undone.**
+    /// <para> **⚠️ WARNING: This operation permanently deletes old click data and cannot be undone.**
     /// 
     /// This endpoint performs system-wide cleanup of historical click tracking data to:
     /// - **Comply with Data Retention Policies**: Meet regulatory requirements for data retention
@@ -355,6 +357,7 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// - **Analytics Needs**: 6-18 months for trend analysis
     /// - **Storage Optimization**: 3-12 months depending on volume
     /// - **Audit Requirements**: Varies by industry and regulations
+    /// </para>
     /// </remarks>
     /// <response code="200">Cleanup completed successfully. Returns the number of deleted click events.</response>
     /// <response code="400">The retentionDays parameter is invalid (e.g., negative or zero value).</response>

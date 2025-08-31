@@ -289,6 +289,26 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
+    public async Task<bool> MarkEmailAsConfirmedAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Users
+                .AsNoTracking()
+                .Where(u => u.Id == id && !u.IsDeleted && !u.IsEmailConfirmed)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(u => u.IsEmailConfirmed, true)
+                        .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error verify user Email: {UserId}", id);
+            throw new DatabaseException("Failed to verify user Email", ex);
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try

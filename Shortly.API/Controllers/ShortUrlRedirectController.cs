@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
 using Shortly.API.HTMLTemplates;
 using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.ServiceContracts.Tokens;
 using Shortly.Core.ServiceContracts.UrlManagement;
 
 namespace Shortly.API.Controllers;
@@ -14,6 +14,7 @@ namespace Shortly.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("")]
+[Produces("application/json")]
 public class ShortUrlRedirectController(IShortUrlRedirectService redirectService, ITokenService tokenService) : ControllerApiBase
 {
     

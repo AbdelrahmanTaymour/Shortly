@@ -22,8 +22,8 @@ public class EmailNotificationService(
     public void EnqueueSendEmailVerificationAsync(string email, string userName, string verificationToken)
     {
         var baseUrl = configuration["AppSettings:BaseUrl"];
-        var verificationLink = $"{baseUrl}/verify-email?token={verificationToken}&email={Uri.EscapeDataString(email)}";
-
+        var verificationLink = $"{baseUrl}/api/auth/account/verify-email?token={verificationToken}";
+        
         var template = templateService.GetEmailVerificationTemplateAsync(userName, verificationLink);
 
         var emailRequest = new EmailRequest

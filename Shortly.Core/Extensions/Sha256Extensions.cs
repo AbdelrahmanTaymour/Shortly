@@ -58,11 +58,9 @@ public static class Sha256Extensions
     /// <param name="cipherText">The Base64-encoded encrypted string. If null, returns null.</param>
     /// <param name="key">The 16-byte decryption key (must match the encryption key).</param>
     /// <returns>The decrypted plain text string.</returns>
-    public static string? Decrypt(string? cipherText, string key = "1234567890123456")
+    public static string Decrypt(string cipherText, string key = "1234567890123456")
     {
-        if (cipherText == null) return null;
-
-        using var aesAlg = Aes.Create();
+         using var aesAlg = Aes.Create();
         aesAlg.Key = Encoding.UTF8.GetBytes(key);
         aesAlg.IV = new byte[aesAlg.BlockSize / 8];
 

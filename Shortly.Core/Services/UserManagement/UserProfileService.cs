@@ -5,7 +5,7 @@ using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Mappers;
 using Shortly.Core.RepositoryContract.UserManagement;
-using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.ServiceContracts.Tokens;
 using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Domain.Configuration;
 

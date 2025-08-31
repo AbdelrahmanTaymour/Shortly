@@ -12,10 +12,10 @@ using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Extensions;
 using Shortly.Core.Mappers;
 using Shortly.Core.RepositoryContract.Tokens;
-using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.ServiceContracts.Tokens;
 using Shortly.Domain.Entities;
 
-namespace Shortly.Core.Services.Authentication;
+namespace Shortly.Core.Services.Tokens;
 
 /// <summary>
 /// Provides methods for generating, validating, and revoking JWT access and refresh tokens.

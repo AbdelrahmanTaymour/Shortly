@@ -31,15 +31,12 @@ public interface IUserActionTokenService
     Task<UserActionTokenDto> GenerateTokenAsync(Guid userId, enUserActionTokenType tokenType, TimeSpan? customExpiration = null, CancellationToken cancellationToken = default);
     
     /// <summary>
-    /// Validates a token hash against the expected token type and business rules.
+    /// Validates a token against the expected token type and business rules.
     /// </summary>
-    /// <param name="tokenHash">The hashed token string to validate.</param>
+    /// <param name="token">The token string to validate.</param>
     /// <param name="expectedTokenType">The expected type of the token.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
-    /// <returns>
-    /// A task that represents the asynchronous operation. The task result contains
-    /// true if the token is valid and can be used.
-    /// </returns>
+    /// <returns>A <see cref="UserActionTokenDto"/> object containing the details of the validated token.</returns>
     /// <exception cref="NotFoundException">Thrown when the token is not found in the database.</exception>
     /// <exception cref="ForbiddenException">Thrown when the token type doesn't match or the token has expired.</exception>
     /// <exception cref="ConflictException">Thrown when the token has already been used.</exception>
@@ -48,7 +45,7 @@ public interface IUserActionTokenService
     /// This method performs comprehensive validation including existence, type matching,
     /// usage status, and expiration checks. It does not consume the token.
     /// </remarks>
-    Task<bool> ValidateTokenAsync(string tokenHash, enUserActionTokenType expectedTokenType, CancellationToken cancellationToken = default);
+    Task<UserActionTokenDto> ValidateTokenAsync(string token, enUserActionTokenType expectedTokenType, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Retrieves detailed information about a token using its plain text value.
@@ -74,8 +71,7 @@ public interface IUserActionTokenService
     /// <param name="tokenType">The expected type of the token.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>
-    /// A task that represents the asynchronous operation. The task result contains
-    /// true if the token was successfully validated and consumed.
+    /// A <see cref="UserActionTokenDto"/> instance containing details about the consumed token.
     /// </returns>
     /// <exception cref="NotFoundException">Thrown when the token is not found in the database.</exception>
     /// <exception cref="ForbiddenException">Thrown when the token type doesn't match or the token has expired.</exception>
@@ -86,7 +82,7 @@ public interface IUserActionTokenService
     /// Once consumed, the token cannot be used again. This is the recommended way to use tokens
     /// for one-time operations like email verification or password reset.
     /// </remarks>
-    Task<bool> ConsumeTokenAsync(string token, enUserActionTokenType tokenType, CancellationToken cancellationToken = default);
+    Task<UserActionTokenDto> ConsumeTokenAsync(string token, enUserActionTokenType tokenType, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Invalidates all active tokens of a specific type for a user.

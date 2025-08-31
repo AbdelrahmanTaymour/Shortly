@@ -12,7 +12,6 @@ public class PlanConfiguration
     }
 
     public enSubscriptionPlan Plan { get; set; }
-    public enPermissions AllowedPermissions { get; set; }
     public decimal Price { get; set; }
     public Dictionary<enPlanLimits, int> Limits { get; set; } = new();
 
@@ -21,9 +20,6 @@ public class PlanConfiguration
         [enSubscriptionPlan.Free] = new PlanConfiguration
         {
             Plan = enSubscriptionPlan.Free,
-            // AllowedPermissions = enPermissions. |
-            //                      enPermissions.BasicAnalytics |
-            //                      enPermissions.GenerateQrCodes,
             Price = 0,
             Limits = new Dictionary<enPlanLimits, int>
             {
@@ -35,10 +31,6 @@ public class PlanConfiguration
         [enSubscriptionPlan.Starter] = new PlanConfiguration
         {
             Plan = enSubscriptionPlan.Starter,
-            // AllowedPermissions = enPermissions.BasicUrlOperations |
-            //                      enPermissions.BasicAnalytics |
-            //                      enPermissions.GenerateQrCodes |
-            //                      enPermissions.CreateCustomAlias,
             Price = 10,
             Limits = new Dictionary<enPlanLimits, int>
             {
@@ -50,12 +42,6 @@ public class PlanConfiguration
         [enSubscriptionPlan.Professional] = new PlanConfiguration
         {
             Plan = enSubscriptionPlan.Professional,
-            // AllowedPermissions = enPermissions.FullUrlManagement |
-            //                      enPermissions.FullAnalytics |
-            //                      enPermissions.CustomizationFeatures |
-            //                      enPermissions.BulkCreateUrl |
-            //                      enPermissions.SetPasswordProtection |
-            //                      enPermissions.SetLinkExpiration,
             Price = 50,
             Limits = new Dictionary<enPlanLimits, int>
             {
@@ -67,7 +53,6 @@ public class PlanConfiguration
         [enSubscriptionPlan.Enterprise] = new PlanConfiguration
         {
             Plan = enSubscriptionPlan.Enterprise,
-            //AllowedPermissions = enPermissions.AllPermissions, // All except system admin
             Price = 200,
             Limits = new Dictionary<enPlanLimits, int>
             {

@@ -4,7 +4,7 @@ using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Mappers;
 using Shortly.Core.RepositoryContract.UserManagement;
-using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.ServiceContracts.Tokens;
 using Shortly.Core.ServiceContracts.UserManagement;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
@@ -113,10 +113,16 @@ public class UserService(IUserRepository userRepository, ITokenService tokenServ
         if (!deleted)
             throw new NotFoundException("User", userId);
 
-        await tokenService.RevokeAllUserTokensAsync(userId);
+        await tokenService.RevokeAllUserTokensAsync(userId, cancellationToken);
         
         logger.LogInformation("User soft deleted. UserId: {UserId}, DeletedBy: {DeletedBy}", userId, deletedBy);
         return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> MarkEmailAsConfirmedAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await userRepository.MarkEmailAsConfirmedAsync(userId, cancellationToken);
     }
 
     /// <inheritdoc />
