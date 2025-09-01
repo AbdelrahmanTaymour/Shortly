@@ -31,6 +31,7 @@ public class SQLServerDbContext : DbContext
     public DbSet<OrganizationTeamMember> OrganizationTeamMembers { get; set; }
     public DbSet<OrganizationInvitation> OrganizationInvitations { get; set; }
     public DbSet<OrganizationAuditLog> OrganizationAuditLogs { get; set; }
+    public DbSet<EmailChangeToken> EmailChangeTokens { get; set; }
     public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
     public DbSet<Role> Roles { get; set; }
 
@@ -58,6 +59,7 @@ public class SQLServerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new OrganizationTeamMemberConfiguration());
         modelBuilder.ApplyConfiguration(new OrganizationInvitationConfiguration());
         modelBuilder.ApplyConfiguration(new OrganizationAuditLogConfiguration());
+        modelBuilder.ApplyConfiguration(new EmailChangeTokenConfiguration());
         modelBuilder.ApplyConfiguration(new SubscriptionPlanConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
 

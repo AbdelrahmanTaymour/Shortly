@@ -97,6 +97,9 @@ public abstract class ControllerApiBase : ControllerBase
     ///     This method does not throw exceptions for missing email claims, as email might be optional
     ///     depending on the authentication provider. Returns an empty string if no email is found.
     /// </remarks>
+    /// <exception cref="UnauthorizedAccessException">
+    ///     Thrown when the user is not authenticated or the Email claim is missing.
+    /// </exception>
     /// <example>
     ///     <code>
     /// var userEmail = GetCurrentEmail();
@@ -115,14 +118,19 @@ public abstract class ControllerApiBase : ControllerBase
         {
             var userEmailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
 
-            // Cache the result (even if it's null/empty)
-            _cachedUserEmail = userEmailClaim ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(userEmailClaim))
+            {
+                throw new UnauthorizedAccessException("Unable to determine current user Email.");
+            }
+            
+            // Cache the result
+            _cachedUserEmail = userEmailClaim;
 
             return _cachedUserEmail;
         }
-        catch (Exception)
+        catch (Exception ex) when (!(ex is UnauthorizedAccessException || ex is InvalidOperationException))
         {
-            return string.Empty;
+            throw new InvalidOperationException("An error occurred while processing user authentication", ex);
         }
     }
 
