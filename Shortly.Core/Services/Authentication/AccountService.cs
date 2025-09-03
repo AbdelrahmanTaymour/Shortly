@@ -11,6 +11,27 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Core.Services.Authentication;
 
+/// <summary>
+/// Service responsible for managing user account operations including email verification,
+/// password management, and email change functionality.
+/// </summary>
+/// <param name="actionTokenService">Service for managing user action tokens (verification, reset, etc.).</param>
+/// <param name="userService">Service for user management operations.</param>
+/// <param name="tokenService">Service for JWT authentication token management.</param>
+/// <param name="emailChangeTokenService">Specialized service for handling email change tokens.</param>
+/// <param name="notificationService">Service for sending email notifications.</param>
+/// <param name="logger">Logger instance for tracking operations and errors.</param>
+/// <remarks>
+/// This service implements critical security operations for user account management.
+/// All sensitive operations use encrypted tokens and follow security best practices
+/// including prevention of user enumeration attacks and proper session management.
+/// 
+/// Key security features:
+/// - All tokens are encrypted before transmission
+/// - Password operations revoke existing sessions
+/// - Email changes require two-step verification
+/// - User enumeration protection in password reset flows
+/// </remarks>
 public class AccountService(
     IUserActionTokenService actionTokenService,
     IUserService userService,
@@ -20,6 +41,7 @@ public class AccountService(
     ILogger<AccountService> logger
 ) : IAccountService
 {
+    /// <inheritdoc />
     public async Task<bool> SendVerificationEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         var user = await userService.GetByEmailAsync(email, cancellationToken);
@@ -35,6 +57,7 @@ public class AccountService(
         return true;
     }
 
+    /// <inheritdoc />
     public async Task<AuthenticationResponse> VerifyEmailAsync(string token, CancellationToken cancellationToken = default)
     {
         var decryptToken = Sha256Extensions.Decrypt(token);
@@ -60,6 +83,7 @@ public class AccountService(
             );
     }
 
+    /// <inheritdoc />
     public async Task<bool> InitiateEmailChangeAsync(Guid userId, string currentEmail, string newEmail, string currentPassword,
         CancellationToken cancellationToken = default)
     {
@@ -81,6 +105,7 @@ public class AccountService(
         return true;
     }
 
+    /// <inheritdoc />
     public async Task<bool> ConfirmEmailChangeAsync(string token, CancellationToken cancellationToken = default)
     {
         // Validate the token and marks the token as used
@@ -97,6 +122,7 @@ public class AccountService(
         return success;
     }
 
+    /// <inheritdoc />
     public async Task<bool> ForgotPasswordAsync(string email, CancellationToken cancellationToken = default)
     {
         try
@@ -121,6 +147,7 @@ public class AccountService(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> ValidateResetToken(string token, CancellationToken cancellationToken = default)
     {
         try
@@ -136,12 +163,13 @@ public class AccountService(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken cancellationToken = default)
     {
         // Validate and marks token as used
         var actionTokenDto = await actionTokenService.ConsumeTokenAsync(Sha256Extensions.Decrypt(token), enUserActionTokenType.PasswordReset, cancellationToken);
         
-        // Update the user’s password in DB
+        // Update the user's password in DB
         var success = await userService.ChangePasswordAsync(actionTokenDto.UserId, newPassword, cancellationToken);
         if (!success)
             throw new ServiceUnavailableException("Failed to reset password. Please try resetting password later.");
@@ -152,6 +180,7 @@ public class AccountService(
         return success;
     }
 
+    /// <inheritdoc />
     public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword,
         CancellationToken cancellationToken = default)
     {
