@@ -31,4 +31,12 @@ public interface IEmailNotificationService
     /// <param name="invitationToken">The unique token for accepting the invitation.</param>
     /// <param name="organizationName">The name of the organization the invitee is asked to join.</param>
     void EnqueueSendUserInvitation(string email, string inviterUsername, string inviteeName, string invitationToken, string organizationName);
+
+    /// <summary>
+    /// Sends an email to confirm an email change request.
+    /// </summary>
+    /// <param name="newEmail">The new email address to be confirmed.</param>
+    /// <param name="username">The username associated with the account.</param>
+    /// <param name="changeToken">The unique token for verifying the email change request.</param>
+    void EnqueueEmailChangeConfirmationAsync(string newEmail, string username, string changeToken);
 }

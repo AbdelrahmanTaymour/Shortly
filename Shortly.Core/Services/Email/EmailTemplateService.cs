@@ -58,6 +58,20 @@ public class EmailTemplateService(
             IsHtml = true
         };
     }
+    
+    /// <inheritdoc />
+    public EmailTemplate GetEmailChangeConfirmationTemplateAsync(string userName, string newEmail, string confirmationLink)
+    {
+        var expiryHours = _appSettings.Tokens.EmailChangeExpiryHours;
+
+        return new EmailTemplate
+        {
+            Subject = $"Confirm your new email address - {_appSettings.Name}",
+            Body = GetEmailChangeConfirmationTemplate(userName, newEmail, confirmationLink, expiryHours),
+            IsHtml = true
+        };
+    }
+
 
     /// <inheritdoc />
     public EmailTemplate GetCustomTemplateAsync(string templateName,
@@ -93,8 +107,7 @@ public class EmailTemplateService(
                             <h2 style='color: #333; margin-top: 0; text-align: center;'>Verify Your Email Address</h2>
                             <p style='color: #666; line-height: 1.6;'>Hello {userName},</p>
                             <p style='color: #666; line-height: 1.6;'>
-                                Welcome to {_appSettings.Name}! To complete your registration and secure your account, 
-                                please verify your email address by clicking the button below.
+                                To secure your account, please verify your email address by clicking the button below.
                             </p>
                             <div style='text-align: center; margin: 30px 0;'>
                                 <a href='{verificationLink}' 
@@ -123,7 +136,7 @@ public class EmailTemplateService(
     }
 
     /// <summary>
-    ///     Builds the HTML body for a password reset message.
+    ///     Builds the HTML body for a password-reset message.
     /// </summary>
     private string GetPasswordResetTemplate(string userName, string resetLink, int expiryHours)
     {
@@ -222,6 +235,66 @@ public class EmailTemplateService(
                 </body>
                 </html>";
     }
+    
+        /// <summary>
+    ///     Builds the HTML body for an email change confirmation message.
+    /// </summary>
+    private string GetEmailChangeConfirmationTemplate(string userName, string newEmail, string confirmationLink, int expiryHours)
+    {
+        return $@"
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='utf-8'>
+                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                    <title>Confirm Email Change</title>
+                </head>
+                <body style='margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f5f5f5;'>
+                    <div style='max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);'>
+                        {GetEmailHeader()}
+                        <div style='padding: 30px;'>
+                            <h2 style='color: #333; margin-top: 0; text-align: center;'>Confirm Your New Email Address</h2>
+                            <p style='color: #666; line-height: 1.6;'>Hello {userName},</p>
+                            <p style='color: #666; line-height: 1.6;'>
+                                We received a request to change the email address associated with your {_appSettings.Name} account 
+                                to <strong>{newEmail}</strong>.
+                            </p>
+                            <p style='color: #666; line-height: 1.6;'>
+                                To confirm this change and secure your account, please click the button below.
+                            </p>
+                            <div style='text-align: center; margin: 30px 0;'>
+                                <a href='{confirmationLink}' 
+                                   style='background-color: #17a2b8; color: white; padding: 14px 28px; text-decoration: none; 
+                                          border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;'>
+                                    Confirm Email Change
+                                </a>
+                            </div>
+                            <p style='color: #666; line-height: 1.6;'>
+                                If the button above doesn't work, you can copy and paste the following link into your browser:
+                            </p>
+                            <p style='background-color: #f8f9fa; padding: 15px; border-radius: 4px; word-break: break-all; 
+                                      color: #495057; border-left: 4px solid #17a2b8; margin: 20px 0;'>
+                                {confirmationLink}
+                            </p>
+                            <div style='background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 15px; margin: 20px 0;'>
+                                <p style='margin: 0; color: #155724; font-size: 14px;'>
+                                    <strong>Security Notice:</strong> This confirmation link will expire in {expiryHours} hour(s) for security reasons. 
+                                    If you didn't request this change, please ignore this email and consider changing your password.
+                                </p>
+                            </div>
+                            <div style='background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 20px 0;'>
+                                <p style='margin: 0; color: #856404; font-size: 14px;'>
+                                    <strong>Important:</strong> Once confirmed, your new email address will be used for all future communications 
+                                    and account recovery processes.
+                                </p>
+                            </div>
+                        </div>
+                        {GetEmailFooter()}
+                    </div>
+                </body>
+                </html>";
+    }
+
 
     /// <summary>
     ///     Generates the standard email header section including logo and app name.

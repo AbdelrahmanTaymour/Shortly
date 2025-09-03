@@ -78,4 +78,24 @@ public class EmailNotificationService(
         emailQueueService.EnqueueEmail(emailRequest);
         logger.LogInformation("Enqueued invitation email for {Email} by {Inviter}.", email, inviterUsername);
     }
+
+    /// <inheritdoc />
+    public void EnqueueEmailChangeConfirmationAsync(string newEmail, string username, string changeToken)
+    {
+        var baseUiUrl = configuration["AppSettings:BaseUIUrl"];
+        var confirmationLink = $"{baseUiUrl}/account/confirm-email-change?token={changeToken}";
+
+        var template = templateService.GetEmailChangeConfirmationTemplateAsync(username, newEmail, confirmationLink);
+
+        var emailRequest = new EmailRequest
+        {
+            To = newEmail,
+            Subject = template.Subject,
+            Body = template.Body,
+            IsHtml = template.IsHtml
+        };
+
+        emailQueueService.EnqueueEmail(emailRequest);
+        logger.LogInformation("Enqueued email change confirmation to '{NewEmail}' for user '{Username}'.", newEmail, username);
+    }
 }

@@ -16,7 +16,7 @@ public interface IEmailTemplateService
     EmailTemplate GetEmailVerificationTemplateAsync(string userName, string verificationLink);
    
     /// <summary>
-    /// Generates a password reset email template for users who request to reset their password.
+    /// Generates a password-reset email template for users who request to reset their password.
     /// </summary>
     /// <param name="userName">The recipient's username or display name.</param>
     /// <param name="resetLink">The password reset link provided to the user.</param>
@@ -33,6 +33,15 @@ public interface IEmailTemplateService
     /// <returns>An <see cref="EmailTemplate"/> containing the invitation details.</returns>
     EmailTemplate GetUserInvitationTemplateAsync(string inviterName, string inviteeName, string invitationLink, string organizationName);
   
+    /// <summary>
+    /// Generates an email change confirmation template for confirming a user's new email address.
+    /// </summary>
+    /// <param name="userName">The recipient's username or display name.</param>
+    /// <param name="newEmail">The new email address to be confirmed.</param>
+    /// <param name="confirmationLink">The confirmation link the user must click to confirm the email change.</param>
+    /// <returns>An <see cref="EmailTemplate"/> containing the subject, HTML body, and formatting.</returns>
+    EmailTemplate GetEmailChangeConfirmationTemplateAsync(string userName, string newEmail, string confirmationLink);
+    
     /// <summary>
     /// Generates a custom email template based on provided parameters.
     /// </summary>
