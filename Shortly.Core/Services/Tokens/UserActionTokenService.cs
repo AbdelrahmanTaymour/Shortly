@@ -64,7 +64,7 @@ public class UserActionTokenService(
         if (storedToken.TokenType != expectedTokenType)
         {
             logger.LogWarning("Token validation failed: incorrect token type. Expected {ExpectedType}, got {ActualType}", expectedTokenType, storedToken.TokenType);
-            throw new ForbiddenException("Incorrect token type.");
+            throw new ValidationException("Incorrect token type.");
         }
 
         if (storedToken.Used)

@@ -38,7 +38,7 @@ public interface IUserActionTokenService
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>A <see cref="UserActionTokenDto"/> object containing the details of the validated token.</returns>
     /// <exception cref="NotFoundException">Thrown when the token is not found in the database.</exception>
-    /// <exception cref="ForbiddenException">Thrown when the token type doesn't match or the token has expired.</exception>
+    /// <exception cref="ValidationException">Thrown when the token type doesn't match or the token has expired.</exception>
     /// <exception cref="ConflictException">Thrown when the token has already been used.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     /// <remarks>
@@ -74,7 +74,7 @@ public interface IUserActionTokenService
     /// A <see cref="UserActionTokenDto"/> instance containing details about the consumed token.
     /// </returns>
     /// <exception cref="NotFoundException">Thrown when the token is not found in the database.</exception>
-    /// <exception cref="ForbiddenException">Thrown when the token type doesn't match or the token has expired.</exception>
+    /// <exception cref="ValidationException">Thrown when the token type doesn't match or the token has expired.</exception>
     /// <exception cref="ConflictException">Thrown when the token has already been used.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     /// <remarks>

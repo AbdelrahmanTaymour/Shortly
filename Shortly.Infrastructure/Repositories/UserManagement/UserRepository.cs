@@ -225,6 +225,47 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
+    public async Task<bool> ChangeEmailAsync(Guid id, string newEmail, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Users
+                .AsNoTracking()
+                .Where(u => u.Id == id && !u.IsDeleted)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(u => u.Email, newEmail)
+                        .SetProperty(u => u.IsEmailConfirmed, true)
+                        .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error changing user email: {UserId}", id);
+            throw new DatabaseException("Failed to change user email.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ChangePasswordAsync(Guid id, string newPasswordHash, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Users
+                .AsNoTracking()
+                .Where(u => u.Id == id && !u.IsDeleted)
+                .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(u => u.PasswordHash, newPasswordHash)
+                        .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)
+                    , cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error changing user password: {UserId}", id);
+            throw new DatabaseException("Failed to change user password.", ex);
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<bool> DeleteAsync(Guid id, Guid deletedBy, CancellationToken cancellationToken = default)
     {
         try

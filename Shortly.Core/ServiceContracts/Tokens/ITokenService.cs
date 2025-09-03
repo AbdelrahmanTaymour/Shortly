@@ -1,4 +1,5 @@
 using Shortly.Core.DTOs.AuthDTOs;
+using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Domain.Entities;
 
@@ -14,7 +15,7 @@ public interface ITokenService
     /// </summary>
     /// <param name="user">The user to generate tokens for.</param>
     /// <returns>A <see cref="TokenResponse"/> containing token data.</returns>
-    Task<TokenResponse> GenerateTokensAsync(User user);
+    Task<TokenResponse> GenerateTokensAsync(UserDto user);
 
     /// <summary>
     /// Refreshes the token pair using a valid refresh token.

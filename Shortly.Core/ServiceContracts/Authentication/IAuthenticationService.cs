@@ -1,5 +1,7 @@
 using Shortly.Core.DTOs.AuthDTOs;
-using Shortly.Domain.Entities;
+using Shortly.Core.DTOs.UsersDTOs.User;
+using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.Exceptions.ServerErrors;
 
 namespace Shortly.Core.ServiceContracts.Authentication;
 
@@ -31,8 +33,11 @@ public interface IAuthenticationService
     /// <param name="password">The plaintext password to verify against the stored hash.</param>
     /// <param name="cancellationToken">Optional cancellation token for the asynchronous operation.</param>
     /// <returns>
-    /// The <see cref="User"/> object if credentials are valid.
+    /// The <see cref="UserDto"/> object if credentials are valid.
     /// </returns>
-    Task<User> ValidateCredentialsAsync(string emailOrUsername, string password,
+    /// <exception cref="NotFoundException">Thrown when no user is found with the specified email or username.</exception>
+    /// <exception cref="UnauthorizedException">Thrown when the password does not match the stored hash for the user.</exception>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    Task<UserDto> ValidateCredentialsAsync(string emailOrUsername, string password,
         CancellationToken cancellationToken = default);
 }

@@ -15,7 +15,8 @@ namespace Shortly.Core.Services.UserManagement;
 ///     Provides core business logic for managing user accounts, including creation, updates,
 ///     activation/deactivation, availability checks, and soft deletion.
 /// </summary>
-public class UserService(IUserRepository userRepository, ITokenService tokenService, ILogger<UserService> logger) : IUserService
+public class UserService(IUserRepository userRepository,
+    ITokenService tokenService, ILogger<UserService> logger) : IUserService
 {
     /// <inheritdoc />
     public async Task<UserDto> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -44,8 +45,17 @@ public class UserService(IUserRepository userRepository, ITokenService tokenServ
         return user.MapToUserDto();
     }
 
+    public async Task<User> GetByEmailOrUsernameAsync(string emailOrUsername, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByEmailOrUsernameAsync(emailOrUsername, cancellationToken);
+        if (user == null)
+            throw new NotFoundException("User", emailOrUsername);
+        
+        return user;
+    }
+
     /// <inheritdoc />
-    public async Task<CreateUserResponse> CreateAsync(CreateUserRequest request,
+    public async Task<UserDto> CreateAsync(CreateUserRequest request,
         CancellationToken cancellationToken = default)
     {
         var userExists = await userRepository
@@ -70,7 +80,7 @@ public class UserService(IUserRepository userRepository, ITokenService tokenServ
 
         logger.LogInformation("User created successfully. UserId: {UserId}", user.Id);
 
-        return user.MapToCreateUserResponse();
+        return user.MapToUserDto();
     }
 
     /// <inheritdoc />
@@ -106,6 +116,19 @@ public class UserService(IUserRepository userRepository, ITokenService tokenServ
         return user.MapToUserDto();
     }
 
+    public async Task<bool> ChangeEmailAsync(Guid userId, string newEmail,
+        CancellationToken cancellationToken = default)
+    {
+        return await userRepository.ChangeEmailAsync(userId, newEmail, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ChangePasswordAsync(Guid userId, string newPassword, CancellationToken cancellationToken = default)
+    {
+        var newPasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword, 10);
+        return await userRepository.ChangePasswordAsync(userId, newPasswordHash, cancellationToken);
+    }
+
     /// <inheritdoc />
     public async Task<bool> SoftDeleteAsync(Guid userId, Guid deletedBy, CancellationToken cancellationToken = default)
     {
@@ -123,6 +146,17 @@ public class UserService(IUserRepository userRepository, ITokenService tokenServ
     public async Task<bool> MarkEmailAsConfirmedAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await userRepository.MarkEmailAsConfirmedAsync(userId, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<UserDto?> ValidateCurrentPasswordAsync(Guid userId, string currentPassword,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user == null || user.IsDeleted)
+            throw new NotFoundException("User", userId);
+
+        return BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash) ? user.MapToUserDto() : null;
     }
 
     /// <inheritdoc />
@@ -145,6 +179,12 @@ public class UserService(IUserRepository userRepository, ITokenService tokenServ
 
         logger.LogInformation("User deactivated. UserId: {UserId}", userId);
         return deactivated;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> EmailOrUsernameExistsAsync(string email, string username, CancellationToken cancellationToken = default)
+    {
+        return await userRepository.EmailOrUsernameExistsAsync(email, username, cancellationToken);
     }
 
     /// <inheritdoc />

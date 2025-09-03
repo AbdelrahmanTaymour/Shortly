@@ -128,6 +128,26 @@ public interface IUserRepository
     /// <returns>True if the update was successful; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<bool> UpdateAsync(User user);
+    
+    /// <summary>
+    /// Changes the email address of a user and marks it as confirmed.
+    /// </summary>
+    /// <param name="id">The unique identifier of the user whose email is to be changed.</param>
+    /// <param name="newEmail">The new email address to assign to the user.</param>
+    /// <param name="cancellationToken">A CancellationToken to observe while waiting for the task to complete.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is true if the email was successfully updated; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when there is a failure to update the email in the database.</exception>
+    Task<bool> ChangeEmailAsync(Guid id, string newEmail, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Changes the password of a user identified by their unique identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier of the user whose password is being changed.</param>
+    /// <param name="newPasswordHash">The new password hash to set for the user.</param>
+    /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
+    /// <returns>True if the password was successfully changed; otherwise, false.</returns>
+    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
+    Task<bool> ChangePasswordAsync(Guid id, string newPasswordHash, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Performs a soft delete on a user by marking them as deleted with audit information.
@@ -260,6 +280,5 @@ public interface IUserRepository
     /// </exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<(IEnumerable<IUserSearchResult> Users, int TotalCount)> SearchUsers(UserSearchRequest request,
-        bool retrieveCompleteUser = false,
-        CancellationToken cancellationToken = default);
+        bool retrieveCompleteUser = false, CancellationToken cancellationToken = default);
 }

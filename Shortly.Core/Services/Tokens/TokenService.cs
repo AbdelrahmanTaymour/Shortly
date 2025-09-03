@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core.DTOs.AuthDTOs;
 using Shortly.Core.DTOs.RefreshTokenDTOs;
+using Shortly.Core.DTOs.UsersDTOs.User;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Extensions;
@@ -28,7 +29,7 @@ public class TokenService(
     private readonly IConfigurationSection _jwtSection = configuration.GetSection("Jwt");
 
     /// <inheritdoc />
-    public async Task<TokenResponse> GenerateTokensAsync(User user)
+    public async Task<TokenResponse> GenerateTokensAsync(UserDto user)
     {
         // Generate an access token
         var accessToken = GenerateAccessToken(user);
@@ -62,7 +63,7 @@ public class TokenService(
         var refreshTokenExpiry = await ResetRefreshTokenAsync(storedRefreshToken.Id, newRefreshToken);
         
         // Generate new tokens
-        var newAccessToken = GenerateAccessToken(storedRefreshToken.User);
+        var newAccessToken = GenerateAccessToken(storedRefreshToken.User.MapToUserDto());
         var accessTokenExpiry =
             DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtSection["AccessTokenExpirationMinutes"]));
 
@@ -209,7 +210,7 @@ public class TokenService(
     /// </summary>
     /// <param name="user">The user to generate the token for.</param>
     /// <returns>A signed JWT access token.</returns>
-    private string GenerateAccessToken(User user)
+    private string GenerateAccessToken(UserDto user)
     {
         var signingCredentials = GetSigningCredentials();
         var claims = GetClaims(user);
@@ -236,7 +237,7 @@ public class TokenService(
     /// </summary>
     /// <param name="user">The user for whom to create claims.</param>
     /// <returns>A list of claims including user ID, name, email, and permissions.</returns>
-    private List<Claim> GetClaims(User user)
+    private List<Claim> GetClaims(UserDto user)
     {
         var claims = new List<Claim>
         {
