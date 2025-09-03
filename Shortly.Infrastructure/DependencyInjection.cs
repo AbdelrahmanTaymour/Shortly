@@ -89,8 +89,11 @@ public static class DependencyInjection
         services.AddScoped<IUserUsageRepository, UserUsageRepository>();
         services.AddScoped<IUserAuditLogRepository, UserAuditLogRepository>();
         services.AddScoped<IUserAdministrationRepository, UserAdministrationRepository>();
+        
+        // Tokens
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUserActionTokenRepository, UserActionTokenRepository>();
+        services.AddScoped<IEmailChangeTokenRepository, EmailChangeTokenRepository>();
         
         // Url Management
         services.AddScoped<IShortUrlRepository, ShortUrlRepository>();
@@ -115,8 +118,6 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationTeamMemberRepository, OrganizationTeamMemberRepository>();
         services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
 
-        
-        
         
         // Register background services
         services.AddHostedService<EmailBackgroundWorker>();

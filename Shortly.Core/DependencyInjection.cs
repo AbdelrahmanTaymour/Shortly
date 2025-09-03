@@ -53,6 +53,8 @@ public static class DependencyInjection
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserActionTokenService, UserActionTokenService>();
+        services.AddScoped<IEmailChangeTokenService, EmailChangeTokenService>();
+        services.AddScoped<IAccountService, AccountService>();
         
         // URL Management
         services.AddScoped<IShortUrlsService, ShortUrlsService>();
