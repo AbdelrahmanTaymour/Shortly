@@ -30,6 +30,7 @@ public static partial class ValidationExtensions
         return !string.IsNullOrWhiteSpace(name) && NamePattern.IsMatch(name);
     }
 
+    
 
     /// <summary>
     /// Validates if the username contains only allowed characters (letters, numbers, underscores, hyphens, and periods).
@@ -130,7 +131,54 @@ public static partial class ValidationExtensions
             return false;
         }
     }
+    
+    /// <summary>
+    /// Validates that the token is a properly formatted base64 string.
+    /// </summary>
+    /// <param name="token">The refresh token to validate.</param>
+    /// <returns>True if the token is valid base64, false otherwise.</returns>
+    /// <remarks>
+    /// This validation helps catch malformed tokens early and provides better user experience
+    /// by rejecting obviously invalid tokens before making database calls.
+    /// </remarks>
+    public static bool BeValidBase64String(string token)
+    {
+        if (string.IsNullOrEmpty(token))
+            return false;
 
+        try
+        {
+            // Check if the string length is valid for base64 (must be multiple of 4)
+            if (token.Length % 4 != 0)
+                return false;
+
+            // Attempt to convert from base64 - this will throw if invalid
+            Convert.FromBase64String(token);
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Ensures the token doesn't contain whitespace characters that could indicate tampering or corruption.
+    /// </summary>
+    /// <param name="token">The refresh token to validate.</param>
+    /// <returns>True if the token contains no whitespace, false otherwise.</returns>
+    /// <remarks>
+    /// Base64 tokens should not contain spaces, tabs, or newlines. The presence of whitespace
+    /// often indicates the token has been corrupted during transmission or storage.
+    /// </remarks>
+    public static bool BeNotContainWhitespace(string token)
+    {
+        return !string.IsNullOrEmpty(token) && !token.Any(char.IsWhiteSpace);
+    }
 
     [GeneratedRegex(@"^[a-zA-Z\s\-'\.]+$", RegexOptions.Compiled)]
     private static partial Regex MyNameRegex();
