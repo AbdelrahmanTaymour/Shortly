@@ -16,3 +16,14 @@ _UpgradeReport_Files/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Environment files with sensitive data
+.env
+secrets.env
+secrets/
+
+# Docker
+.dockerignore
+
+# keep the template
+!.env.template
