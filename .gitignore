@@ -22,8 +22,5 @@ Desktop.ini
 secrets.env
 secrets/
 
-# Docker
-.dockerignore
-
 # keep the template
 !.env.template

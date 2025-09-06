@@ -1,0 +1,32 @@
+# Directories
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Files
+Dockerfile*
+**/*.trx
+**/*.md
+**/*.ps1
+**/*.cmd
+**/*.sh
+.dockerignore
+.env
+.git
+.gitignore
+.vs
+.vscode
+**/.toolstarget
+**/.vs/
+**/.vscode/
+**/node_modules/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
