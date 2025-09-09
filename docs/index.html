@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Shortly API Docs</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+    <style>
+        body { margin: 0; padding: 0; }
+        #swagger-ui { width: 100%; height: 100vh; }
+    </style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+<script>
+    window.onload = () => {
+        SwaggerUIBundle({
+            url: "swagger.json",   // OpenAPI spec
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            defaultModelsExpandDepth: -1, // hide schemas panel
+        });
+    };
+</script>
+</body>
+</html>
