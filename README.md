@@ -14,6 +14,7 @@
 | [🛠️ Tech Stack](#️-tech-stack) | Technologies and frameworks |
 | [📊 Database Schema](#-database-schema) | Entity relationships and structure |
 | [📚 API Documentation](#-api-documentation) | Comprehensive API reference |
+| [🎨 UI](#-ui) | Front-end (under development) |
 | [🚀 Getting Started](#-getting-started) | Development setup guide |
 | [🐳 Docker Setup](#-docker-setup) | Containerized deployment |
 | [📧 SMTP Configuration](#-smtp-configuration) | Email notification setup |
@@ -25,7 +26,9 @@
 
 ## 🌟 Overview
 
-**Shortly** is a comprehensive, enterprise-grade URL shortening service built with Clean Architecture principles. It goes beyond simple URL shortening to provide a complete platform for organizations to manage their links, collaborate in teams, track detailed analytics, and maintain security at scale.
+**Shortly** is a comprehensive, enterprise-grade URL shortening service built with Clean Architecture principles. The initial spark for this project came from [roadmap.sh’s URL Shortening Service project](https://roadmap.sh/projects/url-shortening-service), but I extended the concept far beyond its basic requirements. Shortly goes beyond simple URL shortening to provide a full platform for organizations to manage their links, collaborate in teams, track detailed analytics, and maintain security at scale.
+
+<img width="1490" height="735" alt="Screenshot 2025-09-09 at 12 41 49 PM" src="https://github.com/user-attachments/assets/ce0422da-3ea0-4a65-8051-991820642a16" />
 
 ### Key Highlights
 - 🏢 **Multi-Tenant Organization Management** - Complete organization structure with teams and roles
@@ -40,7 +43,6 @@
 - 🛡️ **Audit Logging** - Comprehensive activity tracking and security auditing
 
 ---
-
 ## ✨ Features
 
 ### 🔗 URL Management
