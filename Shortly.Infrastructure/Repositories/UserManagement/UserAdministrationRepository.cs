@@ -332,7 +332,7 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
     /// </summary>
     /// <param name="user">The user whose short URLs should be deleted.</param>
     /// <param name="userId">The user ID for logging purposes.</param>
-    private async Task DeleteUserShortUrlsIfRequiredAsync(User user, Guid userId)
+    private Task DeleteUserShortUrlsIfRequiredAsync(User user, Guid userId)
     {
         if (user.OwnedShortUrls?.Count > 0)
         {
@@ -342,6 +342,8 @@ public class UserAdministrationRepository(SQLServerDbContext dbContext, ILogger<
                 user.OwnedShortUrls.Count,
                 userId);
         }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>

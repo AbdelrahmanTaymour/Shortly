@@ -27,6 +27,33 @@ namespace Shortly.API.Controllers;
 public class UserController(IUserService userService) : ControllerApiBase
 {
     /// <summary>
+    /// Retrieves the authenticated user.
+    /// </summary>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
+    /// <returns>
+    /// A <see cref="UserDto"/> containing the user's information if found.
+    /// </returns>
+    /// <response code="200">Returns the user information successfully.</response>
+    /// <response code="401">User is not authenticated.</response>
+    /// <response code="403">User does not have permission.</response>
+    /// <response code="404">User with the specified ID was not found.</response>
+    /// <response code="500">An internal server error occurred.</response>
+    /// <example>
+    /// GET /api/user/current-user
+    /// </example>
+    [HttpGet("current-user", Name = "GetCurrentUser")]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
+    [RequirePermission(enPermissions.ManageOwnAccount)]
+    public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken = default)
+    {
+        var currentUserId = GetCurrentUserId();
+        var user = await userService.GetByIdAsync(currentUserId, cancellationToken);
+        return Ok(user);
+    }
+    
+    /// <summary>
     /// Retrieves a user by their unique identifier.
     /// </summary>
     /// <param name="userId">The unique identifier of the user to retrieve.</param>

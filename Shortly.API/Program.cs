@@ -1,17 +1,23 @@
+
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core;
 using Shortly.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Shortly.API.Authentication;
 using Shortly.API.Authorization;
 using Shortly.API.Middleware;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.API;
 
@@ -106,7 +112,7 @@ public class Program
             options.AddDefaultPolicy(policyBuilder =>
             {
                 policyBuilder.WithOrigins("http://localhost:3000", "https://localhost:3000", 
-                        "http://127.0.0.1:5501", "https://127.0.0.1:5501", "http://localhost:63343") // Add your frontend URLs
+                        "http://127.0.0.1:5500", "https://127.0.0.1:5501", "http://localhost:63342") // Add your frontend URLs
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials(); // Only if you need cookies/sessions
@@ -114,11 +120,23 @@ public class Program
         });
 
 
-        // Authentication
+        // Authentication - UPDATED FOR OAUTH
         builder.Services.AddAuthentication(options =>
             {
+                // JWT is still the default for API authentication
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                // Add Cookie scheme as default sign-in scheme for OAuth
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            })
+            .AddCookie(options =>
+            {
+                // Configure cookie for OAuth temporary storage
+                options.Cookie.Name = "Shortly.OAuth";
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(5); // Short-lived for OAuth flow
             })
             .AddJwtBearer(options =>
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -133,7 +151,27 @@ public class Program
                         new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] 
                                                                         ?? throw new ConfigurationException("JWT signing key is missing in configuration."))),
                     ClockSkew = TimeSpan.Zero
-                });
+                })
+            .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+            {
+                options.ClientId = builder.Configuration["Authentication:Google:ClientId"] 
+                    ?? throw new ConfigurationException("Google ClientId is missing in configuration.");
+                options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] 
+                    ?? throw new ConfigurationException("Google ClientSecret is missing in configuration.");
+                
+                // Request additional scopes
+                options.Scope.Add("profile");
+                options.Scope.Add("email");
+                
+                // Important: Use cookie sign-in scheme
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                
+                // Save tokens for potential future use
+                options.SaveTokens = true;
+                
+                // Map claims
+                options.ClaimActions.MapJsonKey("picture", "picture");
+            });
 
 
         // Authorization & Authentication
@@ -167,16 +205,27 @@ public class Program
 
         // 5. Routing
         app.UseRouting();
-        
+
         // 6. Authentication
         app.UseAuthentication();
 
         // 7. Authorization
         app.UseAuthorization();
 
-        // 8. Controller mapping
+        // 8. Apply migrations (For Docker setup)
+        if (app.Environment.IsDevelopment() && builder.Configuration.GetConnectionString("ConnectionString")!.Contains("sqlserver"))
+        {
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<SQLServerDbContext>();
+                db.Database.Migrate();
+            }
+        }
+
+        // 9. Controller mapping
         app.MapControllers();
 
+        // 10. Run app
         app.Run();
     }
 }

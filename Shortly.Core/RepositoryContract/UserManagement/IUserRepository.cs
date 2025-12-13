@@ -49,6 +49,15 @@ public interface IUserRepository
     /// <returns>The user if found and not deleted; otherwise, null.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     Task<User?> GetByEmailOrUsernameAsync(string emailOrUsername, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Gets a user by their Google ID
+    /// </summary>
+    /// <param name="googleId">The Google ID to search for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The user if found, null otherwise</returns>
+    Task<User?> GetUserByGoogleIdAsync(string googleId, CancellationToken cancellationToken = default);
+
 
     /// <summary>
     /// Retrieves a user with their associated profile information, excluding deleted users.

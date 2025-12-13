@@ -88,6 +88,22 @@ public class UserRepository(SQLServerDbContext dbContext, ILogger<UserRepository
     }
 
     /// <inheritdoc />
+    public async Task<User?> GetUserByGoogleIdAsync(string googleId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.GoogleId == googleId && !u.IsDeleted, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving user by their Google ID: {googleId}", googleId);
+            throw new DatabaseException("Failed to retrieve user by their Google ID", ex);
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<User?> GetWithProfileAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try

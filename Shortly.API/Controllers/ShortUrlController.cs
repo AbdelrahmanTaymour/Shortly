@@ -119,7 +119,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService, IAuthenticat
     /// <response code="409">A short URL with the specified custom code already exists.</response>
     /// <response code="500">An internal server error occurred.</response>
     [HttpPost(Name = "CreateShortUrl")]
-    [ProducesResponseType(typeof(CreateUserResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(CreateShortUrlResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]

@@ -20,6 +20,11 @@ public class User
     public DateTime? DeletedAt { get; set; } = null;
     public Guid? DeletedBy { get; set; } = null;
 
+    // OAuth fields
+    public string? GoogleId { get; set; }
+    public string? GoogleProfilePicture { get; set; }
+    public bool IsOAuthUser { get; set; } = false;
+    
     // Navigation properties
     public SubscriptionPlan? SubscriptionPlan { get; set; }
     public UserProfile? Profile { get; set; }

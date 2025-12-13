@@ -7,7 +7,7 @@ namespace Shortly.Core.Validators.Auth;
 
 public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
 {
-    public RegisterRequestValidator(IUserRepository userRepository)
+    public RegisterRequestValidator()
     {
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("Email is required.")
