@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.AuthDTOs;
-using Shortly.Core.DTOs.AuthDTOs.Email;
-using Shortly.Core.DTOs.AuthDTOs.Password;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.Auth.Contracts;
+using Shortly.Core.Auth.DTOs;
+using Shortly.Core.Auth.DTOs.Email;
+using Shortly.Core.Auth.DTOs.Password;
+using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Exceptions.DTOs;
 
 namespace Shortly.API.Controllers;
 
@@ -28,7 +29,7 @@ namespace Shortly.API.Controllers;
 [ApiController]
 [Route("api/auth")]
 [Produces("application/json")]
-public class AccountController(IAccountService accountService) : ControllerApiBase
+public class AccountController(IAccountService accountService, IUserContext userContext) : ControllerApiBase
 {
     /// <summary>
     /// Sends an email verification link to the specified or current user's email address.
@@ -74,7 +75,7 @@ public class AccountController(IAccountService accountService) : ControllerApiBa
         [FromBody] SendEmailVerificationRequest request,
         CancellationToken cancellationToken = default)
     {
-        var email = request.Email ?? GetCurrentEmail();
+        var email = request.Email ?? userContext.CurrentUserEmail;
         var result = await accountService.SendVerificationEmailAsync(email, cancellationToken);
         
         var response = new SendEmailVerificationResponse
@@ -191,11 +192,9 @@ public class AccountController(IAccountService accountService) : ControllerApiBa
         [FromBody] ChangeEmailRequest request,
         CancellationToken cancellationToken = default)
     {
-        var currentUserId = GetCurrentUserId();
-        var currentEmail = GetCurrentEmail();
         var result = await accountService.InitiateEmailChangeAsync(
-            currentUserId, 
-            currentEmail, 
+            userContext.CurrentUserId, 
+            userContext.CurrentUserEmail, 
             request.NewEmail, 
             request.Password,
             cancellationToken);
@@ -489,7 +488,7 @@ public class AccountController(IAccountService accountService) : ControllerApiBa
         CancellationToken cancellationToken = default)
     {
         var result = await accountService.ChangePasswordAsync(
-            GetCurrentUserId(), 
+            userContext.CurrentUserId, 
             request.CurrentPassword,
             request.NewPassword, 
             cancellationToken);

@@ -1,7 +1,7 @@
 using FluentValidation;
-using Shortly.Core.DTOs.UsersDTOs.User;
+using Shortly.Core.Users.DTOs.User;
 
-namespace Shortly.Core.Validators.Users;
+namespace Shortly.Core.Users.Validators;
 
 public class UserDtoValidator : AbstractValidator<UserDto>
 {

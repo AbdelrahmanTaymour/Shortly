@@ -1,15 +1,15 @@
 using Microsoft.Extensions.Logging;
-using Shortly.Core.DTOs.AuthDTOs;
+using Shortly.Core.Auth.Contracts;
+using Shortly.Core.Auth.DTOs;
+using Shortly.Core.Email.Contracts;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Extensions;
-using Shortly.Core.ServiceContracts.Authentication;
-using Shortly.Core.ServiceContracts.Email;
-using Shortly.Core.ServiceContracts.Tokens;
-using Shortly.Core.ServiceContracts.UserManagement;
+using Shortly.Core.Tokens.Contracts;
+using Shortly.Core.Users.Contracts;
 using Shortly.Domain.Enums;
 
-namespace Shortly.Core.Services.Authentication;
+namespace Shortly.Core.Auth.Services;
 
 /// <summary>
 /// Service responsible for managing user account operations including email verification,
@@ -98,7 +98,7 @@ public class AccountService(
         // Generate token for email change
         var createdEmailToken = await emailChangeTokenService.CreateTokenAsync(userId, currentEmail, newEmail, cancellationToken);
         
-        // Send confirmation email to new email address
+        // Send a confirmation email to a new email address
         notificationService.EnqueueEmailChangeConfirmationAsync(newEmail, userDto.Username, Sha256Extensions.Encrypt(createdEmailToken.Token));
         
         logger.LogInformation("Email change initiated for user: {UserId}, New email: {NewEmail}", userId, newEmail);

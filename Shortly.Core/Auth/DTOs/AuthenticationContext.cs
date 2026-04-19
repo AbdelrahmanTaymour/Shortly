@@ -1,7 +1,7 @@
-using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.Auth.Contracts;
 using Shortly.Domain.Enums;
 
-namespace Shortly.Core.Models;
+namespace Shortly.Core.Auth.DTOs;
 
 public class AuthenticationContext : IAuthenticationContext
 {

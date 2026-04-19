@@ -1,4 +1,4 @@
-namespace Shortly.Core.DTOs.AuthDTOs;
+namespace Shortly.Core.Auth.DTOs;
 
 public record AuthenticationResponse(
     Guid Id,

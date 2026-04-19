@@ -2,10 +2,12 @@ using MethodTimer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.AuthDTOs;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.ServiceContracts.Authentication;
-using Shortly.Core.ServiceContracts.Tokens;
+using Shortly.Core.Auth.Contracts;
+using Shortly.Core.Auth.DTOs;
+using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Exceptions.ClientErrors;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Tokens.Contracts;
 
 namespace Shortly.API.Controllers;
 
@@ -25,7 +27,10 @@ namespace Shortly.API.Controllers;
 [ApiController]
 [Route("api/auth")]
 [Produces("application/json")]
-public class AuthController(IAuthenticationService authenticationService, ITokenService tokenService) : ControllerApiBase
+public class AuthController(
+    IAuthenticationService authenticationService, 
+    ITokenService tokenService,
+    IUserContext userContext) : ControllerApiBase
 {
     /// <summary>
     /// Registers a new user account with email verification.
@@ -63,6 +68,9 @@ public class AuthController(IAuthenticationService authenticationService, IToken
     {
         AuthenticationResponse? authResponse = await authenticationService.Register(request, cancellationToken);
         if (authResponse is null || !authResponse.Success) return BadRequest();
+        if(authResponse.Tokens is null || authResponse.Tokens?.RefreshToken is null)
+            return Unauthorized("Invalid or expired refresh token");
+        SetRefreshTokenCookie(authResponse.Tokens.RefreshToken);
         return Ok(authResponse);
     }
 
@@ -97,9 +105,17 @@ public class AuthController(IAuthenticationService authenticationService, IToken
     public async Task<IActionResult> Login([FromBody] LoginRequest request,
         CancellationToken cancellationToken = default)
     {
-        AuthenticationResponse? authResponse = await authenticationService.Login(request, cancellationToken);
-        if (authResponse is null || !authResponse.Success) return BadRequest();
-        return Ok(authResponse);
+        try
+        {
+            AuthenticationResponse? authResponse = await authenticationService.Login(request, cancellationToken);
+            if (authResponse is null || !authResponse.Success) return BadRequest();
+            if(authResponse.Tokens is null || authResponse.Tokens?.RefreshToken is null)
+                return Unauthorized("Invalid or expired refresh token");
+            
+            SetRefreshTokenCookie(authResponse.Tokens.RefreshToken);
+            return Ok(authResponse);
+        }
+        catch (NotFoundException) { throw new UnauthorizedException("Email or password is incorrect"); }
     }
     
     /// <summary>
@@ -131,10 +147,16 @@ public class AuthController(IAuthenticationService authenticationService, IToken
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     [AllowAnonymous]
-    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest refreshTokenRequest)
+    public async Task<IActionResult> RefreshToken()
     {
-        var response = await tokenService.RefreshTokenAsync(refreshTokenRequest.RefreshToken);
+        var refreshToken = Request.Cookies["refreshToken"];
+        if (string.IsNullOrEmpty(refreshToken)) return Unauthorized("Refresh token is missing");
+
+        var response = await tokenService.RefreshTokenAsync(refreshToken);
         if (response == null) return Unauthorized("Invalid or expired refresh token");
+
+        SetRefreshTokenCookie(response.RefreshToken);
+
         return Ok(response);
     }
 
@@ -185,32 +207,26 @@ public class AuthController(IAuthenticationService authenticationService, IToken
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken = default)
     {
-        var success = await tokenService.RevokeTokenAsync(request.RefreshToken, cancellationToken);
-        
-        var response = new LogoutResponse
-        (
-            Success: success,
-            Message: success ? "Logged out successfully." : "Failed to logout. Token may already be revoked."
-        );
+        var refreshToken = Request.Cookies["refreshToken"];
+    
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            await tokenService.RevokeTokenAsync(refreshToken, cancellationToken);
+        }
 
-        return Ok(response);
+        // 2. Delete the cookie from the browser
+        Response.Cookies.Delete("refreshToken", new CookieOptions 
+        { 
+            HttpOnly = true, 
+            Secure = true, 
+            SameSite = SameSiteMode.None 
+        });
+
+        return Ok(new LogoutResponse(true, "Logged out successfully."));
     }
     
-    /// <summary>
-    /// Ensures the token doesn't contain whitespace characters that could indicate tampering or corruption.
-    /// </summary>
-    /// <param name="token">The refresh token to validate.</param>
-    /// <returns>True if the token contains no whitespace, false otherwise.</returns>
-    /// <remarks>
-    /// Base64 tokens should not contain spaces, tabs, or newlines. The presence of whitespace
-    /// often indicates the token has been corrupted during transmission or storage.
-    /// </remarks>
-    public static bool BeNotContainWhitespace(string token)
-    {
-        return !string.IsNullOrEmpty(token) && !token.Any(char.IsWhiteSpace);
-    }
     
     /// <summary>
     /// Logs out the user from all sessions by revoking all refresh tokens associated with their account.
@@ -262,8 +278,7 @@ public class AuthController(IAuthenticationService authenticationService, IToken
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> LogoutAll(CancellationToken cancellationToken = default)
     {
-        var currentUserId = GetCurrentUserId();
-        var success = await tokenService.RevokeAllUserTokensAsync(currentUserId, cancellationToken);
+        var success = await tokenService.RevokeAllUserTokensAsync(userContext.CurrentUserId, cancellationToken);
         
         var response = new LogoutResponse
         (
@@ -273,4 +288,21 @@ public class AuthController(IAuthenticationService authenticationService, IToken
 
         return Ok(response);
     }
+    
+    private void SetRefreshTokenCookie(string refreshToken)
+    {
+        var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+
+        HttpContext.Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,           // Chrome requires Secure for SameSite=None
+            SameSite = SameSiteMode.None, 
+            Path = "/",
+            Expires = DateTime.UtcNow.AddDays(7),
+            IsEssential = true
+        });
+    }
+    
+    
 }

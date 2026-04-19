@@ -1,7 +1,7 @@
 using System.Net;
 using System.Security.Claims;
-using Shortly.Core.Models;
-using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.Auth.Contracts;
+using Shortly.Core.Auth.DTOs;
 using Shortly.Domain.Enums;
 
 namespace Shortly.API.Authentication;

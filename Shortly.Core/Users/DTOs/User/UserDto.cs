@@ -1,6 +1,6 @@
 using Shortly.Domain.Enums;
 
-namespace Shortly.Core.DTOs.UsersDTOs.User;
+namespace Shortly.Core.Users.DTOs.User;
 
 public sealed record UserDto(
     Guid Id,

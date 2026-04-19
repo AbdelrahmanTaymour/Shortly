@@ -1,4 +1,4 @@
-namespace Shortly.Core.Models;
+namespace Shortly.Core.Email.DTOs;
 
 public record GeneralSettings
 {

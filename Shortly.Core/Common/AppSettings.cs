@@ -1,10 +1,11 @@
-namespace Shortly.Core.Models;
+using Shortly.Core.Tokens.DTOs;
+
+namespace Shortly.Core.Common;
 
 public record AppSettings
 {
     public const string SectionName = "AppSettings";
-        
-    public string Name { get; set; } = "Shortly";
+    public string CompanyName { get; set; } = "Shortly";
     public string BaseUrl { get; set; }
     public string LogoUrl { get; set; }
     public string SupportEmail { get; set; }

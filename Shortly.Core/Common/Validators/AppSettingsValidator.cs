@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Options;
-using Shortly.Core.Models;
 
-namespace Shortly.Core.Validators.Configuration;
+namespace Shortly.Core.Common.Validators;
 
 public class AppSettingsValidator : IValidateOptions<AppSettings>
 {
@@ -9,7 +8,7 @@ public class AppSettingsValidator : IValidateOptions<AppSettings>
     {
         var errors = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(options.Name))
+        if (string.IsNullOrWhiteSpace(options.CompanyName))
             errors.Add("App Name is required");
 
         if (string.IsNullOrWhiteSpace(options.BaseUrl))
