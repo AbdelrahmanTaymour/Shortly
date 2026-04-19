@@ -3,39 +3,57 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: shortly-api
+    restart: on-failure
     ports:
       - "5001:80"
       - "5002:443"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:80
-      # Map your user secrets to environment variables
-      - ConnectionStrings__ConnectionString=${CONNECTION_STRING}
-      - Jwt__Key=${JWT_KEY}
-      - EmailSettings__Smtp__Username=${EMAIL_USERNAME}
-      - EmailSettings__Smtp__Password=${EMAIL_PASSWORD}
     env_file:
       - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=YourSecurePassword123!
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/shortly-api.pfx
+      - ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}
+      - ConnectionStrings__REDIS_CONNECTION_STRING=${REDIS_CONNECTION_STRING}
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
+    volumes:
+      - ~/.aspnet/https:/https:ro
     depends_on:
-      - sqlserver
+      shortly-db:
+        condition: service_healthy
+      shortly-cache:
+        condition: service_healthy
     networks:
       - shortly-network
 
-  sqlserver:
+  shortly-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: shortly-db
+    ports:
+      - "1433:1433"
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=${DB_PASSWORD}
-      - MSSQL_PID=Express
-    ports:
-      - "1433:1433"
-    volumes:
-      - sqlserver-data:/var/opt/mssql
+      - MSSQL_PID=Developer
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-C", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD}", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - shortly-network
 
-volumes:
-  sqlserver-data:
+  shortly-cache:
+    image: redis:7-alpine
+    container_name: shortly-cache
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+    networks:
+      - shortly-network
 
 networks:
   shortly-network:

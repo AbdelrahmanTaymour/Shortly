@@ -1,6 +1,6 @@
-using Shortly.Core.DTOs.AuthDTOs;
+using Shortly.Core.Auth.DTOs;
 
-namespace Shortly.Core.ServiceContracts.Authentication;
+namespace Shortly.Core.Auth.Contracts;
 
 /// <summary>
 /// Service for handling OAuth authentication operations

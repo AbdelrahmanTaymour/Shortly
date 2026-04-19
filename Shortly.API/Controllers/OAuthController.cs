@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.AuthDTOs;
-using Shortly.Core.ServiceContracts.Authentication;
+using Shortly.Core.Auth.Contracts;
 
 namespace Shortly.API.Controllers;
 
 /// <summary>
-///     Controller for handling OAuth authentication with external providers
+///     Handles OAuth authentication with external providers.
+///     SECURITY MODEL (BFF — Backend For Frontend):
 /// </summary>
 [ApiController]
 [Route("api/oauth")]
@@ -22,17 +22,14 @@ public class OAuthController(
 ) : ControllerApiBase
 {
     /// <summary>
-    ///     Initiates Google OAuth login flow
+    ///     Initiates the Google OAuth 2.0 authorization code flow.
+    ///     Redirects the browser to Google's consent screen.
     /// </summary>
-    /// <param name="returnUrl">Optional return URL after successful authentication</param>
-    /// <returns>Redirects to Google OAuth consent screen</returns>
-    /// <remarks>
-    ///     This endpoint initiates the OAuth 2.0 authorization code flow with Google.
-    ///     The user will be redirected to Google's login page, and upon successful authentication,
-    ///     will be redirected back to the callback endpoint.
-    ///     Example: GET /api/oauth/google/login?returnUrl=/dashboard
-    /// </remarks>
-    /// <response code="302">Redirects to Google OAuth consent screen</response>
+    /// <param name="returnUrl">
+    ///     Optional path to redirect to after successful authentication
+    ///     (e.g. "/dashboard", "/settings"). Must be a local path.
+    /// </param>
+    /// <response code="302">Redirects to Google's OAuth consent screen.</response>
     [HttpGet("google/login", Name = "GoogleLogin")]
     [AllowAnonymous]
     public IActionResult GoogleLogin([FromQuery] string? returnUrl = null)
@@ -48,18 +45,17 @@ public class OAuthController(
     }
 
     /// <summary>
-    ///     Handles Google OAuth callback and completes authentication
+    ///     Google calls this after the user grants permission.
+    ///     Authenticates/creates the user, sets the HttpOnly refresh-token
+    ///     cookie, then performs a clean redirect to the frontend — no tokens
+    ///     in the URL.
     /// </summary>
-    /// <param name="returnUrl">Optional return URL to redirect after authentication</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Redirects to frontend with authentication tokens</returns>
-    /// <remarks>
-    ///     Google calls this endpoint after the user grants permission.
-    ///     It exchanges the authorization code for user information and creates/authenticates the user.
-    ///     The user will be redirected to the frontend with tokens in the URL hash or query parameters.
-    /// </remarks>
-    /// <response code="302">Redirects to frontend application with authentication tokens</response>
-    /// <response code="400">OAuth authentication failed</response>
+    /// <param name="returnUrl">Forwarded from GoogleLogin.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="302">
+    ///     Success → redirects to the frontend (returnUrl or "/").
+    ///     Failure → redirects to /login?error=…
+    /// </response>
     [HttpGet("google/callback", Name = "GoogleCallback")]
     [AllowAnonymous]
     public async Task<IActionResult> GoogleCallback(
@@ -68,18 +64,17 @@ public class OAuthController(
     {
         try
         {
-            // Authenticate with Google
-            var authenticateResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+            // Exchange the authorization code for user claims
+            var authResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
 
-            if (!authenticateResult.Succeeded)
+            if (!authResult.Succeeded)
             {
-                logger.LogWarning("Google authentication failed");
-                return RedirectToFrontendWithError("Authentication failed");
+                logger.LogWarning("Google OAuth failed: {Reason}", authResult.Failure?.Message);
+                return RedirectToFrontendWithError("Google authentication failed. Please try again.");
             }
 
-            var claims = authenticateResult.Principal.Claims.ToList();
-
-            // Extract user information from claims
+            // Extract required claims
+            var claims = authResult.Principal!.Claims.ToList();
             var googleId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
             var name = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
@@ -87,84 +82,98 @@ public class OAuthController(
 
             if (string.IsNullOrEmpty(googleId) || string.IsNullOrEmpty(email))
             {
-                logger.LogWarning("Missing required claims from Google OAuth");
-                return RedirectToFrontendWithError("Missing required information from Google");
+                logger.LogWarning("Google OAuth: required claims (sub / email) are missing");
+                return RedirectToFrontendWithError("Required account information was not returned by Google.");
             }
 
-            // Authenticate or register a user
+            // Authenticate / create / link the user in our system
             var authResponse = await oAuthService.AuthenticateWithGoogleAsync(
-                email,
-                googleId,
-                name,
-                picture,
-                cancellationToken);
+                email, googleId, name, picture, cancellationToken);
 
-            if (authResponse == null || !authResponse.Success)
+            if (authResponse is null || !authResponse.Success)
             {
-                logger.LogWarning("OAuth service authentication failed for {Email}", email);
-                return RedirectToFrontendWithError("Authentication failed");
+                logger.LogWarning("OAuthService could not authenticate Google user {Email}", email);
+                return RedirectToFrontendWithError("Authentication failed. Please try again.");
             }
 
-            // Redirect to the frontend with tokens
-            return RedirectToFrontendWithTokens(authResponse, returnUrl);
+            if (authResponse.Tokens?.RefreshToken is null)
+            {
+                logger.LogError("TokenService returned no refresh token for OAuth user {Email}", email);
+                return RedirectToFrontendWithError("Token generation failed. Please try again.");
+            }
+
+            // Persist the refresh token as an HttpOnly cookie
+            //       The access token is NOT sent to the browser here.
+            //       The frontend will request one via POST /api/auth/refresh-token.
+            SetRefreshTokenCookie(authResponse.Tokens.RefreshToken);
+
+            // Clean redirect
+            logger.LogInformation("Google OAuth successful for user {Email}", email);
+            return RedirectToFrontend(returnUrl);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error during Google OAuth callback");
-            return RedirectToFrontendWithError("An unexpected error occurred");
+            logger.LogError(ex, "Unhandled error during Google OAuth callback");
+            return RedirectToFrontendWithError("An unexpected error occurred. Please try again.");
         }
     }
 
+    // ─── Private Helpers ──────────────────────────────────────────────────────
+
     /// <summary>
-    ///     Redirects to frontend with authentication tokens
+    ///     Redirects the browser to the frontend after a successful OAuth flow.
+    ///     Accepts an optional <paramref name="returnUrl" /> so users land on the
+    ///     page they were trying to reach before being sent to Google.
+    ///     Security: only local paths are allowed — a full URL (e.g. from a
+    ///     malicious returnUrl parameter) is silently replaced with "/".
     /// </summary>
-    private IActionResult RedirectToFrontendWithTokens(AuthenticationResponse authResponse, string? returnUrl)
+    private IActionResult RedirectToFrontend(string? returnUrl)
     {
-        var frontendUrl = configuration["AppSettings:BaseUIUrl"] ?? "http://localhost:3000";
-
-        // Using URL hash to avoid tokens appearing in server logs
-        var callbackUrl = $"{frontendUrl}/callback.html#{BuildTokenQueryString(authResponse)}";
-
-        return Redirect(callbackUrl);
+        var frontendUrl = GetFrontendUrl();
+        var destination = IsLocalPath(returnUrl) ? returnUrl! : "/";
+        return Redirect($"{frontendUrl}{destination}");
     }
 
     /// <summary>
-    ///     Redirects to frontend with error message
+    ///     Redirects the browser to /login with a human-readable error message
+    ///     in the query string so the login page can display it.
     /// </summary>
     private IActionResult RedirectToFrontendWithError(string errorMessage)
     {
-        var frontendUrl = configuration["AppSettings:BaseUIUrl"] ?? "http://localhost:3000";
-        var callbackUrl = $"{frontendUrl}/auth/callback?error={Uri.EscapeDataString(errorMessage)}";
-
-        return Redirect(callbackUrl);
+        var frontendUrl = GetFrontendUrl();
+        return Redirect($"{frontendUrl}/login?error={Uri.EscapeDataString(errorMessage)}");
     }
 
     /// <summary>
-    ///     Builds query string from authentication response
+    ///     Sets the refresh token as an HttpOnly cookie with settings that
+    ///     match those in <see cref="AuthController" /> exactly, so the
+    ///     /api/auth/refresh-token and /api/auth/logout endpoints can read
+    ///     and delete the cookie regardless of which flow created it.
     /// </summary>
-    private string BuildTokenQueryString(AuthenticationResponse authResponse)
+    private void SetRefreshTokenCookie(string refreshToken)
     {
-        var parameters = new Dictionary<string, string>
+        HttpContext.Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
         {
-            ["access_token"] = authResponse.Tokens?.AccessToken ?? "",
-            ["refresh_token"] = authResponse.Tokens?.RefreshToken ?? "",
-            ["token_type"] = "Bearer",
-            ["expires_at"] = authResponse.Tokens?.AccessTokenExpiry.ToString("o") ?? ""
-        };
+            HttpOnly = true, // JS cannot read this — XSS protection
+            Secure = true, // HTTPS only
+            SameSite = SameSiteMode.None, // Required: frontend & API are on different origins
+            Path = "/", // Must match the Path used by AuthController
+            Expires = DateTime.UtcNow.AddDays(7),
+            IsEssential = true // GDPR: session management is essential
+        });
+    }
 
-        return string.Join("&", parameters.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
+    private string GetFrontendUrl()
+    {
+        return configuration["AppSettings:BaseUIUrl"] ?? "http://localhost:3000";
     }
 
     /// <summary>
-    ///     Gets the current authenticated user's OAuth connection status
+    ///     Returns true only for local paths (starts with "/" but not "//").
+    ///     Prevents open-redirect attacks via a crafted returnUrl.
     /// </summary>
-    /// <returns>Information about connected OAuth providers</returns>
-    /// <response code="200">Returns OAuth connection status</response>
-    /// <response code="401">User is not authenticated</response>
-    [HttpGet("status", Name = "OAuthStatus")]
-    [Authorize]
-    public IActionResult GetOAuthStatus()
+    private static bool IsLocalPath(string? url)
     {
-        throw new NotImplementedException();
+        return !string.IsNullOrEmpty(url) && url.StartsWith('/') && !url.StartsWith("//");
     }
 }

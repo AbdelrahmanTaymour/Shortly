@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging;
-using Shortly.Core.DTOs.AuthDTOs;
-using Shortly.Core.Mappers;
-using Shortly.Core.RepositoryContract.UserManagement;
-using Shortly.Core.ServiceContracts.Authentication;
-using Shortly.Core.ServiceContracts.Tokens;
+using Shortly.Core.Auth.Contracts;
+using Shortly.Core.Auth.DTOs;
+using Shortly.Core.Tokens.Contracts;
+using Shortly.Core.Users.Mappers;
 using Shortly.Domain.Entities;
+using Shortly.Domain.RepositoryContract.Users;
 
-namespace Shortly.Core.Services.Authentication;
+namespace Shortly.Core.Auth.Services;
 
 public class OAuthService(
     IUserRepository userRepository,
