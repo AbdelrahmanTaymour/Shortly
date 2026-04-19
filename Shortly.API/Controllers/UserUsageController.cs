@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.DTOs.UsersDTOs.Usage;
-using Shortly.Core.ServiceContracts.UserManagement;
-using Shortly.Domain.Enums;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Users.Contracts;
+using Shortly.Core.Users.DTOs.Usage;
 
 namespace Shortly.API.Controllers;
 
@@ -18,7 +16,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-[RequirePermission(enPermissions.ManageUserUsage)]
+//[RequirePermission(enPermissions.ManageUserUsage)]
 public class UserUsageController(IUserUsageService usageService) : ControllerApiBase
 {
     /// <summary>

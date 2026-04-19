@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.DTOs.UsersDTOs.Profile;
-using Shortly.Core.DTOs.UsersDTOs.Usage;
-using Shortly.Core.ServiceContracts.UserManagement;
-using Shortly.Domain.Enums;
+using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Profile.Contracts;
+using Shortly.Core.Profile.DTOs;
+using Shortly.Core.Users.DTOs.Usage;
 
 namespace Shortly.API.Controllers;
 
@@ -21,8 +20,8 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
-[RequirePermission(enPermissions.ManageOwnAccount)]
-public class ProfileController(IUserProfileService profileService) : ControllerApiBase
+//[RequirePermission(enPermissions.ManageOwnAccount)]
+public class ProfileController(IUserProfileService profileService, IUserContext userContext) : ControllerApiBase
 {
     /// <summary>
     ///     Retrieves the current user's profile information.
@@ -45,8 +44,7 @@ public class ProfileController(IUserProfileService profileService) : ControllerA
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetProfile(CancellationToken cancellationToken = default)
     {
-        var currentUser = GetCurrentUserId();
-        var profile = await profileService.GetProfileAsync(currentUser, cancellationToken);
+        var profile = await profileService.GetProfileAsync(userContext.CurrentUserId, cancellationToken);
         return Ok(profile);
     }
 
@@ -72,8 +70,7 @@ public class ProfileController(IUserProfileService profileService) : ControllerA
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetMonthlyQuotaStatus(CancellationToken cancellationToken = default)
     {
-        var currentUser = GetCurrentUserId();
-        var quotaStatus = await profileService.GetMonthlyQuotaStatusAsync(currentUser, cancellationToken);
+        var quotaStatus = await profileService.GetMonthlyQuotaStatusAsync(userContext.CurrentUserId, cancellationToken);
         return Ok(quotaStatus);
     }
 
@@ -103,8 +100,7 @@ public class ProfileController(IUserProfileService profileService) : ControllerA
     public async Task<IActionResult> UpdateProfile(UpdateUserProfileRequest request,
         CancellationToken cancellationToken = default)
     {
-        var currentUser = GetCurrentUserId();
-        var succeed = await profileService.UpdateProfileAsync(currentUser, request, cancellationToken);
+        var succeed = await profileService.UpdateProfileAsync(userContext.CurrentUserId, request, cancellationToken);
         return Ok(succeed);
     }
 
@@ -119,7 +115,7 @@ public class ProfileController(IUserProfileService profileService) : ControllerA
     /// </returns>
     /// <remarks>
     ///     <para>
-    ///         The user will be immediately logged out from all devices and applications, and will not be able to
+    ///         The user will be immediately logged out from all devices and applications and will not be able to
     ///         authenticate using any previously issued tokens.
     ///     </para>
     /// </remarks>
@@ -139,8 +135,7 @@ public class ProfileController(IUserProfileService profileService) : ControllerA
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RequestAccountDeletion(CancellationToken cancellationToken = default)
     {
-        var currentUser = GetCurrentUserId();
-        var succeed = await profileService.RequestAccountDeletionAsync(currentUser, cancellationToken);
+        var succeed = await profileService.RequestAccountDeletionAsync(userContext.CurrentUserId, cancellationToken);
         return Ok(succeed);
     }
 }

@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
 using Shortly.API.HTMLTemplates;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.ServiceContracts.Tokens;
-using Shortly.Core.ServiceContracts.UrlManagement;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.ShortUrls.Contracts;
+using Shortly.Core.Tokens.Contracts;
 
 namespace Shortly.API.Controllers;
 
@@ -87,7 +87,7 @@ public class ShortUrlRedirectController(IShortUrlRedirectService redirectService
     /// - 301 redirect to the original URL if the password is correct.<br/>
     /// - Re-renders the password form with an error if incorrect.
     /// </returns>
-    /// <response code="301">Password correct — redirected to the original URL.</response>
+    /// <response code="301">Password corrects — redirected to the original URL.</response>
     /// <response code="200">Password incorrect — form re-rendered with error.</response>
     /// <response code="403">Invalid or expired redirect token.</response>
     [HttpPost("api/url-redirect/verify")]

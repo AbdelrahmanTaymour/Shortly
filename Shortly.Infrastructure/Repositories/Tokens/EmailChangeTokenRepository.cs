@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
-using Shortly.Core.RepositoryContract.Tokens;
 using Shortly.Domain.Entities;
+using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.Tokens;
 
 /// <inheritdoc />
-public class EmailChangeTokenRepository(SQLServerDbContext dbContext, ILogger<EmailChangeTokenRepository> logger) : IEmailChangeTokenRepository
+public class EmailChangeTokenRepository(SqlServerDbContext dbContext, ILogger<EmailChangeTokenRepository> logger) : IEmailChangeTokenRepository
 {
     /// <inheritdoc />
     public async Task<EmailChangeToken?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

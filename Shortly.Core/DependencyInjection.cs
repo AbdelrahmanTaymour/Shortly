@@ -1,22 +1,38 @@
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Shortly.Core.Models;
-using Shortly.Core.ServiceContracts.Authentication;
-using Shortly.Core.ServiceContracts.ClickTracking;
-using Shortly.Core.ServiceContracts.Email;
-using Shortly.Core.ServiceContracts.OrganizationManagement;
-using Shortly.Core.ServiceContracts.Tokens;
-using Shortly.Core.ServiceContracts.UrlManagement;
-using Shortly.Core.ServiceContracts.UserManagement;
-using Shortly.Core.Services.Authentication;
-using Shortly.Core.Services.ClickTracking;
-using Shortly.Core.Services.Email;
-using Shortly.Core.Services.OrganizationManagement;
-using Shortly.Core.Services.Tokens;
-using Shortly.Core.Services.UrlManagement;
-using Shortly.Core.Services.UserManagement;
-using Shortly.Core.Validators.Auth;
+using Shortly.Core.Admin.Contracts;
+using Shortly.Core.Admin.Services;
+using Shortly.Core.Analytics.Contracts;
+using Shortly.Core.Analytics.Services;
+using Shortly.Core.Auth.Contracts;
+using Shortly.Core.Auth.Services;
+using Shortly.Core.Auth.Validators;
+using Shortly.Core.ClickTracking.Contracts;
+using Shortly.Core.ClickTracking.Services;
+using Shortly.Core.Common;
+using Shortly.Core.Email.Contracts;
+using Shortly.Core.Email.Services;
+using Shortly.Core.Invitations.Contracts;
+using Shortly.Core.Invitations.Services;
+using Shortly.Core.Members.Contracts;
+using Shortly.Core.Members.Services;
+using Shortly.Core.Organizations.Contracts;
+using Shortly.Core.Organizations.Services;
+using Shortly.Core.Profile.Contracts;
+using Shortly.Core.Profile.Services;
+using Shortly.Core.Security.Contracts;
+using Shortly.Core.Security.Services;
+using Shortly.Core.ShortUrls.Contracts;
+using Shortly.Core.ShortUrls.Services;
+using Shortly.Core.Teams.Contracts;
+using Shortly.Core.Teams.Services;
+using Shortly.Core.Tokens.Contracts;
+using Shortly.Core.Tokens.Services;
+using Shortly.Core.UserAuditLog.Contracts;
+using Shortly.Core.UserAuditLog.Services;
+using Shortly.Core.Users.Contracts;
+using Shortly.Core.Users.Services;
 
 namespace Shortly.Core;
 
@@ -45,7 +61,6 @@ public static class DependencyInjection
         // Email
         services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
         services.AddSingleton<EmailQueueService>();
-        services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
         services.AddScoped<IEmailNotificationService, EmailNotificationService>();
 
@@ -62,6 +77,7 @@ public static class DependencyInjection
         services.AddScoped<IShortUrlQueryService, ShortUrlQueryService>();
         services.AddScoped<IShortUrlAnalyticsService, ShortUrlAnalyticsService>();
         services.AddScoped<IUrlBulkOperationsService, UrlBulkOperationsService>();
+        services.AddScoped<IUrlStatisticsService, UrlStatisticsService>();
         
         // User Management
         services.AddScoped<IUserSecurityService, UserSecurityService>();
@@ -78,6 +94,7 @@ public static class DependencyInjection
         services.AddScoped<IClickTrackingService, ClickTrackingService>();
         services.AddScoped<ITrafficSourceAnalyzer, TrafficSourceAnalyzer>();
         services.AddScoped<IUserAgentParsingService, UserAgentParsingService>();
+        services.AddScoped<IUrlStatisticsService, UrlStatisticsService>();
         
         // Organization Management
         services.AddScoped<IOrganizationService, OrganizationService>();

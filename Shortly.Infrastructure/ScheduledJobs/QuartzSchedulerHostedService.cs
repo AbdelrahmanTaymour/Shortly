@@ -10,18 +10,13 @@ namespace Shortly.Infrastructure.ScheduledJobs;
 /// </summary>
 public class QuartzSchedulerHostedService(IServiceProvider serviceProvider, ISchedulerFactory schedulerFactory) : IHostedService
 {
-    private IScheduler _scheduler;
+    private IScheduler? _scheduler;
     
     /// <inheritdoc />
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // Create the scheduler
         _scheduler = await schedulerFactory.GetScheduler(cancellationToken);
-        
-        // Set the job factory to use the DI service provider
         _scheduler.JobFactory = serviceProvider.GetRequiredService<IJobFactory>();
-
-        // Start the scheduler
         await _scheduler.Start(cancellationToken);
 
         // Schedule the MonthlyUsageResetJob

@@ -2,9 +2,10 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.DTOs.UsersDTOs.Security;
-using Shortly.Core.ServiceContracts.UserManagement;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Security.Contracts;
+using Shortly.Core.Security.DTOs;
+using Shortly.Core.Users.Contracts;
 using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
@@ -23,7 +24,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-[RequirePermission(enPermissions.ManageUserAccessibility)]
+//[RequirePermission(enPermissions.ManageUserAccessibility)]
 public class SecurityController(IUserSecurityService securityService) : ControllerApiBase
 {
 

@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
-using Shortly.Core.RepositoryContract.Tokens;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
+using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.Tokens;
@@ -11,7 +11,7 @@ namespace Shortly.Infrastructure.Repositories.Tokens;
 /// <inheritdoc />
 /// <param name="dbContext">The database context for accessing UserActionTokens.</param>
 /// <param name="logger">Logger instance for tracking operations and errors.</param>
-public class UserActionTokenRepository(SQLServerDbContext dbContext, ILogger<UserActionTokenRepository> logger) : IUserActionTokenRepository
+public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<UserActionTokenRepository> logger) : IUserActionTokenRepository
 {
     /// <inheritdoc />
     public async Task<UserActionToken?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Shortly.Core.Models;
-using Shortly.Core.RepositoryContract.EmailService;
+using Shortly.Core.Email.Contracts;
+using Shortly.Core.Email.Services;
 
 namespace Shortly.Infrastructure.BackgroundServices;
 
@@ -41,7 +41,7 @@ public class EmailBackgroundWorker(
                     }
                     else
                     {
-                        logger.LogError("Failed to send email to {Email}. Error: {Error}", emailRequest.To, result.Message);
+                        logger.LogError("Failed to send email to {Email}. Error: {Error}", emailRequest.To, result.ErrorMessage);
                     }
                 }
             }
