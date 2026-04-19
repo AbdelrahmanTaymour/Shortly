@@ -6,14 +6,13 @@ using Shortly.Infrastructure.DbContexts.Configurations;
 namespace Shortly.Infrastructure.DbContexts;
 
 /// <summary>
-/// Represents the Entity Framework Core DbContext for managing Shortly application database operations.
-/// Provides DbSet properties for entity mapping and implements custom model configurations.
+///     Represents the Entity Framework Core DbContext for managing Shortly application database operations.
+///     Provides DbSet properties for entity mapping and implements custom model configurations.
 /// </summary>
-public class SQLServerDbContext : DbContext
+public class SqlServerDbContext(DbContextOptions<SqlServerDbContext> dbContextOptions) : DbContext(dbContextOptions)
 {
-    public SQLServerDbContext(DbContextOptions<SQLServerDbContext> dbContextOptions) : base(dbContextOptions)
-    {
-    }
+    private static readonly Guid AdminId = new("d27b9c92-747d-4b9d-bc65-083656729e24");
+    private static readonly DateTime AdminCreatedAt = new(2025, 12, 12, 11, 32, 20, DateTimeKind.Utc);
 
     public DbSet<ShortUrl> ShortUrls { get; set; }
     public DbSet<ClickEvent> ClickEvents { get; set; }
@@ -36,9 +35,9 @@ public class SQLServerDbContext : DbContext
     public DbSet<Role> Roles { get; set; }
 
     /// <summary>
-    /// Configures the model for the ShortlyDbContext by applying entity configurations and other custom settings.
+    ///     Configures the model for the ShortlyDbContext by applying entity configurations
+    ///     and seeding reference and admin data.
     /// </summary>
-    /// <param name="modelBuilder">An instance of <see cref="ModelBuilder"/> used to configure the model and its entities.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -63,7 +62,9 @@ public class SQLServerDbContext : DbContext
         modelBuilder.ApplyConfiguration(new SubscriptionPlanConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
 
-
+        // -----------------------------------------------------------------
+        // Reference data — SubscriptionPlans
+        // -----------------------------------------------------------------
         modelBuilder.Entity<SubscriptionPlan>().HasData(
             new SubscriptionPlan
             {
@@ -131,6 +132,9 @@ public class SQLServerDbContext : DbContext
             }
         );
 
+        // -----------------------------------------------------------------
+        // Reference data — Roles
+        // -----------------------------------------------------------------
         modelBuilder.Entity<Role>().HasData(
             new Role
             {
@@ -185,5 +189,43 @@ public class SQLServerDbContext : DbContext
                 DefaultPermissions = (long)enPermissions.SystemAdmin
             }
         );
+
+        // -----------------------------------------------------------------
+        // Admin user seed
+        // -----------------------------------------------------------------
+        modelBuilder.Entity<User>().HasData(new User
+        {
+            Id = AdminId,
+            Email = "taymour@gmail.com",
+            Username = "taymour",
+            PasswordHash = "$2a$10$0EjZyXu5orwyTJ2GZyVRWeRSL0bnR.FrPx0aFi5GORCoDWLVNR6Ca",
+            SubscriptionPlanId = enSubscriptionPlan.Professional,
+            Permissions = -1L, // SystemAdmin — all bits set
+            IsActive = true,
+            IsEmailConfirmed = true,
+            IsOAuthUser = false,
+            IsDeleted = false,
+            CreatedAt = AdminCreatedAt,
+            UpdatedAt = AdminCreatedAt
+        });
+
+        modelBuilder.Entity<UserProfile>().HasData(new UserProfile
+        {
+            UserId = AdminId,
+            Name = "Abdelrahman Taymour",
+            UpdatedAt = AdminCreatedAt
+        });
+
+        modelBuilder.Entity<UserSecurity>().HasData(new UserSecurity
+        {
+            UserId = AdminId,
+            UpdatedAt = AdminCreatedAt
+        });
+
+        modelBuilder.Entity<UserUsage>().HasData(new UserUsage
+        {
+            UserId = AdminId,
+            MonthlyResetDate = AdminCreatedAt.AddMonths(1)
+        });
     }
 }

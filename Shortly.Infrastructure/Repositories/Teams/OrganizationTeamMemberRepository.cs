@@ -1,0 +1,224 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Shortly.Core.Exceptions.ServerErrors;
+using Shortly.Domain.Entities;
+using Shortly.Domain.RepositoryContract.Teams;
+using Shortly.Infrastructure.DbContexts;
+
+namespace Shortly.Infrastructure.Repositories.Teams;
+
+/// <summary>
+/// Repository implementation for managing OrganizationTeamMember entities in the database.
+/// Provides CRUD operations, team membership queries, and organization team member-specific business logic
+/// with comprehensive error handling and logging.
+/// </summary>
+/// <param name="dbContext">The Entity Framework database context for SQL Server operations.</param>
+/// <param name="logger">The logger instance for recording operation details and errors.</param>
+public class OrganizationTeamMemberRepository(
+    SqlServerDbContext dbContext,
+    ILogger<OrganizationTeamMemberRepository> logger) : IOrganizationTeamMemberRepository
+{
+    /// <inheritdoc />
+    public async Task<IEnumerable<OrganizationTeamMember>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeamMembers
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving all organization team members.");
+            throw new DatabaseException("An error occurred while retrieving organization team members.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<OrganizationTeamMember?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeamMembers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(tm => tm.Id == id, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving organization team member with ID {TeamMemberId}.", id);
+            throw new DatabaseException("An error occurred while retrieving the organization team member.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<OrganizationTeamMember>> GetByTeamIdAsync(Guid teamId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeamMembers
+                .Include(tm => tm.Member)
+                .ThenInclude(m => m.User)
+                .Where(tm => tm.TeamId == teamId)
+                .OrderBy(tm => tm.JoinedAt)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving team members for team {TeamId}.", teamId);
+            throw new DatabaseException("An error occurred while retrieving team members.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<OrganizationTeamMember>> GetByMemberIdAsync(Guid memberId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeamMembers
+                .AsNoTracking()
+                .Include(tm => tm.Team)
+                .Where(tm => tm.MemberId == memberId)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving team memberships for member {MemberId}.", memberId);
+            throw new DatabaseException("An error occurred while retrieving member team memberships.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<OrganizationTeamMember?> GetByTeamAndMemberAsync(Guid teamId, Guid memberId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeamMembers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(tm => tm.TeamId == teamId && tm.MemberId == memberId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving team membership for team {TeamId} and member {MemberId}.", 
+                teamId, memberId);
+            throw new DatabaseException("An error occurred while retrieving the team membership.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<OrganizationTeam>> GetTeamsByMemberAsync(Guid memberId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeamMembers
+                .AsNoTracking()
+                .Include(tm => tm.Team)
+                .Where(tm => tm.MemberId == memberId)
+                .Select(tm => tm.Team)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving teams for member {MemberId}.", memberId);
+            throw new DatabaseException("An error occurred while retrieving member teams.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<OrganizationTeamMember> AddAsync(OrganizationTeamMember entity, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await dbContext.OrganizationTeamMembers.AddAsync(entity, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return entity;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error adding member {MemberId} to team {TeamId}.", 
+                entity.MemberId, entity.TeamId);
+            throw new DatabaseException("An error occurred while adding the organization team member.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdateAsync(OrganizationTeamMember entity, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            dbContext.OrganizationTeamMembers.Update(entity);
+            return await dbContext.SaveChangesAsync(cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error updating organization team member with ID {TeamMemberId}.", entity.Id);
+            throw new DatabaseException("An error occurred while updating the organization team member.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeamMembers
+                .AsNoTracking()
+                .Where(tm => tm.Id == id)
+                .ExecuteDeleteAsync(cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting organization team member with ID {TeamMemberId}.", id);
+            throw new DatabaseException("An error occurred while deleting the organization team member.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> RemoveFromTeamAsync(Guid teamId, Guid memberId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeamMembers
+                .AsNoTracking()
+                .Where(tm => tm.TeamId == teamId && tm.MemberId == memberId)
+                .ExecuteDeleteAsync(cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error removing member {MemberId} from team {TeamId}.", memberId, teamId);
+            throw new DatabaseException("An error occurred while removing the member from the team.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeamMembers
+                .AsNoTracking()
+                .AnyAsync(tm => tm.Id == id, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking if organization team member with ID {TeamMemberId} exists.", id);
+            throw new DatabaseException("An error occurred while checking team member existence.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> IsMemberOfTeamAsync(Guid memberId, Guid teamId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.OrganizationTeamMembers
+                .AsNoTracking()
+                .AnyAsync(tm => tm.MemberId == memberId && tm.TeamId == teamId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking if member {MemberId} belongs to team {TeamId}.", 
+                memberId, teamId);
+            throw new DatabaseException("An error occurred while checking team membership.", ex);
+        }
+    }
+}

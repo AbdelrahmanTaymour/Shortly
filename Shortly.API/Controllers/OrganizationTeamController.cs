@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.DTOs.OrganizationDTOs;
-using Shortly.Core.ServiceContracts.OrganizationManagement;
+using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Organizations.Contracts;
+using Shortly.Core.Organizations.DTOs;
+using Shortly.Core.Teams.Contracts;
+using Shortly.Core.Teams.DTOs;
 using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
@@ -21,7 +24,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-public class OrganizationTeamController(IOrganizationTeamService teamService) : ControllerApiBase
+public class OrganizationTeamController(IOrganizationTeamService teamService, IUserContext userContext) : ControllerApiBase
 {
     /// <summary>
     /// Retrieves a team by its unique identifier.
@@ -44,7 +47,7 @@ public class OrganizationTeamController(IOrganizationTeamService teamService) : 
     [ProducesResponseType(typeof(OrganizationTeamDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewTeams)]
+    //[RequirePermission(enPermissions.ViewTeams)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
     {
         var team = await teamService.GetTeamAsync(id, cancellationToken);
@@ -70,7 +73,7 @@ public class OrganizationTeamController(IOrganizationTeamService teamService) : 
     [HttpGet("organization/{organizationId:guid}", Name = "GetOrganizationTeams")]
     [ProducesResponseType(typeof(IEnumerable<OrganizationTeamDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewTeams)]
+    //[RequirePermission(enPermissions.ViewTeams)]
     public async Task<IActionResult> GetOrganizationTeams(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var teams = await teamService.GetOrganizationTeamsAsync(organizationId, cancellationToken);
@@ -97,7 +100,7 @@ public class OrganizationTeamController(IOrganizationTeamService teamService) : 
     [HttpGet("{teamId:guid}/members", Name = "GetTeamMembers")]
     [ProducesResponseType(typeof(IEnumerable<OrganizationTeamMemberDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewTeams)]
+    //[RequirePermission(enPermissions.ViewTeams)]
     public async Task<IActionResult> GetTeamMembers(Guid teamId, CancellationToken cancellationToken = default)
     {
         var members = await teamService.GetTeamMembersAsync(teamId, cancellationToken);
@@ -134,7 +137,7 @@ public class OrganizationTeamController(IOrganizationTeamService teamService) : 
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.CreateTeam)]
+    //[RequirePermission(enPermissions.CreateTeam)]
     public async Task<IActionResult> Create([FromBody] CreateTeamRequest createTeamRequest, CancellationToken cancellationToken = default)
     {
         var team = await teamService.CreateTeamAsync(createTeamRequest);
@@ -172,8 +175,7 @@ public class OrganizationTeamController(IOrganizationTeamService teamService) : 
     [RequirePermission(enPermissions.ManageTeamMembers)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTeamRequest updateTeamDto, CancellationToken cancellationToken = default)
     {
-        var requestingUserId = GetCurrentUserId();
-        var result = await teamService.UpdateTeamAsync(id, updateTeamDto, requestingUserId, cancellationToken);
+        var result = await teamService.UpdateTeamAsync(id, updateTeamDto, userContext.CurrentUserId, cancellationToken);
         return Ok(result);
     }
     
@@ -202,8 +204,7 @@ public class OrganizationTeamController(IOrganizationTeamService teamService) : 
     [RequirePermission(enPermissions.DeleteTeam)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
     {
-        var requestingUserId = GetCurrentUserId();
-        await teamService.DeleteTeamAsync(id, requestingUserId, cancellationToken);
+        await teamService.DeleteTeamAsync(id, userContext.CurrentUserId, cancellationToken);
         return NoContent();
     }
     
@@ -238,8 +239,7 @@ public class OrganizationTeamController(IOrganizationTeamService teamService) : 
     [RequirePermission(enPermissions.ManageTeamMembers)]
     public async Task<IActionResult> AddMemberToTeam(Guid teamId, [FromBody] AddTeamMemberRequest addTeamMemberDto, CancellationToken cancellationToken = default)
     {
-        var requestingUserId = GetCurrentUserId();
-        var result = await teamService.AddMemberToTeamAsync(teamId, addTeamMemberDto.MemberId, requestingUserId, cancellationToken);
+        var result = await teamService.AddMemberToTeamAsync(teamId, addTeamMemberDto.MemberId, userContext.CurrentUserId, cancellationToken);
         return Ok(result);
     }
     

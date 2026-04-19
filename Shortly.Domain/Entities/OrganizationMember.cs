@@ -7,7 +7,7 @@ public class OrganizationMember
     public Guid Id { get; set; }
     public Guid OrganizationId { get; set; }
     public Guid UserId { get; set; }
-    public enUserRole RoleId { get; set; } = enUserRole.Member;
+    public enUserRole RoleId { get; set; }
     public enPermissions CustomPermissions { get; set; } = enPermissions.None;
     public bool IsActive { get; set; } = true;
     public Guid InvitedBy { get; set; }

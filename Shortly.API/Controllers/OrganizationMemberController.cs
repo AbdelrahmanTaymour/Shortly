@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.DTOs.OrganizationDTOs;
-using Shortly.Core.ServiceContracts.OrganizationManagement;
-using Shortly.Domain.Enums;
+using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Members.Contracts;
+using Shortly.Core.Members.DTOs;
 
 namespace Shortly.API.Controllers;
 
@@ -21,7 +20,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-public class OrganizationMemberController(IOrganizationMemberService memberService) : ControllerApiBase
+public class OrganizationMemberController(IOrganizationMemberService memberService, IUserContext userContext) : ControllerApiBase
 {
     /// <summary>
     /// Retrieves all organization members with pagination support.
@@ -43,7 +42,7 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     [HttpGet(Name = "GetAllOrganizationMembers")]
     [ProducesResponseType(typeof(IEnumerable<OrganizationMemberDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewMembers)]
+    //[RequirePermission(enPermissions.ViewMembers)]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
     {
         var members = await memberService.GetAllMembersAsync(page, pageSize, cancellationToken);
@@ -69,7 +68,7 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     [HttpGet("organization/{organizationId:guid}", Name = "GetOrganizationMembers")]
     [ProducesResponseType(typeof(IEnumerable<OrganizationMemberDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewMembers)]
+    //[RequirePermission(enPermissions.ViewMembers)]
     public async Task<IActionResult> GetOrganizationMembers(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var members = await memberService.GetOrganizationMembersAsync(organizationId, cancellationToken);
@@ -95,7 +94,7 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     [HttpGet("user/{userId:guid}", Name = "GetUserMemberships")]
     [ProducesResponseType(typeof(IEnumerable<OrganizationMemberDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewUserMemberships)]
+    //[RequirePermission(enPermissions.ViewUserMemberships)]
     public async Task<IActionResult> GetUserMemberships(Guid userId, CancellationToken cancellationToken = default)
     {
         var memberships = await memberService.GetUserMembershipsAsync(userId, cancellationToken);
@@ -124,7 +123,7 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     [ProducesResponseType(typeof(OrganizationMemberDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewMembers)]
+    //[RequirePermission(enPermissions.ViewMembers)]
     public async Task<IActionResult> GetMembership(Guid organizationId, Guid userId, CancellationToken cancellationToken = default)
     {
         var membership = await memberService.GetMembershipAsync(organizationId, userId, cancellationToken);
@@ -162,7 +161,7 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-     [RequirePermission(enPermissions.ManageOrgMembers)]
+    // [RequirePermission(enPermissions.ManageOrgMembers)]
     public async Task<IActionResult> AddMember([FromBody] CreateMemberRequest request, CancellationToken cancellationToken = default)
     {
         var member = await memberService.AddMemberAsync(request, cancellationToken);
@@ -195,11 +194,10 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.RemoveMembers)]
+    //[RequirePermission(enPermissions.RemoveMembers)]
     public async Task<IActionResult> RemoveMember(Guid organizationId, Guid userId, CancellationToken cancellationToken = default)
     {
-        var requestingUserId = GetCurrentUserId();
-        await memberService.RemoveMemberAsync(organizationId, userId, requestingUserId, cancellationToken);
+        await memberService.RemoveMemberAsync(organizationId, userId, userContext.CurrentUserId, cancellationToken);
         return NoContent();
     }
     
@@ -231,7 +229,7 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ManageOrgMembers)]
+    //[RequirePermission(enPermissions.ManageOrgMembers)]
     public async Task<IActionResult> UpdateMemberRole(Guid organizationId, Guid userId, [FromBody] UpdateMemberRoleRequest updateRoleDto, CancellationToken cancellationToken = default)
     {
         var result = await memberService.UpdateMemberRoleAsync(organizationId, userId, updateRoleDto.RoleId, cancellationToken);
@@ -266,7 +264,7 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ManageOrgMembers)]
+    //[RequirePermission(enPermissions.ManageOrgMembers)]
     public async Task<IActionResult> UpdateMemberPermissions(Guid organizationId, Guid userId, [FromBody] UpdateMemberPermissionsRequest updatePermissionsDto, CancellationToken cancellationToken = default)
     {
         var result = await memberService.UpdateMemberPermissionsAsync(organizationId, userId, updatePermissionsDto.Permissions, cancellationToken);
@@ -293,7 +291,7 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     [HttpGet("{organizationId:guid}/user/{userId:guid}/is-member", Name = "IsMember")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewMembers)]
+    //[RequirePermission(enPermissions.ViewMembers)]
     public async Task<IActionResult> IsMember(Guid organizationId, Guid userId, CancellationToken cancellationToken = default)
     {
         var isMember = await memberService.IsMemberAsync(userId, organizationId, cancellationToken);

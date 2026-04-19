@@ -1,0 +1,9 @@
+namespace Shortly.Core.Tokens.DTOs;
+
+public record TokenSettings
+{
+    public int EmailVerificationExpiryHours { get; set; } = 24;
+    public int PasswordResetExpiryHours { get; set; } = 1;
+    public int EmailChangeExpiryHours { get; set; } = 1;
+    public int InvitationExpiryDays { get; set; } = 7;
+}

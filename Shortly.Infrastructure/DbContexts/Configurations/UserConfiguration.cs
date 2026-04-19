@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shortly.Domain.Entities;
-using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 
 namespace Shortly.Infrastructure.DbContexts.Configurations;
@@ -18,55 +17,58 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(320)
             .IsUnicode(false);
 
-        builder.Property(user => user.Username)
+        builder.Property(u => u.Username)
             .IsRequired()
             .HasMaxLength(50)
             .IsUnicode(false);
 
-        builder.Property(user => user.PasswordHash)
+        builder.Property(u => u.PasswordHash)
             .IsRequired()
             .HasMaxLength(256)
             .IsUnicode(false);
 
-        builder.Property(user => user.SubscriptionPlanId)
+        builder.Property(u => u.SubscriptionPlanId)
             .HasConversion<byte>();
 
-        builder.Property(user => user.Permissions)
+        builder.Property(u => u.Permissions)
             .HasDefaultValue(enPermissions.BasicUser);
 
-        builder.Property(user => user.IsActive)
+        builder.Property(u => u.IsActive)
             .HasDefaultValue(true);
 
-        builder.Property(user => user.IsEmailConfirmed)
+        builder.Property(u => u.IsEmailConfirmed)
             .HasDefaultValue(false);
 
-        builder.Property(user => user.IsDeleted)
+        builder.Property(u => u.IsDeleted)
             .HasDefaultValue(false);
 
-        builder.Property(user => user.LastLoginAt)
+        builder.Property(u => u.IsOAuthUser)
+            .HasDefaultValue(false);
+
+        builder.Property(u => u.LastLoginAt)
             .HasColumnType("datetime2(0)");
 
-        builder.Property(user => user.UpdatedAt)
+        builder.Property(u => u.UpdatedAt)
             .HasDefaultValueSql("GETUTCDATE()")
             .HasColumnType("datetime2(0)");
 
-        builder.Property(user => user.CreatedAt)
+        builder.Property(u => u.CreatedAt)
             .HasDefaultValueSql("GETUTCDATE()")
             .HasColumnType("datetime2(0)");
 
-        builder.Property(user => user.DeletedAt)
+        builder.Property(u => u.DeletedAt)
             .HasColumnType("datetime2(0)");
 
-        builder.Property(user => user.DeletedBy)
+        builder.Property(u => u.DeletedBy)
             .HasColumnType("uniqueidentifier");
 
         // Indexes
-        builder.HasIndex(user => user.Email).IsUnique();
-        builder.HasIndex(user => user.Username).IsUnique();
+        builder.HasIndex(u => u.Email).IsUnique();
+        builder.HasIndex(u => u.Username).IsUnique();
         builder.HasIndex(u => u.IsDeleted);
         builder.HasIndex(u => new { u.IsDeleted, u.IsActive });
 
-        // Relationship
+        // Relationships
         builder.HasOne(u => u.SubscriptionPlan)
             .WithMany()
             .HasForeignKey(u => u.SubscriptionPlanId)

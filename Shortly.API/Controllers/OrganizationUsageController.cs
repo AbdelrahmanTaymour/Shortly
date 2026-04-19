@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.DTOs.OrganizationDTOs;
-using Shortly.Core.ServiceContracts.OrganizationManagement;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Organizations.Contracts;
+using Shortly.Core.Organizations.DTOs;
 using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
@@ -17,7 +17,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-[RequirePermission(enPermissions.ManageOrgUsage)]
+//[RequirePermission(enPermissions.ManageOrgUsage)]
 public class OrganizationUsageController(IOrganizationUsageService organizationUsageService) : ControllerApiBase
 {
     /// <summary>

@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Quartz;
-using Shortly.Core.ServiceContracts.OrganizationManagement;
-using Shortly.Core.ServiceContracts.UserManagement;
+using Shortly.Core.Organizations.Contracts;
+using Shortly.Core.Users.Contracts;
 
 namespace Shortly.Infrastructure.ScheduledJobs;
 

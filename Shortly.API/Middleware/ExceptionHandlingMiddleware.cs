@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using FluentValidation;
-using Shortly.Core.DTOs.ExceptionsDTOs;
 using Shortly.Core.Exceptions.Base;
+using Shortly.Core.Exceptions.DTOs;
 using ClientErrors = Shortly.Core.Exceptions.ClientErrors;
 
 namespace Shortly.API.Middleware;
