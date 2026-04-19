@@ -16,13 +16,8 @@ public static class Sha256Extensions
     /// <returns>A lowercase hexadecimal representation of the SHA-256 hash.</returns>
     public static string ComputeHash(string input)
     {
-        // Create an instance of the SHA-256 algorithm
         using var sha256 = SHA256.Create();
-        
-        // Compute the hash value from the UTF-8 encoded input string
         var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
-
-        // Convert the byte array to a lowercase hexadecimal string
         return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
     }
 

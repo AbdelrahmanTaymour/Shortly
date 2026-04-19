@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Shortly.Core.Models;
-using Shortly.Core.ServiceContracts.ClickTracking;
+using Shortly.Core.ClickTracking.Contracts;
+using Shortly.Core.ClickTracking.Services;
 
 namespace Shortly.Infrastructure.BackgroundServices;
 
@@ -23,7 +23,7 @@ public class ClickTrackingBackgroundWorker(
 
                 if (clickJob.HasValue)
                 {
-                    var (redirectId, trackingData) = clickJob.Value;
+                    var (redirectId, shortUrlOwnerId, trackingData) = clickJob.Value;
                     
                     // Process the click tracking job within a scoped DI context
                     using var scope = serviceProvider.CreateScope();
@@ -32,7 +32,7 @@ public class ClickTrackingBackgroundWorker(
                     try
                     {
                         logger.LogInformation("Processing click tracking for redirect ID {RedirectId}.", redirectId);
-                        await clickTrackingService.TrackClickAsync(redirectId, trackingData);
+                        await clickTrackingService.TrackClickAsync(redirectId, shortUrlOwnerId, trackingData);
                     }
                     catch (Exception ex)
                     {

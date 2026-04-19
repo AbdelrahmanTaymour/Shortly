@@ -1,7 +1,6 @@
-using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 
-namespace Shortly.Core.RepositoryContract.UrlManagement;
+namespace Shortly.Domain.RepositoryContract.ShortUrls;
 
 /// <summary>
 /// Contract to be implemented by ShortUrlRepository that contains data access logic of ShortUrls data store

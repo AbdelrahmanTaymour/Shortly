@@ -2,12 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
-using Shortly.Core.RepositoryContract.Tokens;
+using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.Tokens;
 
-public class RefreshTokenRepository(SQLServerDbContext dbContext, ILogger<RefreshTokenRepository> logger) : IRefreshTokenRepository
+public class RefreshTokenRepository(SqlServerDbContext dbContext, ILogger<RefreshTokenRepository> logger) : IRefreshTokenRepository
 {
     public async Task<RefreshToken?> AddRefreshTokenAsync(RefreshToken refreshToken)
     {

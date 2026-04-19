@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
-using Shortly.Core.Models;
-using Shortly.Core.RepositoryContract.ClickTracking;
+using Shortly.Core.ClickTracking.Contracts;
+using Shortly.Core.ClickTracking.DTOs;
 
-namespace Shortly.Infrastructure.Repositories.ClickTracking;
+namespace Shortly.Infrastructure.Services.GeoLocation;
 
 /// <summary>
 /// Provides geolocation lookup functionality for a given IP address using the ipapi.co API.

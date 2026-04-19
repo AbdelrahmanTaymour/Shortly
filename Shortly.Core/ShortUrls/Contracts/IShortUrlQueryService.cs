@@ -1,8 +1,9 @@
-using Shortly.Core.DTOs.ShortUrlDTOs;
+using Shortly.Core.Common;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
+using Shortly.Core.ShortUrls.DTOs;
 
-namespace Shortly.Core.ServiceContracts.UrlManagement;
+namespace Shortly.Core.ShortUrls.Contracts;
 
 /// <summary>
 ///     Defins query operations for retrieving short URLs based on various filters such as user, organization,
@@ -176,5 +177,11 @@ public interface IShortUrlQueryService
         TimeSpan? olderThan = null,
         int pageNumber = 1,
         int pageSize = 50,
+        CancellationToken cancellationToken = default);
+
+
+    Task<PagedResult<ShortUrlDto>> SearchByFiltersAsync(
+        Guid userId,
+        ShortUrlSearchRequest request,
         CancellationToken cancellationToken = default);
 }

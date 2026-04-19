@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.DTOs.OrganizationDTOs;
-using Shortly.Core.ServiceContracts.OrganizationManagement;
+using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Organizations.Contracts;
+using Shortly.Core.Organizations.DTOs;
 using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
@@ -20,7 +21,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-public class OrganizationController(IOrganizationService organizationService) : ControllerApiBase
+public class OrganizationController(IOrganizationService organizationService, IUserContext userContext) : ControllerApiBase
 {
     /// <summary>
     /// Retrieves all organizations with pagination support.
@@ -42,7 +43,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [HttpGet(Name = "GetAllOrganizations")]
     [ProducesResponseType(typeof(IEnumerable<OrganizationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewOrganization)]
+    // [RequirePermission(enPermissions.ViewOrganization)]
     public async Task<IActionResult> GetAll(int page = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
         var organizations = await organizationService.GetAllAsync(page, pageSize, cancellationToken);
@@ -70,7 +71,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [ProducesResponseType(typeof(OrganizationDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewOrganization)]
+    // [RequirePermission(enPermissions.ViewOrganization)]
     public async Task<IActionResult> GetById(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var organization = await organizationService.GetOrganizationAsync(organizationId, cancellationToken);
@@ -98,7 +99,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [HttpGet("search", Name = "SearchOrganizations")]
     [ProducesResponseType(typeof(IEnumerable<OrganizationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewOrganization)]
+    // [RequirePermission(enPermissions.ViewOrganization)]
     public async Task<IActionResult> Search([FromQuery] string searchTerm, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
         var organizations = await organizationService.SearchOrganizationsAsync(searchTerm, page, pageSize, cancellationToken);
@@ -124,7 +125,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [HttpGet("user/{ownerId:guid}", Name = "GetUserOrganizations")]
     [ProducesResponseType(typeof(IEnumerable<OrganizationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewOrganization)]
+    // [RequirePermission(enPermissions.ViewOrganization)]
     public async Task<IActionResult> GetUserOrganizations(Guid ownerId, CancellationToken cancellationToken = default)
     {
         var organizations = await organizationService.GetUserOrganizationsAsync(ownerId, cancellationToken);
@@ -166,8 +167,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Create([FromBody] CreateOrganizationDto createOrganizationDto, CancellationToken cancellationToken = default)
     {
-        var currentUserId = GetCurrentUserId();
-        var organization = await organizationService.CreateOrganizationAsync(createOrganizationDto, currentUserId);
+        var organization = await organizationService.CreateOrganizationAsync(createOrganizationDto, userContext.CurrentUserId);
         return CreatedAtRoute("GetOrganizationById", new { id = organization.Id }, organization);
     }
     
@@ -206,7 +206,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.UpdateOrganization)]
+    // [RequirePermission(enPermissions.UpdateOrganization)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOrganizationDto updateOrganizationDto, CancellationToken cancellationToken = default)
     {
         var organization = await organizationService.UpdateOrganizationAsync(id, updateOrganizationDto, cancellationToken);
@@ -235,11 +235,10 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.DeleteOrganization)]
+    // [RequirePermission(enPermissions.DeleteOrganization)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
     {
-        var currentUserId = GetCurrentUserId();
-        await organizationService.DeleteOrganizationAsync(id, currentUserId, cancellationToken);
+        await organizationService.DeleteOrganizationAsync(id, userContext.CurrentUserId, cancellationToken);
         return NoContent();
     }
     
@@ -265,7 +264,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ManageOrganization)]
+    // [RequirePermission(enPermissions.ManageOrganization)]
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken = default)
     {
         var result = await organizationService.ActivateOrganizationAsync(id, cancellationToken);
@@ -293,7 +292,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ManageOrganization)]
+    // [RequirePermission(enPermissions.ManageOrganization)]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken = default)
     {
         var result = await organizationService.DeactivateOrganizationAsync(id, cancellationToken);
@@ -327,11 +326,10 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.TransferOrgOwnership)]
+    // [RequirePermission(enPermissions.TransferOrgOwnership)]
     public async Task<IActionResult> TransferOwnership(Guid id, [FromBody] TransferOwnershipRequest request, CancellationToken cancellationToken = default)
     {
-        var currentUserId = GetCurrentUserId();
-        var result = await organizationService.TransferOwnershipAsync(id, currentUserId, request.NewOwnerId, cancellationToken);
+        var result = await organizationService.TransferOwnershipAsync(id, userContext.CurrentUserId, request.NewOwnerId, cancellationToken);
         return Ok(result);
     }
 
@@ -355,7 +353,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     [HttpGet("{id:guid}/access/{userId:guid}", Name = "CheckUserOrganizationAccess")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewOrganization)]
+    // [RequirePermission(enPermissions.ViewOrganization)]
     public async Task<IActionResult> CheckUserAccess(Guid id, Guid userId, CancellationToken cancellationToken = default)
     {
         var hasAccess = await organizationService.CanUserAccessOrganizationAsync(userId, id, cancellationToken);

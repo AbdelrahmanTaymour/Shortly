@@ -10,7 +10,7 @@ public class OrganizationInvitation
     public enUserRole InvitedUserRoleId { get; set; } = enUserRole.Member;
     public enPermissions InvitedUserPermissions { get; set; } = enPermissions.None;
     public Guid InvitedBy { get; set; }
-    public enInvitationStatus Status { get; set; } = enInvitationStatus.Pending;
+    public enInvitationStatus Status { get; set; }
     public DateTime? RegisteredAt { get; set; }
     public DateTime? ExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

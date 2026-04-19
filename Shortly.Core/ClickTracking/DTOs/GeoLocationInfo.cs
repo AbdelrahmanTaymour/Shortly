@@ -1,4 +1,4 @@
-namespace Shortly.Core.Models;
+namespace Shortly.Core.ClickTracking.DTOs;
 
 public record GeoLocationInfo(
     string Country,

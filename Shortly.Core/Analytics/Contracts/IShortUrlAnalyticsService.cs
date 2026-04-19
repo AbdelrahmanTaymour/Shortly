@@ -1,8 +1,8 @@
-using Shortly.Core.DTOs.ShortUrlDTOs;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
+using Shortly.Core.ShortUrls.DTOs;
 
-namespace Shortly.Core.ServiceContracts.UrlManagement;
+namespace Shortly.Core.Analytics.Contracts;
 
 /// <summary>
 /// Defins analytics operations for short URLs, including statistics retrieval,

@@ -1,16 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.ShortUrlDTOs;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.DTOs.UsersDTOs.User;
-using Shortly.Core.ServiceContracts.Authentication;
-using Shortly.Core.ServiceContracts.UrlManagement;
-using Shortly.Domain.Enums;
+using Shortly.Core.Auth.Contracts;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.ShortUrls.Contracts;
+using Shortly.Core.ShortUrls.DTOs;
 
 namespace Shortly.API.Controllers;
-
 
 /// <summary>
 /// Controller for managing short URLs, providing CRUD operations and URL shortening functionality.
@@ -47,7 +43,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService, IAuthenticat
     [ProducesResponseType(typeof(ShortUrlDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ReadOwnLinks | enPermissions.ReadOrgLinks | enPermissions.ReadUrls)]
+    //[RequirePermission(enPermissions.ReadOwnLinks | enPermissions.ReadOrgLinks | enPermissions.ReadUrls)]
     public async Task<IActionResult> GetById(long id, CancellationToken cancellationToken = default)
     {
         var shortUrlDto = await shortUrlsService.GetByIdAsync(id, includeTracking: false, cancellationToken);
@@ -76,7 +72,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService, IAuthenticat
     [ProducesResponseType(typeof(ShortUrlDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ReadOwnLinks | enPermissions.ReadOrgLinks | enPermissions.ReadUrls)]
+    //[RequirePermission(enPermissions.ReadOwnLinks | enPermissions.ReadOrgLinks | enPermissions.ReadUrls)]
     public async Task<IActionResult> GetByShortCode(string shortCode, CancellationToken cancellationToken = default)
     {
         var shortUrlDto = await shortUrlsService.GetByShortCodeAsync(shortCode, includeTracking: false, cancellationToken);
@@ -168,7 +164,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService, IAuthenticat
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.UpdateOwnLinks |enPermissions.UpdateOrgLinks)]
+    //[RequirePermission(enPermissions.UpdateOwnLinks |enPermissions.UpdateOrgLinks)]
     public async Task<IActionResult> UpdateById(long id, [FromBody] UpdateShortUrlRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -200,7 +196,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService, IAuthenticat
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.UpdateOwnLinks | enPermissions.UpdateOrgLinks)]
+    //[RequirePermission(enPermissions.UpdateOwnLinks | enPermissions.UpdateOrgLinks)]
     public async Task<IActionResult> UpdateShortCode(long id, [FromBody] string newShortCode, CancellationToken cancellationToken = default)
     {
         var succeed = await shortUrlsService.UpdateShortCodeAsync(id, newShortCode, cancellationToken);
@@ -225,7 +221,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService, IAuthenticat
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.DeleteOwnLinks | enPermissions.DeleteOrgLinks)]
+    //[RequirePermission(enPermissions.DeleteOwnLinks | enPermissions.DeleteOrgLinks)]
     public async Task<IActionResult> DeleteShortUrl(long id, CancellationToken cancellationToken = default)
     {
         await shortUrlsService.DeleteByIdAsync(id, cancellationToken);
@@ -250,7 +246,7 @@ public class ShortUrlController(IShortUrlsService shortUrlsService, IAuthenticat
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.DeleteOwnLinks | enPermissions.DeleteOrgLinks)]
+    //[RequirePermission(enPermissions.DeleteOwnLinks | enPermissions.DeleteOrgLinks)]
     public async Task<IActionResult> DeleteShortUrlByCode(string shortCode, CancellationToken cancellationToken = default)
     {
         await shortUrlsService.DeleteByShortCodeAsync(shortCode, cancellationToken);

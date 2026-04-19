@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.Models;
-using Shortly.Core.ServiceContracts.ClickTracking;
-using Shortly.Core.ServiceContracts.UrlManagement;
+using Shortly.Core.ClickTracking.Contracts;
+using Shortly.Core.ClickTracking.DTOs;
+using Shortly.Core.Common;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Domain.Entities;
-using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
 
@@ -22,15 +21,17 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// Tracks a click event for a specific short URL and returns the recorded click data.
     /// </summary>
     /// <param name="shortUrlId">The unique identifier of the short URL that was clicked.</param>
+    /// <param name="shortUrlOwnerId">Denormalized user Id to improve analytics performance</param>
+    /// <param name="cancellationToken"></param>
     /// <returns>The recorded click event with all tracking information.</returns>
     /// <example>POST /api/urls/tracking/123456789/click</example>
     /// <remarks>
     /// **Access:** [AllowAnonymous] This endpoint is accessible to everyone to enable click tracking for all users.
-    ///
+    /// 
     /// Sample Request:
-    ///
+    /// 
     ///     POST /api/urls/tracking/123456789/click
-    ///
+    /// 
     /// This endpoint automatically captures and records comprehensive click analytics including:
     /// - **Geographic Information**: Country and city based on IP address
     /// - **Device Information**: Browser, operating system, device type
@@ -62,10 +63,10 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     [AllowAnonymous]
-    public async Task<IActionResult> TrackClick(long shortUrlId, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> TrackClick(long shortUrlId, Guid? shortUrlOwnerId, CancellationToken cancellationToken = default)
     {
         var trackingData = shortUrlRedirectService.ExtractTrackingDataAsync(HttpContext, cancellationToken);
-        var clickEvent = await clickTrackingService.TrackClickAsync(shortUrlId, trackingData);
+        var clickEvent = await clickTrackingService.TrackClickAsync(shortUrlId, shortUrlOwnerId, trackingData);
         return Ok(clickEvent);
     }
 
@@ -122,7 +123,7 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ReadOwnAnalytics | enPermissions.ReadOrgAnalytics)]
+    // [RequirePermission(enPermissions.ReadOwnAnalytics | enPermissions.ReadOrgAnalytics)]
     public async Task<IActionResult> GetAnalytics(long shortUrlId, [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null, CancellationToken cancellationToken = default)
     {
         if (startDate.HasValue && endDate.HasValue && startDate > endDate)
@@ -177,7 +178,7 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     [ProducesResponseType(typeof(ClickAnalytics), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewRealTimeStats)]
+    // [RequirePermission(enPermissions.ViewRealTimeStats)]
     public async Task<IActionResult> GetRealTimeAnalytics(long shortUrlId, CancellationToken cancellationToken = default)
     {
         var realTimeAnalytics = await clickTrackingService.GetRealTimeAnalyticsAsync(shortUrlId, cancellationToken);
@@ -236,7 +237,7 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ReadOwnAnalytics | enPermissions.ReadTeamAnalytics | enPermissions.ReadOrgAnalytics | enPermissions.ViewRealTimeStats)]
+    // [RequirePermission(enPermissions.ReadOwnAnalytics | enPermissions.ReadTeamAnalytics | enPermissions.ReadOrgAnalytics | enPermissions.ViewRealTimeStats)]
     public async Task<IActionResult> GetRecentClicks(long shortUrlId, [FromQuery] int count = 10, CancellationToken cancellationToken = default)
     {
         if (count < 1 || count > 100)
@@ -301,11 +302,11 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// <response code="404">Short URL with the specified ID was not found.</response>
     /// <response code="500">An internal server error occurred.</response>
     [HttpGet("{shortUrlId:long}/click-history", Name = "GetClickHistory")]
-    [ProducesResponseType(typeof(PaginatedResult<ClickEvent>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<ClickEvent>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewHistoricalData)]
+    // [RequirePermission(enPermissions.ViewHistoricalData)]
     public async Task<IActionResult> GetClickHistory(long shortUrlId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
         if (pageNumber < 1)
@@ -368,7 +369,7 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.CleanupSystemData)]
+    // [RequirePermission(enPermissions.CleanupSystemData)]
     public async Task<IActionResult> CleanupOldClicks([FromQuery] int retentionDays, CancellationToken cancellationToken = default)
     {
         if (retentionDays <= 0)

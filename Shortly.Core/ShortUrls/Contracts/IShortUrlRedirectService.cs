@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Http;
-using Shortly.Core.DTOs.ShortUrlDTOs;
+using Shortly.Core.ClickTracking.DTOs;
 using Shortly.Core.Exceptions.ClientErrors;
-using Shortly.Core.Models;
+using Shortly.Core.ShortUrls.DTOs;
 
-namespace Shortly.Core.ServiceContracts.UrlManagement;
+namespace Shortly.Core.ShortUrls.Contracts;
 
 /// <summary>
 /// Define operations for retrieving and managing redirect-related information

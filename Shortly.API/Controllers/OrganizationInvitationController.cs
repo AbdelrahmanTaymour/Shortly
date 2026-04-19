@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.DTOs.ExceptionsDTOs;
-using Shortly.Core.DTOs.OrganizationDTOs;
-using Shortly.Core.ServiceContracts.OrganizationManagement;
+using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Invitations.Contracts;
+using Shortly.Core.Invitations.DTOs;
+using Shortly.Core.Organizations.Contracts;
+using Shortly.Core.Organizations.DTOs;
 using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
@@ -20,7 +23,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-public class OrganizationInvitationController(IOrganizationInvitationService invitationService) : ControllerApiBase
+public class OrganizationInvitationController(IOrganizationInvitationService invitationService, IUserContext userContext) : ControllerApiBase
 {
     /// <summary>
     /// Retrieves all invitations for a specific organization with pagination support.
@@ -43,7 +46,7 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     [HttpGet("organization/{organizationId:guid}", Name = "GetOrganizationInvitations")]
     [ProducesResponseType(typeof(IEnumerable<OrganizationInvitationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewInvitations)]
+    //[RequirePermission(enPermissions.ViewInvitations)]
     public async Task<IActionResult> GetOrganizationInvitations(Guid organizationId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
     {
         var invitations = await invitationService.GetOrganizationInvitationsAsync(organizationId, page, pageSize, cancellationToken);
@@ -71,7 +74,7 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     [ProducesResponseType(typeof(OrganizationInvitationDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ViewInvitations)]
+    //[RequirePermission(enPermissions.ViewInvitations)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
     {
         var invitation = await invitationService.GetInvitationByIdAsync(id, cancellationToken);
@@ -133,7 +136,7 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.CreateInvitations)]
+    //[RequirePermission(enPermissions.CreateInvitations)]
     public async Task<IActionResult> Create(Guid organizationId, [FromBody] InviteMemberDto inviteMemberDto, CancellationToken cancellationToken = default)
     {
         var invitation = await invitationService.CreateInvitationAsync(organizationId, inviteMemberDto, cancellationToken);
@@ -163,11 +166,10 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ManageInvitations)]
+    //[RequirePermission(enPermissions.ManageInvitations)]
     public async Task<IActionResult> Accept([FromQuery] string token, CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
-        var result = await invitationService.AcceptInvitationAsync(token, userId, cancellationToken);
+        var result = await invitationService.AcceptInvitationAsync(token, userContext.CurrentUserId, cancellationToken);
         return Ok(result);
     }
 
@@ -194,7 +196,7 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ManageInvitations)]
+    //[RequirePermission(enPermissions.ManageInvitations)]
     public async Task<IActionResult> Reject([FromQuery] string token, CancellationToken cancellationToken = default)
     {
         var result = await invitationService.RejectInvitationAsync(token, cancellationToken);
@@ -223,11 +225,10 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.ManageInvitations)]
+    //[RequirePermission(enPermissions.ManageInvitations)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken = default)
     {
-        var requestingUserId = GetCurrentUserId();
-        await invitationService.CancelInvitationAsync(id, requestingUserId, cancellationToken);
+        await invitationService.CancelInvitationAsync(id, userContext.CurrentUserId, cancellationToken);
         return NoContent();
     }
 
@@ -254,11 +255,10 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.CreateInvitations)]
+    //[RequirePermission(enPermissions.CreateInvitations)]
     public async Task<IActionResult> Resend(Guid id, CancellationToken cancellationToken = default)
     {
-        var requestingUserId = GetCurrentUserId();
-        var result = await invitationService.ResendInvitationAsync(id, requestingUserId, cancellationToken);
+        var result = await invitationService.ResendInvitationAsync(id, userContext.CurrentUserId, cancellationToken);
         return Ok(result);
     }
 
@@ -282,7 +282,7 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     [HttpPost("cleanup-expired", Name = "CleanupExpiredInvitations")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
-    [RequirePermission(enPermissions.CleanupSystemData)]
+    //[RequirePermission(enPermissions.CleanupSystemData)]
     public async Task<IActionResult> CleanupExpired()
     {
         var result = await invitationService.CleanupExpiredInvitationsAsync();
