@@ -425,9 +425,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
         {
             return await dbContext.Users
                 .AsNoTracking()
-                .AnyAsync(u => (u.Username.Equals(username) ||
-                                u.Email.Equals(email))
-                    , cancellationToken);
+                .AnyAsync(u => u.Username == username || u.Email == email, cancellationToken);
         }
         catch (Exception ex)
         {
