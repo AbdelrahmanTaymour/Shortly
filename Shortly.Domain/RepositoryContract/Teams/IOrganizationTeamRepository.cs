@@ -15,14 +15,15 @@ public interface IOrganizationTeamRepository
     /// <returns>A collection of all organization teams.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
     Task<IEnumerable<OrganizationTeam>> GetAllAsync(CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Retrieves an organization team by its unique identifier.
     /// </summary>
     /// <param name="id">The unique identifier of the organization team.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns>The organization team if found; otherwise, null.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<OrganizationTeam?> GetByIdAsync(Guid id);
+    Task<OrganizationTeam?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Retrieves all teams belonging to a specific organization, including team manager details.
@@ -78,15 +79,6 @@ public interface IOrganizationTeamRepository
     /// <returns>The added organization team with any database-generated values.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
     Task<OrganizationTeam> AddAsync(OrganizationTeam entity, CancellationToken cancellationToken = default);
-   
-    /// <summary>
-    /// Updates an existing organization team in the database.
-    /// </summary>
-    /// <param name="entity">The organization team with updated values.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
-    /// <returns>True if the update was successful; otherwise, false.</returns>
-    /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<bool> UpdateAsync(OrganizationTeam entity, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Permanently deletes an organization team from the database.

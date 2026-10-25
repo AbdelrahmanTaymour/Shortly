@@ -93,15 +93,15 @@ public class ProfileController(IUserProfileService profileService, IUserContext 
     ///     PUT /api/profile/update
     /// </example>
     [HttpPut("update", Name = "UpdateProfile")]
-    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateProfile(UpdateUserProfileRequest request,
         CancellationToken cancellationToken = default)
     {
-        var succeed = await profileService.UpdateProfileAsync(userContext.CurrentUserId, request, cancellationToken);
-        return Ok(succeed);
+        await profileService.UpdateProfileAsync(userContext.CurrentUserId, request, cancellationToken);
+        return Ok();
     }
 
     

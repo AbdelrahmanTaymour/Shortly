@@ -235,7 +235,6 @@ public class OrganizationMemberRepository(SqlServerDbContext dbContext, ILogger<
         try
         {
             return await dbContext.OrganizationMembers
-                .AsNoTracking()
                 .Where(m => m.OrganizationId == organizationId && m.UserId == userId && m.IsActive)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(m => m.RoleId, newRoleId)
@@ -255,7 +254,6 @@ public class OrganizationMemberRepository(SqlServerDbContext dbContext, ILogger<
         try
         {
             return await dbContext.OrganizationMembers
-                .AsNoTracking()
                 .Where(m => m.OrganizationId == organizationId && m.UserId == userId && m.IsActive)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(m => m.CustomPermissions, permissions)
@@ -332,7 +330,6 @@ public class OrganizationMemberRepository(SqlServerDbContext dbContext, ILogger<
         try
         {
             return await dbContext.OrganizationMembers
-                .AsNoTracking()
                 .AnyAsync(m => m.UserId == userId && m.OrganizationId == organizationId && m.IsActive,
                     cancellationToken);
         }

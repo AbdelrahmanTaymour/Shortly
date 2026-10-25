@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Shortly.Core.Abstractions;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Tokens.Contracts;
@@ -16,7 +17,9 @@ namespace Shortly.Core.Users.Services;
 ///     activation/deactivation, availability checks, and soft deletion.
 /// </summary>
 public class UserService(IUserRepository userRepository,
-    ITokenService tokenService, ILogger<UserService> logger) : IUserService
+    ITokenService tokenService, 
+    IUnitOfWork unitOfWork,
+    ILogger<UserService> logger) : IUserService
 {
     /// <inheritdoc />
     public async Task<UserDto> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -84,15 +87,15 @@ public class UserService(IUserRepository userRepository,
     }
 
     /// <inheritdoc />
-    public async Task<UserDto> UpdateAsync(Guid userId, UpdateUserRequest request)
+    public async Task<UserDto> UpdateAsync(Guid userId, UpdateUserRequest request, CancellationToken cancellationToken = default)
     {
-        var user = await userRepository.GetByIdAsync(userId);
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
         if (user == null)
             throw new NotFoundException("User", userId);
 
         
         if (!user.Username.Equals(request.Username, StringComparison.OrdinalIgnoreCase) &&
-            await userRepository.UsernameExistsAsync(request.Username))
+            await userRepository.UsernameExistsAsync(request.Username, cancellationToken))
         {
             throw new ConflictException("Username is already taken.");
         }
@@ -106,12 +109,7 @@ public class UserService(IUserRepository userRepository,
         user.IsEmailConfirmed = request.IsEmailConfirmed;
         user.UpdatedAt = DateTime.UtcNow;
 
-        var updated = await userRepository.UpdateAsync(user);
-        if (!updated)
-            throw new ServiceUnavailableException("Update User");
-
-        logger.LogInformation("User updated successfully. UserId: {UserId}, " +
-                              "SubscriptionPlan: {SubscriptionPlan}", userId, user.SubscriptionPlan);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return user.MapToUserDto();
     }

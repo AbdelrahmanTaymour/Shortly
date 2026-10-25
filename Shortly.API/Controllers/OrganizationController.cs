@@ -168,7 +168,7 @@ public class OrganizationController(IOrganizationService organizationService, IU
     public async Task<IActionResult> Create([FromBody] CreateOrganizationDto createOrganizationDto, CancellationToken cancellationToken = default)
     {
         var organization = await organizationService.CreateOrganizationAsync(createOrganizationDto, userContext.CurrentUserId);
-        return CreatedAtRoute("GetOrganizationById", new { id = organization.Id }, organization);
+        return CreatedAtRoute("GetById", new { id = organization.Id }, organization);
     }
     
     /// <summary>

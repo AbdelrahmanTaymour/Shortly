@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Shortly.Core.Abstractions;
 using Shortly.Core.Auth.Contracts;
 using Shortly.Core.Auth.DTOs;
 using Shortly.Core.Tokens.Contracts;
@@ -11,6 +12,7 @@ namespace Shortly.Core.Auth.Services;
 public class OAuthService(
     IUserRepository userRepository,
     ITokenService tokenService,
+    IUnitOfWork unitOfWork,
     ILogger<OAuthService> logger) : IOAuthService
 {
     /// <inheritdoc />
@@ -69,8 +71,9 @@ public class OAuthService(
 
         user.LastLoginAt = now;
         user.UpdatedAt = now;
-        await userRepository.UpdateAsync(user);
 
+        await unitOfWork.SaveChangesAsync();
+        
         logger.LogInformation("User {UserId} logged in via Google OAuth", user.Id);
         return await GenerateAuthenticationResponseAsync(user);
     }
@@ -93,7 +96,7 @@ public class OAuthService(
         user.LastLoginAt = now;
         user.UpdatedAt = now;
 
-        await userRepository.UpdateAsync(user);
+        await unitOfWork.SaveChangesAsync();
 
         logger.LogInformation(
             "Linked Google an account to existing user {UserId} with email {Email}",

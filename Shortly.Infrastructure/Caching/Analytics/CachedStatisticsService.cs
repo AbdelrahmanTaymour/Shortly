@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
@@ -32,12 +33,16 @@ public class CachedStatisticsService(
     private long _redisOpenedAtTicks;
     private static readonly TimeSpan RedisRetryWindow = TimeSpan.FromSeconds(30);
 
-    private bool IsRedisAvailable()
+    private bool _redisOpenedAtMilliseconds()
     {
-        if (!_redisCircuitOpen) return true;
-        var elapsed = TimeSpan.FromTicks(Environment.TickCount64 - Interlocked.Read(ref _redisOpenedAtTicks));
-        if (elapsed < RedisRetryWindow) return false;
-        _redisCircuitOpen = false; // half-open: let one probe through
+        if (!_redisCircuitOpen)
+            return true;
+
+        if (Environment.TickCount64 - Interlocked.Read(ref _redisOpenedAtTicks)
+            < RedisRetryWindow.TotalMilliseconds)
+            return false;
+
+        _redisCircuitOpen = false;
         return true;
     }
 
@@ -93,22 +98,51 @@ public class CachedStatisticsService(
         string key,
         Func<CancellationToken, Task<T>> factory,
         TimeSpan ttl,
-        CancellationToken cancellationToken) where T : class
+        CancellationToken cancellationToken)
+        where T : class
     {
+        var totalSw = Stopwatch.StartNew();
+
         var fast = await GetFromCacheAsync<T>(key, cancellationToken);
-        if (fast is not null) return fast;
+
+        logger.LogInformation(
+            "GetFromCacheAsync took {Time} ms",
+            totalSw.ElapsedMilliseconds);
+
+        if (fast is not null)
+            return fast;
 
         var sem = _keyLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+
         await sem.WaitAsync(cancellationToken);
+
         try
         {
-            // Double-check after acquiring a lock
             var afterLock = await GetFromCacheAsync<T>(key, cancellationToken);
-            if (afterLock is not null) return afterLock;
 
-            logger.LogDebug("Cache MISS (computing): {Key}", key);
+            if (afterLock is not null)
+                return afterLock;
+
+            var factorySw = Stopwatch.StartNew();
+
             var computed = await factory(cancellationToken);
+
+            logger.LogInformation(
+                "Factory took {Time} ms",
+                factorySw.ElapsedMilliseconds);
+
+            var cacheSw = Stopwatch.StartNew();
+
             await SetInCacheAsync(key, computed, ttl, cancellationToken);
+
+            logger.LogInformation(
+                "SetInCacheAsync took {Time} ms",
+                cacheSw.ElapsedMilliseconds);
+
+            logger.LogInformation(
+                "TOTAL GetOrSetAsync = {Time} ms",
+                totalSw.ElapsedMilliseconds);
+
             return computed;
         }
         finally
@@ -119,7 +153,7 @@ public class CachedStatisticsService(
 
     private async Task<T?> GetFromCacheAsync<T>(string key, CancellationToken cancellationToken) where T : class
     {
-        if (memoryCache.TryGetValue<T>(key, out var l1Hit))
+        /*if (memoryCache.TryGetValue<T>(key, out var l1Hit))
         {
             Interlocked.Increment(ref _cacheHits);
             logger.LogTrace("L1 HIT: {Key}", key);
@@ -127,7 +161,7 @@ public class CachedStatisticsService(
         }
 
         // Skip Redis entirely while the circuit is open — avoids 5 000 ms SDK timeout
-        if (!IsRedisAvailable())
+        if (!_redisOpenedAtMilliseconds())
         {
             Interlocked.Increment(ref _cacheMisses);
             return null;
@@ -136,7 +170,11 @@ public class CachedStatisticsService(
         string? serialized;
         try
         {
+            var sw = Stopwatch.StartNew();
             serialized = await distributedCache.GetStringAsync(key, cancellationToken);
+            logger.LogInformation(
+                "Redis GET = {Time} ms",
+                sw.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
@@ -174,18 +212,20 @@ public class CachedStatisticsService(
             }
             catch
             {
-                /* best-effort */
+                /* best-effort #1#
             }
         }
 
         Interlocked.Increment(ref _cacheMisses);
-        return null;
+        return null;*/
+        
+        return Task.FromResult<T?>(null).Result;
     }
 
     private async Task SetInCacheAsync<T>(string key, T value, TimeSpan ttl, CancellationToken cancellationToken)
         where T : class
     {
-        memoryCache.Set(key, value, new MemoryCacheEntryOptions
+        /*memoryCache.Set(key, value, new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = ttl < L1Ttl ? ttl : L1Ttl, Size = 1
         });
@@ -193,16 +233,27 @@ public class CachedStatisticsService(
         try
         {
             var serialized = JsonSerializer.Serialize(value, JsonOptions);
-            await distributedCache.SetStringAsync(key, serialized,
-                new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = ttl },
+            var sw = Stopwatch.StartNew();
+
+            await distributedCache.SetStringAsync(
+                key,
+                serialized,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = ttl
+                },
                 cancellationToken);
+
+            logger.LogInformation(
+                "Redis SET = {Time} ms",
+                sw.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
             TripRedisCircuit(ex, key);
         }
 
-        logger.LogDebug("Cached: {Key}, TTL: {Ttl}", key, ttl);
+        logger.LogDebug("Cached: {Key}, TTL: {Ttl}", key, ttl);*/
     }
 
     #endregion

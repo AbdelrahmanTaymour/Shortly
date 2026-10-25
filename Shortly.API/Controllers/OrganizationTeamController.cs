@@ -3,8 +3,6 @@ using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
 using Shortly.Core.Common.Abstractions;
 using Shortly.Core.Exceptions.DTOs;
-using Shortly.Core.Organizations.Contracts;
-using Shortly.Core.Organizations.DTOs;
 using Shortly.Core.Teams.Contracts;
 using Shortly.Core.Teams.DTOs;
 using Shortly.Domain.Enums;

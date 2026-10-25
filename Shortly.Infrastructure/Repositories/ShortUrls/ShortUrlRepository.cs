@@ -20,10 +20,7 @@ public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRe
     {
         try
         {
-            var query = includeTracking ? dbContext.ShortUrls : dbContext.ShortUrls.AsNoTracking();
-            return await query
-                .FirstOrDefaultAsync(s => s.Id == id, cancellationToken)
-                .ConfigureAwait(false);
+            return await dbContext.ShortUrls.FindAsync([id], cancellationToken);
         }
         catch (Exception ex)
         {
@@ -71,27 +68,6 @@ public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRe
         }
     }
 
-
-    /// <inheritdoc />
-    public async Task<bool> UpdateAsync(ShortUrl shortUrl, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            dbContext.Update(shortUrl);
-            var affected = await dbContext.SaveChangesAsync(cancellationToken);
-
-            if (affected > 0)
-                logger.LogInformation("Updated short URL with ID: {Id}", shortUrl.Id);
-
-            return affected > 0;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error updating short URL with ID: {Id}", shortUrl.Id);
-            throw new DatabaseException("Failed to update short URL", ex);
-        }
-    }
-
     
     /// <inheritdoc />
     public async Task<bool> UpdateShortCodeAsync(long id, string newShortCode, CancellationToken cancellationToken = default)
@@ -99,7 +75,6 @@ public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRe
         try
         {
             return await dbContext.ShortUrls
-                .AsNoTracking()
                 .Where(s => s.Id == id)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.ShortCode, newShortCode)

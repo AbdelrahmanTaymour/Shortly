@@ -34,12 +34,12 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     }
     
     /// <inheritdoc />
-    public async Task<OrganizationTeam?> GetByIdAsync(Guid id)
+    public async Task<OrganizationTeam?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
             return await dbContext.OrganizationTeams
-                .FindAsync(id);
+                .FindAsync([id], cancellationToken);
         }
         catch (Exception ex)
         {
@@ -155,27 +155,11 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     }
 
     /// <inheritdoc />
-    public async Task<bool> UpdateAsync(OrganizationTeam entity, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            dbContext.OrganizationTeams.Update(entity);
-            return await dbContext.SaveChangesAsync(cancellationToken) > 0;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error updating organization team with ID {TeamId}.", entity.Id);
-            throw new DatabaseException("An error occurred while updating the organization team.", ex);
-        }
-    }
-
-    /// <inheritdoc />
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
             return await dbContext.OrganizationTeams
-                .AsNoTracking()
                 .Where(t => t.Id == id)
                 .ExecuteDeleteAsync(cancellationToken) > 0;
         }

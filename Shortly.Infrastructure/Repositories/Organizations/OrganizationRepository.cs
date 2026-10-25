@@ -45,8 +45,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
         try
         {
             return await dbContext.Organizations
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+                .FindAsync([id], cancellationToken);
         }
         catch (Exception ex)
         {
@@ -87,7 +86,6 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            dbContext.Organizations.Update(organization);
             await dbContext.SaveChangesAsync(cancellationToken);
             return organization;
         }

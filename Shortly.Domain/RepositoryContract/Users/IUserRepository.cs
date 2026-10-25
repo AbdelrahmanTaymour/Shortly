@@ -125,14 +125,6 @@ public interface IUserRepository
     ///     Uses bulk insert with AddRangeAsync for optimal performance.
     /// </remarks>
     Task<User> CreateAsync(User user);
-
-    /// <summary>
-    /// Updates an existing user in the database.
-    /// </summary>
-    /// <param name="user">The user entity with updated information.</param>
-    /// <returns>True if the update was successful; otherwise, false.</returns>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<bool> UpdateAsync(User user);
     
     /// <summary>
     /// Changes the email address of a user and marks it as confirmed.

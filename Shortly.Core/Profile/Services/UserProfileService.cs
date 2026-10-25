@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
+using Shortly.Core.Abstractions;
 using Shortly.Core.Exceptions.ClientErrors;
-using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Profile.Contracts;
 using Shortly.Core.Profile.DTOs;
 using Shortly.Core.Tokens.Contracts;
@@ -24,6 +24,7 @@ public class UserProfileService(
     IUserRepository userRepository,
     IUserQueries userQueries,
     ITokenService tokenService,
+    IUnitOfWork unitOfWork,
     ILogger<UserProfileService> logger) : IUserProfileService
 {
     /// <inheritdoc />
@@ -35,7 +36,7 @@ public class UserProfileService(
     }
 
     /// <inheritdoc />
-    public async Task<bool> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest request,
+    public async Task UpdateProfileAsync(Guid userId, UpdateUserProfileRequest request,
         CancellationToken cancellationToken = default)
     {
         var profile = await profileRepository.GetByUserIdAsync(userId, cancellationToken);
@@ -52,15 +53,9 @@ public class UserProfileService(
         profile.TimeZone = request.TimeZone;
         profile.UpdatedAt = DateTime.UtcNow;
 
-        var updated = await profileRepository.UpdateAsync(profile, cancellationToken);
-        if (!updated)
-        {
-            logger.LogError("Fail updating profile; UserId: {UserId}", userId);
-            throw new ServiceUnavailableException("Update Profile");
-        }
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Profile updated successfully. UserId: {UserId}", userId);
-        return updated;
     }
 
     /// <inheritdoc />

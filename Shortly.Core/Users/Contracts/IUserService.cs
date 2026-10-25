@@ -66,11 +66,12 @@ public interface IUserService
     /// </summary>
     /// <param name="userId">The ID of the user to update.</param>
     /// <param name="request">The updated user data.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
     /// <returns>The updated user's details as a <see cref="UserDto"/>.</returns>
     /// <exception cref="NotFoundException">Thrown if the user does not exist.</exception>
     /// <exception cref="ConflictException">Thrown if the new username is already taken.</exception>
     /// <exception cref="ServiceUnavailableException">Thrown if the update operation fails.</exception>
-    Task<UserDto> UpdateAsync(Guid userId, UpdateUserRequest request);
+    Task<UserDto> UpdateAsync(Guid userId, UpdateUserRequest request, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Updates the email address of a user.

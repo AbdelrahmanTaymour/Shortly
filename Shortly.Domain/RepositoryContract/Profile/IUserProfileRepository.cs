@@ -17,13 +17,4 @@ public interface IUserProfileRepository
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     /// <remarks>Uses AsNoTracking for optimal read-only performance.</remarks>
     Task<UserProfile?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Updates an existing user profile in the database.
-    /// </summary>
-    /// <param name="profile">The user profile entity with updated information.</param>
-    /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
-    /// <returns>True if the update was successful; otherwise, false.</returns>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<bool> UpdateAsync(UserProfile profile, CancellationToken cancellationToken = default);
 }

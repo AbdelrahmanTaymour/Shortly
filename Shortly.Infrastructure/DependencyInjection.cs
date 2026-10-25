@@ -2,12 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
+using Shortly.Core.Abstractions;
 using Shortly.Core.Analytics.CacheContracts;
 using Shortly.Core.Analytics.Contracts;
 using Shortly.Core.ClickTracking.Contracts;
 using Shortly.Core.Email.Contracts;
 using Shortly.Core.Email.DTOs;
-using Shortly.Core.Email.Services;
 using Shortly.Core.Organizations.Contracts;
 using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Core.Users.Contracts;
@@ -26,6 +26,7 @@ using Shortly.Domain.RepositoryContract.Users;
 using Shortly.Infrastructure.BackgroundServices;
 using Shortly.Infrastructure.Caching.Analytics;
 using Shortly.Infrastructure.DbContexts;
+using Shortly.Infrastructure.Persistence;
 using Shortly.Infrastructure.Repositories.Analytics;
 using Shortly.Infrastructure.Repositories.Tokens;
 using Shortly.Infrastructure.Repositories.ClickTracking;
@@ -39,7 +40,6 @@ using Shortly.Infrastructure.Repositories.Teams;
 using Shortly.Infrastructure.Repositories.UserAuditLog;
 using Shortly.Infrastructure.Repositories.Users;
 using Shortly.Infrastructure.ScheduledJobs;
-using Shortly.Infrastructure.Services;
 using Shortly.Infrastructure.Services.Email;
 using Shortly.Infrastructure.Services.GeoLocation;
 
@@ -76,7 +76,8 @@ public static class DependencyInjection
         });
         services.AddQuartzHostedService(options => { options.WaitForJobsToComplete = true; });
         services.AddScoped<MonthlyUsageResetJob>();
- 
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        
         // User Management
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();

@@ -37,8 +37,7 @@ public class UserAuditLogRepository(SqlServerDbContext dbContext, ILogger<UserAu
     public async Task<Domain.Entities.UserAuditLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await dbContext.UserAuditLogs
-            .AsNoTracking()
-            .FirstOrDefaultAsync(log => log.Id == id, cancellationToken);
+            .FindAsync([id], cancellationToken);
     }
 
     /// <inheritdoc/>

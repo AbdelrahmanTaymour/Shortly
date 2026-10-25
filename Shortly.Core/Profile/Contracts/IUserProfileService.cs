@@ -29,7 +29,7 @@ public interface IUserProfileService
     /// <returns><c>true</c> if the profile was updated successfully; otherwise, <c>false</c>.</returns>
     /// <exception cref="NotFoundException">Thrown if the profile is not found.</exception>
     /// <exception cref="ServiceUnavailableException">Thrown if the update operation fails unexpectedly.</exception>
-    Task<bool> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest request,
+    Task UpdateProfileAsync(Guid userId, UpdateUserProfileRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>

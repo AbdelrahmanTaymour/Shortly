@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Shortly.Core.Abstractions;
 using Shortly.Core.Auth.Contracts;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
@@ -28,6 +29,7 @@ public class ShortUrlsService(
     IAuthenticationContextProvider authenticationContext,
     IOrganizationUsageService organizationUsageService,
     IUserUsageService userUsageService,
+    IUnitOfWork unitOfWork,
     ILogger<ShortUrlsService> logger)
     : IShortUrlsService
 {
@@ -97,9 +99,7 @@ public class ShortUrlsService(
         if (shortUrl.ExpiresAt != null) existingUrl.ExpiresAt = shortUrl.ExpiresAt;
         existingUrl.UpdatedAt = DateTime.UtcNow;
 
-        var updated = await shortUrlRepository.UpdateAsync(existingUrl, cancellationToken);
-        if (!updated)
-            throw new ServiceUnavailableException("Update Url");
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Url updated successfully. ShortUrlId: {id}", id);
         return existingUrl.MapToShortUrlDto();

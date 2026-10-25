@@ -132,9 +132,9 @@ public class Program
             options.AddPolicy("FrontendPolicy", policy =>
             {
                 policy
-                    .WithOrigins("http://localhost:3000", "https://localhost:3000")
-                    .AllowAnyMethod()
+                    .WithOrigins("http://localhost:3000", "https://localhost:3000", "https://shortly-frontend-tau.vercel.app")
                     .AllowAnyHeader()
+                    .AllowAnyMethod()
                     .AllowCredentials();
             });
         });
@@ -170,7 +170,7 @@ public class Program
                 options.Cookie.Name = "Shortly.OAuth";
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SameSite = SameSiteMode.None;
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
             })
             .AddJwtBearer(options =>

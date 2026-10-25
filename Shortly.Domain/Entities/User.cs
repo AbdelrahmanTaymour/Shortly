@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Shortly.Domain.Enums;
 
 namespace Shortly.Domain.Entities;
@@ -12,13 +11,13 @@ public class User
     public enSubscriptionPlan SubscriptionPlanId { get; set; } = enSubscriptionPlan.Free;
     public long Permissions { get; set; } = (long)enPermissions.BasicUser;
     public bool IsActive { get; set; } = true;
-    public bool IsEmailConfirmed { get; set; } = false;
-    public DateTime? LastLoginAt { get; set; } = null;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public bool IsDeleted { get; set; } = false;
-    public DateTime? DeletedAt { get; set; } = null;
-    public Guid? DeletedBy { get; set; } = null;
+    public bool IsEmailConfirmed { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public Guid? DeletedBy { get; set; }
 
     // OAuth fields
     public string? GoogleId { get; set; }

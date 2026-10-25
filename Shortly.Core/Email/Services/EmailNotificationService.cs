@@ -21,8 +21,8 @@ public class EmailNotificationService(
     /// <inheritdoc />
     public void EnqueueSendEmailVerificationAsync(string email, string userName, string verificationToken)
     {
-        var baseUrl = configuration["AppSettings:BaseUrl"];
-        var verificationLink = $"{baseUrl}/api/auth/account/verify-email?token={verificationToken}";
+        var baseUiUrl = configuration["AppSettings:BaseUIUrl"];
+        var verificationLink = $"{baseUiUrl}/account/verify-email?token={verificationToken}";
         
         var template = templateService.GetEmailVerificationTemplateAsync(userName, verificationLink);
 
@@ -41,8 +41,8 @@ public class EmailNotificationService(
     /// <inheritdoc />
     public void EnqueueSendPasswordResetAsync(string email, string userName, string resetToken)
     {
-        var baseUrl = configuration["AppSettings:BaseUrl"];
-        var resetLink = $"{baseUrl}/reset-password?token={resetToken}&email={Uri.EscapeDataString(email)}";
+        var baseUiUrl = configuration["AppSettings:BaseUIUrl"];
+        var resetLink = $"{baseUiUrl}/account/reset-password?token={resetToken}&email={Uri.EscapeDataString(email)}";
 
         var template = templateService.GetPasswordResetTemplateAsync(userName, resetLink);
 

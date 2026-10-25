@@ -31,6 +31,7 @@ services:
 
   shortly-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
     container_name: shortly-db
     ports:
       - "1433:1433"
@@ -39,11 +40,11 @@ services:
       - SA_PASSWORD=${DB_PASSWORD}
       - MSSQL_PID=Developer
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'VeryStr0ngP@ssw0rd' -Q 'SELECT 1' || exit 1"]
+      test: [ "CMD", "/bin/bash", "-c", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$$SA_PASSWORD\" -Q \"SELECT 1\" || exit 1" ]
       interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
     networks:
       - shortly-network
 

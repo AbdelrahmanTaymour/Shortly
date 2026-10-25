@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Shortly.Core.Analytics.Contracts;
 using Shortly.Core.Analytics.DTOs;
 
@@ -9,7 +11,7 @@ namespace Shortly.Infrastructure.Repositories.ClickTracking;
 /// <summary>
 ///     Dapper query implementation for analytics.
 /// </summary>
-public class ClickStatisticsDapperQueries(IConfiguration configuration) : IClickStatisticsDapperQueries
+public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<ClickStatisticsDapperQueries> logger) : IClickStatisticsDapperQueries
 {
     private readonly string _connectionString =
         configuration.GetConnectionString("DefaultConnection")
@@ -466,6 +468,9 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration) : IClick
                            """;
 
         await using var connection = OpenConnection();
+        
+        var sw = Stopwatch.StartNew();
+        
         await using var multi = await connection.QueryMultipleAsync(
             new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate },
                 cancellationToken: ct));
@@ -480,6 +485,12 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration) : IClick
         var timeWindows = await multi.ReadSingleAsync<TimeWindowRow>();
         var topCountry = await multi.ReadFirstOrDefaultAsync<string>();
         var topReferrer = await multi.ReadFirstOrDefaultAsync<string>();
+        
+        sw.Stop();
+        
+        logger.LogInformation(
+            "SQL QueryMultiple = {Time} ms",
+            sw.ElapsedMilliseconds);
 
         return new UserOverview
         {

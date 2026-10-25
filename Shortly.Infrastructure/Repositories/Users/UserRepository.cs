@@ -24,7 +24,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users.FindAsync(id, cancellationToken);
+            return await dbContext.Users.FindAsync([id], cancellationToken);
         }
         catch (Exception ex)
         {
@@ -228,21 +228,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
             }
         });
     }
-
-    /// <inheritdoc />
-    public async Task<bool> UpdateAsync(User user)
-    {
-        try
-        {
-            dbContext.Update(user);
-            return await dbContext.SaveChangesAsync() > 0;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error updating user: {UserId}", user.Id);
-            throw new DatabaseException("Failed to update user", ex);
-        }
-    }
+    
 
     /// <inheritdoc />
     public async Task<bool> ChangeEmailAsync(Guid id, string newEmail, CancellationToken cancellationToken = default)

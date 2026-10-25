@@ -68,7 +68,7 @@ public interface IOrganizationTeamService
     /// <exception cref="ConflictException">Thrown when the member is already a member of the team.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
     Task<OrganizationTeamMemberDto> AddMemberToTeamAsync(Guid teamId, Guid memberId, Guid requestingUserId, CancellationToken cancellationToken = default);
-   
+
     /// <summary>
     /// Updates the name and/or description of an existing team.
     /// </summary>
@@ -79,7 +79,8 @@ public interface IOrganizationTeamService
     /// <returns>True if the team was successfully updated, false otherwise.</returns>
     /// <exception cref="NotFoundException">Thrown when the team is not found.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during retrieval.</exception>
-    Task<bool> UpdateTeamAsync(Guid teamId, UpdateTeamRequest request, Guid requestingUserId, CancellationToken cancellationToken = default);
+    Task<OrganizationTeamDto> UpdateTeamAsync(Guid teamId, UpdateTeamRequest request, Guid requestingUserId,
+        CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Deletes a team from the organization.

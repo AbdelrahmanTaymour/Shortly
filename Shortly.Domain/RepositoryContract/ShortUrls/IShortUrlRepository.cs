@@ -54,20 +54,6 @@ public interface IShortUrlRepository
     /// The method validates the entity before creation and ensures short code uniqueness.
     /// </remarks>
     Task<ShortUrl> AddAsync(ShortUrl shortUrl, CancellationToken cancellationToken = default);
- 
-    
-    /// <summary>
-    /// Updates an existing short URL entity in the database.
-    /// </summary>
-    /// <param name="shortUrl">The short URL entity with updated values.</param>
-    /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
-    /// <returns>
-    /// A task that represents the asynchronous operation. The task result indicates
-    /// whether the update was successful.
-    /// </returns>
-    /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<bool> UpdateAsync(ShortUrl shortUrl, CancellationToken cancellationToken = default);
- 
     
     /// <summary>
     /// Updates the short code of an existing short URL identified by its unique ID.
@@ -88,7 +74,6 @@ public interface IShortUrlRepository
     /// Thrown when an error occurs while attempting to update the short code.
     /// </exception>
     Task<bool> UpdateShortCodeAsync(long id, string newShortCode, CancellationToken cancellationToken = default);
-    
     
     /// <summary>
     /// Deletes a short URL entity by its unique identifier.

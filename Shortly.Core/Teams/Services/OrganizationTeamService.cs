@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Shortly.Core.Abstractions;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Teams.Contracts;
 using Shortly.Core.Teams.DTOs;
@@ -20,12 +21,13 @@ public class OrganizationTeamService(
     IOrganizationTeamRepository teamRepository,
     IOrganizationTeamMemberRepository teamMemberRepository,
     IOrganizationMemberRepository memberRepository,
+    IUnitOfWork unitOfWork,
     ILogger<OrganizationTeamService> logger) : IOrganizationTeamService
 {
     /// <inheritdoc />
     public async Task<OrganizationTeamDto> GetTeamAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
-        var team = await teamRepository.GetByIdAsync(teamId);
+        var team = await teamRepository.GetByIdAsync(teamId, cancellationToken);
         if(team == null)
             throw new NotFoundException("Team", teamId);
         
@@ -96,7 +98,7 @@ public class OrganizationTeamService(
     public async Task<OrganizationTeamMemberDto> AddMemberToTeamAsync(Guid teamId, Guid memberId, Guid requestingUserId, CancellationToken cancellationToken = default)
     {
         // Check if the team exists
-        var team = await teamRepository.GetByIdAsync(teamId);
+        var team = await teamRepository.GetByIdAsync(teamId, cancellationToken);
         if(team == null)
             throw new NotFoundException("Team", teamId);
         
@@ -121,17 +123,19 @@ public class OrganizationTeamService(
     }
 
     /// <inheritdoc />
-    public async Task<bool> UpdateTeamAsync(Guid teamId, UpdateTeamRequest request, Guid requestingUserId,
+    public async Task<OrganizationTeamDto> UpdateTeamAsync(Guid teamId, UpdateTeamRequest request, Guid requestingUserId,
         CancellationToken cancellationToken = default)
     {
-        var team = await teamRepository.GetByIdAsync(teamId);
+        var team = await teamRepository.GetByIdAsync(teamId, cancellationToken);
         if(team == null)
             throw new NotFoundException("Team", teamId);
         
         if (request.Name != null) team.Name = request.Name;
         if (request.Description != null) team.Description = request.Description;
-        
-        return await teamRepository.UpdateAsync(team, cancellationToken);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return team.MapToOrganizationTeamDto();
     }
 
     /// <inheritdoc />
@@ -161,7 +165,7 @@ public class OrganizationTeamService(
     public async Task<bool> ChangeTeamManagerAsync(Guid teamId, Guid newManagerId, Guid requestingUserId,
         CancellationToken cancellationToken = default)
     {
-        var team = await teamRepository.GetByIdAsync(teamId);
+        var team = await teamRepository.GetByIdAsync(teamId, cancellationToken);
         if(team == null)
             throw new NotFoundException("Team", teamId);
         
@@ -173,6 +177,8 @@ public class OrganizationTeamService(
             throw new BusinessRuleException("New team manager must be a member of the organization.");
         
         team.TeamManagerId = newManagerId;
-        return await teamRepository.UpdateAsync(team, cancellationToken);
+        
+        
+        return await unitOfWork.SaveChangesAsync(cancellationToken) > 0;
     }
 }

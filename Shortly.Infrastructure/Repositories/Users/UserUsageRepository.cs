@@ -23,8 +23,7 @@ public class UserUsageRepository(SqlServerDbContext dbContext, ILogger<UserUsage
         try
         {
             return await dbContext.UserUsage
-                .AsNoTracking()
-                .FirstOrDefaultAsync(uu => uu.UserId == userId, cancellationToken);
+                .FindAsync([userId], cancellationToken);
         }
         catch (Exception ex)
         {

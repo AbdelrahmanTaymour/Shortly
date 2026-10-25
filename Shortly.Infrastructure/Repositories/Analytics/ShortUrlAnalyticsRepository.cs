@@ -87,8 +87,6 @@ public class ShortUrlAnalyticsRepository(
                 .OrderByDescending(s => s.TotalClicks)
                 .ThenByDescending(s => s.CreatedAt)
                 .Take(topCount)
-                // Project only the fields the caller needs — avoids fetching large
-                // nullable text columns (Description, Password hash, etc.)
                 .Select(s => new ShortUrl
                 {
                     Id           = s.Id,
@@ -142,7 +140,7 @@ public class ShortUrlAnalyticsRepository(
                         SUM(CASE WHEN IsPasswordProtected = 1 THEN 1 ELSE 0 END)              AS PasswordProtectedUrls,
                         SUM(CASE WHEN ExpiresAt IS NOT NULL
                                   AND ExpiresAt <= SYSUTCDATETIME() THEN 1 ELSE 0 END)        AS ExpiredUrls
-                    FROM ShortUrls WITH (NOLOCK)
+                    FROM ShortUrls
                     WHERE UserId = {userId}
                     """)
                 .FirstOrDefaultAsync(cancellationToken)
@@ -173,7 +171,7 @@ public class ShortUrlAnalyticsRepository(
                         CASE WHEN COUNT(*) = 0 THEN 0.0
                              ELSE CAST(COALESCE(SUM(TotalClicks),0) AS FLOAT) / COUNT(*)
                         END                                                  AS AverageClicksPerUrl
-                    FROM ShortUrls WITH (NOLOCK)
+                    FROM ShortUrls
                     WHERE OrganizationId = {organizationId}
                     """)
                 .FirstOrDefaultAsync(cancellationToken)
