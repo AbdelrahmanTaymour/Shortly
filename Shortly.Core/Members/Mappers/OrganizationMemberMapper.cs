@@ -1,5 +1,6 @@
 using Shortly.Core.Members.DTOs;
 using Shortly.Domain.Entities;
+using Shortly.Domain.Members;
 
 namespace Shortly.Core.Members.Mappers;
 
@@ -11,8 +12,7 @@ public static class OrganizationMemberMapper
             organizationMember.Id,
             organizationMember.OrganizationId,
             organizationMember.UserId,
-            organizationMember.RoleId,
-            organizationMember.CustomPermissions,
+            organizationMember.Role,
             organizationMember.IsActive,
             organizationMember.InvitedBy,
             organizationMember.JoinedAt

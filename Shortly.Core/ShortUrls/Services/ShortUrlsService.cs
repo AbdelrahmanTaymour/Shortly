@@ -1,15 +1,15 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Shortly.Core.Abstractions;
-using Shortly.Core.Auth.Contracts;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Extensions;
-using Shortly.Core.Organizations.Contracts;
+using Shortly.Core.Organizations_legacy.Contracts;
 using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Core.ShortUrls.DTOs;
 using Shortly.Core.ShortUrls.Mappers;
-using Shortly.Core.Users.Contracts;
+using Shortly.Core.Users_legacy.Contracts;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 using Shortly.Domain.RepositoryContract.ShortUrls;
@@ -26,7 +26,7 @@ namespace Shortly.Core.ShortUrls.Services;
 /// <param name="logger">Logger for service operations</param>
 public class ShortUrlsService(
     IShortUrlRepository shortUrlRepository,
-    IAuthenticationContextProvider authenticationContext,
+    IUserContext userContext,
     IOrganizationUsageService organizationUsageService,
     IUserUsageService userUsageService,
     IUnitOfWork unitOfWork,
@@ -61,17 +61,16 @@ public class ShortUrlsService(
     public async Task<CreateShortUrlResponse> AddAsync(CreateShortUrlRequest request, HttpContext httpContext,
         CancellationToken cancellationToken = default)
     {
-        var authContext = authenticationContext.GetCurrentContextAsync(httpContext);
-        return authContext.OwnerType switch
+        return userContext.OwnerType switch
         {
             enShortUrlOwnerType.Anonymous =>
-                await HandleAnonymousCreationAsync(request, authContext, cancellationToken),
+                await HandleAnonymousCreationAsync(request, userContext, cancellationToken),
             
             enShortUrlOwnerType.User => 
-                await HandleUserCreationAsync(request, authContext, cancellationToken),
+                await HandleUserCreationAsync(request, userContext, cancellationToken),
             
             enShortUrlOwnerType.Organization => 
-                await HandleOrganizationMemberCreationAsync(request, authContext, cancellationToken),
+                await HandleOrganizationMemberCreationAsync(request, userContext, cancellationToken),
             
             _ => throw new InvalidOperationException("Unsupported owner type.")
         };
@@ -168,10 +167,10 @@ public class ShortUrlsService(
     /// <exception cref="DatabaseException">Thrown when the database operation fails.</exception>
     private async Task<CreateShortUrlResponse> HandleAnonymousCreationAsync(
         CreateShortUrlRequest request,
-        IAuthenticationContext authContext,
+        IUserContext authContext,
         CancellationToken cancellationToken)
     {
-        if (!authContext.IsAnonymous)
+        if (authContext.OwnerType != enShortUrlOwnerType.Anonymous)
             throw new UnauthorizedAccessException("Only anonymous users can create with this method.");
 
         return await CreateShortUrlInternalAsync(request, authContext, cancellationToken);
@@ -189,14 +188,14 @@ public class ShortUrlsService(
     /// <exception cref="DatabaseException">Thrown when the database operation fails.</exception>
     private async Task<CreateShortUrlResponse> HandleUserCreationAsync(
         CreateShortUrlRequest request,
-        IAuthenticationContext authContext,
+        IUserContext authContext,
         CancellationToken cancellationToken)
     {
         if (!authContext.IsAuthenticated || authContext.UserId == null)
             throw new UnauthorizedAccessException("User must be logged in.");
         
         var canCreateMoreLinks =
-            await userUsageService.CanCreateMoreLinksAsync(authContext.UserId.Value, cancellationToken);
+            await userUsageService.CanCreateMoreLinksAsync(authContext.UserId, cancellationToken);
 
         if (canCreateMoreLinks == false)
             throw new BusinessRuleException(
@@ -217,7 +216,7 @@ public class ShortUrlsService(
     /// <exception cref="DatabaseException">Thrown when the database operation fails.</exception>
     private async Task<CreateShortUrlResponse> HandleOrganizationMemberCreationAsync(
         CreateShortUrlRequest request,
-        IAuthenticationContext authContext,
+        IUserContext authContext,
         CancellationToken cancellationToken)
     {
         if (!authContext.IsAuthenticated || authContext.OrganizationId == null || authContext.MemberId == null)
@@ -246,7 +245,7 @@ public class ShortUrlsService(
     /// <exception cref="DatabaseException">Thrown when the database operation fails.</exception>
     private async Task<CreateShortUrlResponse> CreateShortUrlInternalAsync(
         CreateShortUrlRequest request,
-        IAuthenticationContext authContext,
+        IUserContext authContext,
         CancellationToken cancellationToken)
     {
         // Step 0: If custom code is provided, validate first

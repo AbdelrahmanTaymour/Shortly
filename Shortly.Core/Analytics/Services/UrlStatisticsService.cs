@@ -1,67 +1,56 @@
-using Shortly.Core.Analytics.CacheContracts;
 using Shortly.Core.Analytics.Contracts;
 using Shortly.Core.Analytics.DTOs;
 
 namespace Shortly.Core.Analytics.Services;
 
 /// <summary>
-///     Optimized analytics service. Uses the Decorator pattern to wrap
-///     <see cref="ICachedStatisticsService" /> around Dapper queries.
+///     Optimized analytics service. Directly invokes Dapper queries without caching.
 /// </summary>
 public class UrlStatisticsService(
-    IClickStatisticsDapperQueries clickDapperQueries,
-    ICachedStatisticsService service
+    IClickStatisticsDapperQueries clickDapperQueries
 ) : IUrlStatisticsService
 {
-    private static readonly TimeSpan DefaultCacheTtl = TimeSpan.FromMinutes(5);
-
     private const int MaxRangeDays = 365;
     private const int DefaultLookBackDays = 30;
 
-    // ── Per-URL endpoints (unchanged) ────────────────────────────────────────
+    // ── Per-URL endpoints ────────────────────────────────────────────────────
 
     #region Per-URL endpoints
 
     public Task<UrlOverview> GetUrlOverviewAsync(long id, DateTime? s, DateTime? e, CancellationToken ct)
     {
         var (start, end) = ClampRange(s, e);
-        return service.GetOrSetUrlMetricAsync("overview", id, start, end,
-            _ => clickDapperQueries.GetUrlOverviewAsync(id, start, end, ct), DefaultCacheTtl, ct);
+        return clickDapperQueries.GetUrlOverviewAsync(id, start, end, ct);
     }
     
     public Task<EngagementMetrics> GetUrlEngagementAsync(long id, DateTime? s, DateTime? e, CancellationToken ct)
     {
         var (start, end) = ClampRange(s, e);
-        return service.GetOrSetUrlMetricAsync("engagement", id, start, end,
-            _ => clickDapperQueries.GetUrlEngagementAsync(id, start, end, ct), DefaultCacheTtl, ct);
+        return clickDapperQueries.GetUrlEngagementAsync(id, start, end, ct);
     }
 
     public Task<GeographicalStats> GetUrlGeographyAsync(long id, DateTime? s, DateTime? e, CancellationToken ct)
     {
         var (start, end) = ClampRange(s, e);
-        return service.GetOrSetUrlMetricAsync("geography", id, start, end,
-            _ => clickDapperQueries.GetUrlGeographyAsync(id, start, end, ct), DefaultCacheTtl, ct);
+        return clickDapperQueries.GetUrlGeographyAsync(id, start, end, ct);
     }
 
     public Task<DeviceStats> GetUrlDevicesAsync(long id, DateTime? s, DateTime? e, CancellationToken ct)
     {
         var (start, end) = ClampRange(s, e);
-        return service.GetOrSetUrlMetricAsync("devices", id, start, end,
-            _ => clickDapperQueries.GetUrlDeviceStatsAsync(id, start, end, ct), DefaultCacheTtl, ct);
+        return clickDapperQueries.GetUrlDeviceStatsAsync(id, start, end, ct);
     }
 
     public Task<TrafficStats> GetUrlTrafficAsync(long id, DateTime? s, DateTime? e, CancellationToken ct)
     {
         var (start, end) = ClampRange(s, e);
-        return service.GetOrSetUrlMetricAsync("traffic", id, start, end,
-            _ => clickDapperQueries.GetUrlTrafficStatsAsync(id, start, end, ct), DefaultCacheTtl, ct);
+        return clickDapperQueries.GetUrlTrafficStatsAsync(id, start, end, ct);
     }
 
     public Task<TimeSeriesStats> GetUrlTimeSeriesAsync(long id, DateTime? s, DateTime? e, CancellationToken ct)
     {
         var (start, end) = ClampRange(s, e);
-        return service.GetOrSetUrlMetricAsync("timeseries", id, start, end,
-            _ => clickDapperQueries.GetUrlTimeSeriesAsync(id, start, end, ct), DefaultCacheTtl, ct);
+        return clickDapperQueries.GetUrlTimeSeriesAsync(id, start, end, ct);
     }
 
     #endregion
@@ -70,82 +59,60 @@ public class UrlStatisticsService(
 
     #region Per-user endpoints
 
-    /// <inheritdoc />
-    public async Task<UserOverview> GetUserOverviewAsync(
+    public Task<UserOverview> GetUserOverviewAsync(
         Guid userId, DateTime? startDate = null, DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         var (start, end) = ClampRange(startDate, endDate);
-        return await service.GetOrSetUserMetricAsync<UserOverview>(
-            "overview", userId, start, end,
-            _ => clickDapperQueries.GetUserOverviewAsync(userId, start, end, cancellationToken),
-            DefaultCacheTtl, cancellationToken);
+        return clickDapperQueries.GetUserOverviewAsync(userId, start, end, cancellationToken);
     }
 
-    public async Task<EngagementMetrics> GetUserEngagementAsync(
+    public Task<EngagementMetrics> GetUserEngagementAsync(
         Guid userId, DateTime? startDate = null, DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         var (start, end) = ClampRange(startDate, endDate);
-        return await service.GetOrSetUserMetricAsync<EngagementMetrics>(
-            "engagement", userId, start, end,
-            _ => clickDapperQueries.GetUserEngagementAsync(userId, start, end, cancellationToken),
-            DefaultCacheTtl, cancellationToken);
+        return clickDapperQueries.GetUserEngagementAsync(userId, start, end, cancellationToken);
     }
 
-    public async Task<UserTopUrls> GetUserTopUrlsAsync(
+    public Task<UserTopUrls> GetUserTopUrlsAsync(
         Guid userId, DateTime? startDate = null, DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         var (start, end) = ClampRange(startDate, endDate);
-        return await service.GetOrSetUserMetricAsync<UserTopUrls>(
-            "topurls", userId, start, end,
-            _ => clickDapperQueries.GetUserTopUrlsAsync(userId, start, end, cancellationToken),
-            DefaultCacheTtl, cancellationToken);
+        return clickDapperQueries.GetUserTopUrlsAsync(userId, start, end, cancellationToken);
     }
     
-    public async Task<TimeSeriesStats> GetUserTimeSeriesAsync(
+    public Task<TimeSeriesStats> GetUserTimeSeriesAsync(
         Guid userId, DateTime? startDate = null, DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         var (start, end) = ClampRange(startDate, endDate);
-        return await service.GetOrSetUserMetricAsync<TimeSeriesStats>(
-            "timeseries", userId, start, end,
-            _ => clickDapperQueries.GetUserTimeSeriesAsync(userId, start, end, cancellationToken),
-            DefaultCacheTtl, cancellationToken);
+        return clickDapperQueries.GetUserTimeSeriesAsync(userId, start, end, cancellationToken);
     }
 
-    public async Task<GeographicalStats> GetUserGeographyAsync(
+    public Task<GeographicalStats> GetUserGeographyAsync(
         Guid userId, DateTime? startDate = null, DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         var (start, end) = ClampRange(startDate, endDate);
-        return await service.GetOrSetUserMetricAsync<GeographicalStats>(
-            "geography", userId, start, end,
-            _ => clickDapperQueries.GetUserGeographyAsync(userId, start, end, cancellationToken),
-            DefaultCacheTtl, cancellationToken);
+        return clickDapperQueries.GetUserGeographyAsync(userId, start, end, cancellationToken);
     }
 
-    public async Task<TrafficStats> GetUserTrafficAsync(
+    public Task<TrafficStats> GetUserTrafficAsync(
         Guid userId, DateTime? startDate = null, DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         var (start, end) = ClampRange(startDate, endDate);
-        return await service.GetOrSetUserMetricAsync<TrafficStats>(
-            "traffic", userId, start, end,
-            _ => clickDapperQueries.GetUserTrafficAsync(userId, start, end, cancellationToken),
-            DefaultCacheTtl, cancellationToken);
+        return clickDapperQueries.GetUserTrafficAsync(userId, start, end, cancellationToken);
     }
 
-    public async Task<DeviceStats> GetUserDevicesAsync(
+    public Task<DeviceStats> GetUserDevicesAsync(
         Guid userId, DateTime? startDate = null, DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         var (start, end) = ClampRange(startDate, endDate);
-        return await service.GetOrSetUserMetricAsync<DeviceStats>(
-            "devices", userId, start, end,
-            _ => clickDapperQueries.GetUserDevicesAsync(userId, start, end, cancellationToken),
-            DefaultCacheTtl, cancellationToken);
+        return clickDapperQueries.GetUserDevicesAsync(userId, start, end, cancellationToken);
     }
 
     #endregion

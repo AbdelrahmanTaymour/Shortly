@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Shortly.Core.Auth.Contracts;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.ClickTracking.DTOs;
 using Shortly.Core.ClickTracking.Services;
 using Shortly.Core.Exceptions.ClientErrors;
@@ -25,7 +25,7 @@ public class ShortUrlRedirectService(
     IShortUrlRedirectRepository redirectRepository,
     IShortUrlRedirectQueries redirectQueries,
     ClickTrackingQueueService clickTrackingQueueService,
-    IAuthenticationContextProvider authenticationContext,
+    IUserContext authenticationContext,
     ILogger<ShortUrlRedirectService> logger) : IShortUrlRedirectService
 {
     /// <inheritdoc />
@@ -60,10 +60,10 @@ public class ShortUrlRedirectService(
     public ClickTrackingData ExtractTrackingDataAsync(HttpContext context, CancellationToken cancellationToken = default)
     {
         // IP Address (use X-Forwarded-For if behind proxy)
-        var ipAddress = authenticationContext.GetClientIpAddress(context);
+        var ipAddress = authenticationContext.IpAddress;
 
         // Session ID (Anonymous Id)
-        var sessionId = authenticationContext.GetAnonymousId(context);
+        var sessionId = authenticationContext.AnonymousSessionId;
 
         // User Agent
         var userAgent = context.Request.Headers["User-Agent"].FirstOrDefault() ?? "Unknown";

@@ -1,7 +1,7 @@
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Profile.DTOs;
-using Shortly.Core.Users.DTOs.Usage;
+using Shortly.Core.Users_legacy.DTOs.Usage;
 
 namespace Shortly.Core.Profile.Contracts;
 

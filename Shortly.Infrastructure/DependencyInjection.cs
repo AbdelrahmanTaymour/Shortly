@@ -1,16 +1,26 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Quartz;
-using Shortly.Core.Abstractions;
-using Shortly.Core.Analytics.CacheContracts;
+using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.Clock;
+using Shortly.Core.Abstractions.Data;
+using Shortly.Core.Abstractions.Email;
 using Shortly.Core.Analytics.Contracts;
 using Shortly.Core.ClickTracking.Contracts;
-using Shortly.Core.Email.Contracts;
-using Shortly.Core.Email.DTOs;
-using Shortly.Core.Organizations.Contracts;
+using Shortly.Core.Exceptions.ServerErrors;
+using Shortly.Core.Organizations_legacy.Contracts;
 using Shortly.Core.ShortUrls.Contracts;
-using Shortly.Core.Users.Contracts;
+using Shortly.Core.Users_legacy.Contracts;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.RepositoryContract.Analytics;
 using Shortly.Domain.RepositoryContract.ClickTracking;
 using Shortly.Domain.RepositoryContract.Invitations;
@@ -23,15 +33,17 @@ using Shortly.Domain.RepositoryContract.Teams;
 using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Domain.RepositoryContract.UserAuditLog;
 using Shortly.Domain.RepositoryContract.Users;
+using Shortly.Infrastructure.Authentication;
+using Shortly.Infrastructure.Authorization;
 using Shortly.Infrastructure.BackgroundServices;
-using Shortly.Infrastructure.Caching.Analytics;
-using Shortly.Infrastructure.DbContexts;
-using Shortly.Infrastructure.Persistence;
+using Shortly.Infrastructure.Clock;
+using Shortly.Infrastructure.Data;
+using Shortly.Infrastructure.Email;
 using Shortly.Infrastructure.Repositories.Analytics;
 using Shortly.Infrastructure.Repositories.Tokens;
 using Shortly.Infrastructure.Repositories.ClickTracking;
 using Shortly.Infrastructure.Repositories.Invetations;
-using Shortly.Infrastructure.Repositories.Memebrs;
+using Shortly.Infrastructure.Repositories.Members;
 using Shortly.Infrastructure.Repositories.Organizations;
 using Shortly.Infrastructure.Repositories.Profile;
 using Shortly.Infrastructure.Repositories.Security;
@@ -40,44 +52,50 @@ using Shortly.Infrastructure.Repositories.Teams;
 using Shortly.Infrastructure.Repositories.UserAuditLog;
 using Shortly.Infrastructure.Repositories.Users;
 using Shortly.Infrastructure.ScheduledJobs;
-using Shortly.Infrastructure.Services.Email;
 using Shortly.Infrastructure.Services.GeoLocation;
+using AuthenticationService = Shortly.Infrastructure.Authentication.AuthenticationService;
+using IAuthenticationService = Shortly.Core.Abstractions.Authentication.IAuthenticationService;
 
 namespace Shortly.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        // DbContextFactory
-        services.AddDbContextFactory<SqlServerDbContext>(options =>
-            options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
-                sqlOptions => sqlOptions
-                    .EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorNumbersToAdd: null)
-                    .CommandTimeout(30)
-            ));
- 
-        services.AddScoped(sp =>
-            sp.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext());
- 
-        // Email
-        services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
-        services.AddScoped<IEmailProvider, SmtpEmailProvider>();
- 
-        // Quartz scheduled jobs
-        services.AddQuartz(q =>
-        {
-            q.UseMicrosoftDependencyInjectionJobFactory();
-            q.ScheduleJob<MonthlyUsageResetJob>(trigger => trigger
-                .WithIdentity("MonthlyUsageResetTrigger")
-                .StartNow()
-                .WithCronSchedule("0 0 1 * * ?"));
-        });
-        services.AddQuartzHostedService(options => { options.WaitForJobsToComplete = true; });
-        services.AddScoped<MonthlyUsageResetJob>();
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         
+        AddPersistence(services, configuration);
+        AddRepositories(services);
+        AddAuthentication(services, configuration);
+        AddAuthorization(services);
+        AddEmail(services, configuration);
+        AddBackgroundJobs(services);
+        AddAnalytics(services);
+        AddGeoLocation(services);
+
+        return services;
+    }
+    
+    private static void AddPersistence(this IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString =
+            configuration.GetConnectionString("Database") ??
+            throw new InvalidOperationException("Connection string 'Database' was not found.");
+        
+        services.AddDbContextFactory<ApplicationDbContext>(options =>
+        {
+            options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
+        });
+ 
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        services.AddSingleton<ISqlConnectionFactory>(_ => new SqlConnectionFactory(connectionString));
+    }
+
+    private static void AddRepositories(IServiceCollection services)
+    {
         // User Management
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
@@ -89,7 +107,6 @@ public static class DependencyInjection
         // Tokens
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUserActionTokenRepository, UserActionTokenRepository>();
-        services.AddScoped<IEmailChangeTokenRepository, EmailChangeTokenRepository>();
  
         // URL Management
         services.AddScoped<IShortUrlRepository, ShortUrlRepository>();
@@ -98,16 +115,8 @@ public static class DependencyInjection
         services.AddScoped<IShortUrlRedirectRepository, ShortUrlRedirectRepository>();
         services.AddScoped<IShortUrlRedirectQueries, ShortUrlRedirectRepository>();
         
-        // ── Analytics ──
-        services.AddAnalyticsServices();
- 
         // Click Tracking
         services.AddScoped<IClickEventRepository, ClickEventRepository>();
-        services.AddHttpClient<IGeoLocationService, GeoLocationService>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(10);
-            client.DefaultRequestHeaders.Add("User-Agent", "Short.ly/1.0");
-        });
  
         // Organization Management
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
@@ -117,43 +126,116 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationTeamRepository, OrganizationTeamRepository>();
         services.AddScoped<IOrganizationTeamMemberRepository, OrganizationTeamMemberRepository>();
         services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
- 
-        // Caching infrastructure
-        services.AddMemoryCache(options =>
-        {
-            options.SizeLimit               = 10_000;
-            options.CompactionPercentage    = 0.20;
-            options.ExpirationScanFrequency = TimeSpan.FromMinutes(5);
-        });
- 
-        var rawRedis = configuration.GetConnectionString("REDIS_CONNECTION_STRING") ?? "shortly-cache:6379";
-        services.AddStackExchangeRedisCache(options =>
-        {
-            options.Configuration = rawRedis;
-            options.InstanceName  = "Shortly:"; 
-        });
- 
-        services.AddHostedService<EmailBackgroundWorker>();
-        services.AddHostedService<ClickTrackingBackgroundWorker>();
     }
     
-    private static void AddAnalyticsServices(this IServiceCollection services)
+    private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)
     {
-        // 1. Hybrid L1/L2 Cache Service
-        services.AddSingleton<ICachedStatisticsService, CachedStatisticsService>();
- 
-        // 2. High-Performance Dapper Query
+        services.AddHttpContextAccessor();
+        
+        services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<IUserContext, UserContext>();
+        services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<ICookieService, CookieService>();
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
+
+        services
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            })
+            .AddCookie(options =>
+            {
+                options.Cookie.Name = "Shortly.OAuth";
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.SameSite = SameSiteMode.None;
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+            })
+            .AddJwtBearer(options =>
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = configuration["Jwt:Issuer"],
+                    ValidAudience = configuration["Jwt:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(
+                            configuration["Jwt:Key"]
+                            ?? throw new ConfigurationException("JWT signing key is missing in configuration."))),
+                    ClockSkew = TimeSpan.Zero
+                })
+            .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+            {
+                options.ClientId = configuration["Authentication:Google:ClientId"]
+                                   ?? throw new ConfigurationException("Google ClientId is missing in configuration.");
+                options.ClientSecret = configuration["Authentication:Google:ClientSecret"]
+                                       ?? throw new ConfigurationException(
+                                           "Google ClientSecret is missing in configuration.");
+
+                options.Scope.Add("profile");
+                options.Scope.Add("email");
+
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.SaveTokens = true;
+                options.ClaimActions.MapJsonKey("picture", "picture");
+            });
+    }
+
+    private static void AddAuthorization(IServiceCollection services)
+    {
+        services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
+    }
+    
+    private static void AddEmail(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
+
+        services.AddSingleton<EmailQueueService>();
+    
+        services.AddSingleton<IEmailSender, SmtpEmailSender>();
+
+        services.AddScoped<IEmailTemplates, EmailTemplates>();
+        services.AddScoped<IEmailNotifier, EmailNotifier>();
+
+        services.AddHostedService<EmailBackgroundWorker>();
+    }
+
+    private static void AddBackgroundJobs(IServiceCollection services)
+    {
+        services.AddQuartz(q =>
+        {
+            q.UseMicrosoftDependencyInjectionJobFactory();
+            q.ScheduleJob<MonthlyUsageResetJob>(trigger => trigger
+                .WithIdentity("MonthlyUsageResetTrigger")
+                .StartNow()
+                .WithCronSchedule("0 0 1 * * ?"));
+        });
+        services.AddQuartzHostedService(options => { options.WaitForJobsToComplete = true; });
+        services.AddScoped<MonthlyUsageResetJob>();
+
+        services.AddHostedService<ClickTrackingBackgroundWorker>();
+    }
+
+    private static void AddAnalytics(IServiceCollection services)
+    {
         services.AddScoped<IClickStatisticsDapperQueries, ClickStatisticsDapperQueries>();
 
-        // 3. Base Analytics Implementation
-        // We register the concrete type first so both interfaces can resolve to the SAME instance per request.
         services.AddScoped<ShortUrlAnalyticsRepository>();
         services.AddScoped<IShortUrlAnalyticsRepository>(sp => sp.GetRequiredService<ShortUrlAnalyticsRepository>());
         services.AddScoped<IShortUrlAnalyticsDapperQueries>(sp => sp.GetRequiredService<ShortUrlAnalyticsRepository>());
- 
-        // 4. Decorators (Using Scrutor)
-        // Decorate the Query side and Query side independently to respect ISP.
-        services.Decorate<IShortUrlAnalyticsRepository, CachedShortUrlAnalyticsRepository>();
-        services.Decorate<IShortUrlAnalyticsDapperQueries, CachedShortUrlAnalyticsDapperQueries>();
+    }
+
+    private static void AddGeoLocation(IServiceCollection services)
+    {
+        services.AddHttpClient<IGeoLocationService, GeoLocationService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+            client.DefaultRequestHeaders.Add("User-Agent", "Short.ly/1.0");
+        });
     }
 }

@@ -1,7 +1,8 @@
 using Shortly.Core.Common;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
-using Shortly.Core.Users.DTOs.User;
+using Shortly.Core.Users_legacy.DTOs.User;
+using Shortly.Domain.Abstractions;
 
 namespace Shortly.Core.Admin.Contracts;
 
@@ -87,7 +88,7 @@ public interface IUserAdministrationService
     /// The actual bulk update operation sets IsActive to true and UpdatedAt to the current UTC time.
     /// Users that are already active or don't exist will be skipped and counted in the result.
     /// </remarks>
-    Task<BulkOperationResult> BulkActivateUsersAsync(ICollection<Guid> userIds,
+    Task<BulkOperationResponse> BulkActivateUsersAsync(ICollection<Guid> userIds,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -111,7 +112,7 @@ public interface IUserAdministrationService
     /// The actual bulk update operation sets IsActive to false and UpdatedAt to the current UTC time.
     /// Users that are already inactive or don't exist will be skipped and counted in the result.
     /// </remarks>
-    Task<BulkOperationResult> BulkDeactivateUsersAsync(ICollection<Guid> userIds,
+    Task<BulkOperationResponse> BulkDeactivateUsersAsync(ICollection<Guid> userIds,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -145,6 +146,6 @@ public interface IUserAdministrationService
     /// Users that are already deleted or don't exist will be skipped and counted in the result.
     /// This operation generates warning-level log entries due to the nature of user deletion.
     /// </remarks>
-    Task<BulkOperationResult> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy,
+    Task<BulkOperationResponse> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy,
         CancellationToken cancellationToken = default);
 }

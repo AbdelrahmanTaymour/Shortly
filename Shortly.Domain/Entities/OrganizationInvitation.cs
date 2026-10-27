@@ -1,4 +1,5 @@
 using Shortly.Domain.Enums;
+using Shortly.Domain.Members;
 
 namespace Shortly.Domain.Entities;
 
@@ -7,7 +8,7 @@ public class OrganizationInvitation
     public Guid Id { get; set; }
     public Guid OrganizationId { get; set; }
     public required string InvitedUserEmail { get; set; }
-    public enUserRole InvitedUserRoleId { get; set; } = enUserRole.Member;
+    public MemberRole InvitedUserRoleId { get; set; } = MemberRole.Member;
     public enPermissions InvitedUserPermissions { get; set; } = enPermissions.None;
     public Guid InvitedBy { get; set; }
     public enInvitationStatus Status { get; set; }
@@ -15,11 +16,15 @@ public class OrganizationInvitation
     public DateTime? ExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Computed Property:
-    public bool IsExpired { get; set; } //HasComputedColumnSql("CASE WHEN [ExpiresAt] < GETUTCDATE() THEN 1 ELSE 0 END");
+    // Computed Property (calculated dynamically in memory)
+    public bool IsExpired => 
+        (ExpiresAt.HasValue && ExpiresAt.Value < DateTime.UtcNow) || 
+        Status == enInvitationStatus.Failure || 
+        Status == enInvitationStatus.Registered || 
+        Status == enInvitationStatus.Rejected;
 
     // Navigation properties
     public Organization? Organization { get; set; }
     public OrganizationMember? InvitedByMember { get; set; }
-    public Role? InvitedUserRole { get; set; }
+    public MemberRole? InvitedUserRole { get; set; }
 }

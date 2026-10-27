@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
-using Shortly.Core.Auth.Contracts;
-using Shortly.Core.Common;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Extensions;
 using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Core.ShortUrls.DTOs;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Core.ShortUrls.Services;
@@ -20,7 +20,7 @@ public class UrlBulkOperationsService(IUrlBulkOperationsCommand bulkOperationsCo
     /// <inheritdoc />
     public async Task<BulkCreateShortUrlResult> BulkCreateAsync(
     IReadOnlyCollection<CreateShortUrlRequest> shortUrlRequests, 
-    IAuthenticationContext authContext, 
+    IUserContext authContext, 
     CancellationToken cancellationToken = default)
     {
         if (shortUrlRequests == null || shortUrlRequests.Count == 0)
@@ -67,10 +67,10 @@ public class UrlBulkOperationsService(IUrlBulkOperationsCommand bulkOperationsCo
             // Insert URLs into database
             var createResult = shortUrlsToInsert.Count > 0 
                 ? await bulkOperationsCommand.BulkCreateAsync(shortUrlsToInsert, cancellationToken)
-                : new BulkOperationResult(0, 0, 0);
+                : new BulkOperationResponse(0, 0, 0);
             
             // Generate and update short codes for URLs that need them
-            var shortCodeUpdateResult = new BulkOperationResult(0, 0, 0);
+            var shortCodeUpdateResult = new BulkOperationResponse(0, 0, 0);
             if (createResult.SuccessCount > 0)
             {
                 var urlsNeedingCodes = AssignShortCodes(shortUrlsToInsert);
@@ -105,7 +105,7 @@ public class UrlBulkOperationsService(IUrlBulkOperationsCommand bulkOperationsCo
     
     
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkUpdateExpirationAsync(IReadOnlyCollection<long> ids, DateTime? newExpirationDate,
+    public async Task<BulkOperationResponse> BulkUpdateExpirationAsync(IReadOnlyCollection<long> ids, DateTime? newExpirationDate,
         CancellationToken cancellationToken = default)
     {
         if (ids == null || ids.Count == 0)
@@ -116,7 +116,7 @@ public class UrlBulkOperationsService(IUrlBulkOperationsCommand bulkOperationsCo
 
     
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkDeleteAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default)
+    public async Task<BulkOperationResponse> BulkDeleteAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default)
     {
         if (ids == null || ids.Count == 0)
             throw new ArgumentException("IDs collection cannot be null or empty", nameof(ids));
@@ -126,14 +126,14 @@ public class UrlBulkOperationsService(IUrlBulkOperationsCommand bulkOperationsCo
 
     
     /// <inheritdoc />
-    public async Task<BulkOperationResult> DeleteExpiredAsync(DateTime nowUtc, CancellationToken cancellationToken = default)
+    public async Task<BulkOperationResponse> DeleteExpiredAsync(DateTime nowUtc, CancellationToken cancellationToken = default)
     {
         return await bulkOperationsCommand.DeleteExpiredAsync(nowUtc, cancellationToken);
     }
 
     
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkActivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default)
+    public async Task<BulkOperationResponse> BulkActivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default)
     {
         if (ids == null || ids.Count == 0)
             throw new ArgumentException("IDs collection cannot be null or empty", nameof(ids));
@@ -143,7 +143,7 @@ public class UrlBulkOperationsService(IUrlBulkOperationsCommand bulkOperationsCo
 
     
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkDeactivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default)
+    public async Task<BulkOperationResponse> BulkDeactivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default)
     {
         if (ids == null || ids.Count == 0)
             throw new ArgumentException("IDs collection cannot be null or empty", nameof(ids));
@@ -165,7 +165,7 @@ public class UrlBulkOperationsService(IUrlBulkOperationsCommand bulkOperationsCo
     /// Automatically hashes the password if the URL is password-protected.
     /// The ShortCode will be set to the custom code if provided, otherwise null for later generation.
     /// </remarks>
-    private ShortUrl BuildShortUrlEntity(CreateShortUrlRequest request,  IAuthenticationContext authContext)
+    private ShortUrl BuildShortUrlEntity(CreateShortUrlRequest request,  IUserContext authContext)
     {
         var shortUrl = new ShortUrl
         {

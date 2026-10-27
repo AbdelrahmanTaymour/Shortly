@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.Profile;
-using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.Profile;
 
@@ -12,7 +11,7 @@ namespace Shortly.Infrastructure.Repositories.Profile;
 /// <remarks>
 /// Uses Entity Framework Core with SQL Server for data access.
 /// </remarks>
-public class UserProfileRepository(SqlServerDbContext dbContext, ILogger<UserProfileRepository> logger)
+public class UserProfileRepository(ApplicationDbContext dbContext, ILogger<UserProfileRepository> logger)
     : IUserProfileRepository
 {
     /// <inheritdoc/>
@@ -20,7 +19,7 @@ public class UserProfileRepository(SqlServerDbContext dbContext, ILogger<UserPro
     {
         try
         {
-            return await dbContext.UserProfiles
+            return await dbContext.Set<UserProfile>()
                 .FindAsync([userId], cancellationToken);
         }
         catch (Exception ex)

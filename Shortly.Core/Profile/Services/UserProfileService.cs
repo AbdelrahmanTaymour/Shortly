@@ -1,12 +1,13 @@
 using Microsoft.Extensions.Logging;
 using Shortly.Core.Abstractions;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Profile.Contracts;
 using Shortly.Core.Profile.DTOs;
-using Shortly.Core.Tokens.Contracts;
-using Shortly.Core.Users.Contracts;
-using Shortly.Core.Users.DTOs.Usage;
-using Shortly.Core.Users.Mappers;
+using Shortly.Core.Users_legacy.Contracts;
+using Shortly.Core.Users_legacy.DTOs.Usage;
+using Shortly.Core.Users_legacy.Mappers;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Configuration;
 using Shortly.Domain.RepositoryContract.Profile;
 using Shortly.Domain.RepositoryContract.Users;
@@ -23,7 +24,7 @@ public class UserProfileService(
     IUserProfileRepository profileRepository,
     IUserRepository userRepository,
     IUserQueries userQueries,
-    ITokenService tokenService,
+    IJwtService tokenService,
     IUnitOfWork unitOfWork,
     ILogger<UserProfileService> logger) : IUserProfileService
 {
@@ -61,7 +62,7 @@ public class UserProfileService(
     /// <inheritdoc />
     public async Task<bool> RequestAccountDeletionAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        await tokenService.RevokeAllUserTokensAsync(userId, cancellationToken);
+        await tokenService.RevokeAllForUserAsync(userId, cancellationToken);
         return await userRepository.DeleteAsync(userId, userId, cancellationToken);
     }
 

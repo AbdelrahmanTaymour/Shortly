@@ -3,12 +3,12 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Core.ShortUrls.DTOs;
+using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.ShortUrls;
-using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.ShortUrls;
 
-public class ShortUrlRedirectRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRedirectRepository> logger)
+public class ShortUrlRedirectRepository(ApplicationDbContext dbContext, ILogger<ShortUrlRedirectRepository> logger)
     : IShortUrlRedirectRepository, IShortUrlRedirectQueries
 {
     /// <inheritdoc />
@@ -21,7 +21,7 @@ public class ShortUrlRedirectRepository(SqlServerDbContext dbContext, ILogger<Sh
         try
         {
             var now = DateTime.UtcNow;
-            return await dbContext.ShortUrls
+            return await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .Where(s => s.ShortCode == shortCode && s.IsActive && (s.ExpiresAt == null || s.ExpiresAt > now))
                 .Select(s => new ShortUrlRedirectInfoDto
@@ -56,7 +56,7 @@ public class ShortUrlRedirectRepository(SqlServerDbContext dbContext, ILogger<Sh
         try
         {
             var now = DateTime.UtcNow;
-            var affected = await dbContext.ShortUrls
+            var affected = await dbContext.Set<ShortUrl>()
                 .Where(s => s.ShortCode == shortCode && s.IsActive && (s.ExpiresAt == null || s.ExpiresAt > now))
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(s => s.TotalClicks, s => s.TotalClicks + 1)
@@ -83,7 +83,7 @@ public class ShortUrlRedirectRepository(SqlServerDbContext dbContext, ILogger<Sh
         try
         {
             var now = DateTime.UtcNow;
-            return await dbContext.ShortUrls
+            return await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .AnyAsync(s => s.ShortCode == shortCode &&
                                (s.ExpiresAt == null || s.ExpiresAt > now),
@@ -102,7 +102,7 @@ public class ShortUrlRedirectRepository(SqlServerDbContext dbContext, ILogger<Sh
     {
         try
         {
-            var url = await dbContext.ShortUrls
+            var url = await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .Where(s => s.Id == shortUrlId)
                 .Select(s => new { s.ClickLimit, s.TotalClicks })
@@ -123,7 +123,7 @@ public class ShortUrlRedirectRepository(SqlServerDbContext dbContext, ILogger<Sh
     {
         try
         {
-            return await dbContext.ShortUrls
+            return await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .AnyAsync(s => s.Id == shortUrlId && s.IsPasswordProtected, cancellationToken)
                 .ConfigureAwait(false);
@@ -142,7 +142,7 @@ public class ShortUrlRedirectRepository(SqlServerDbContext dbContext, ILogger<Sh
     {
         try
         {
-            return await dbContext.ShortUrls
+            return await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .AnyAsync(s => s.Id == shortUrlId && s.PasswordHash == passwordHash, cancellationToken)
                 .ConfigureAwait(false);
@@ -160,7 +160,7 @@ public class ShortUrlRedirectRepository(SqlServerDbContext dbContext, ILogger<Sh
     {
         try
         {
-            return await dbContext.ShortUrls
+            return await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .Where(s => s.ShortCode == shortCode && s.PasswordHash == passwordHash)
                 .Select(s => s.OriginalUrl)
@@ -182,7 +182,7 @@ public class ShortUrlRedirectRepository(SqlServerDbContext dbContext, ILogger<Sh
     {
         try
         {
-            return await dbContext.ShortUrls
+            return await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .AnyAsync(s => s.Id == shortUrlId &&
                                (s.ExpiresAt == null || s.ExpiresAt > nowUtc)
@@ -203,7 +203,7 @@ public class ShortUrlRedirectRepository(SqlServerDbContext dbContext, ILogger<Sh
         try
         {
             var now = DateTime.UtcNow;
-            return await dbContext.ShortUrls
+            return await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .AnyAsync(s => s.Id == shortUrlId && s.IsActive &&
                                (s.ExpiresAt == null || s.ExpiresAt > now)

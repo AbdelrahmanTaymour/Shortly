@@ -4,7 +4,6 @@ using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 using Shortly.Domain.RepositoryContract.Invitations;
-using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.Invetations;
 
@@ -16,7 +15,7 @@ namespace Shortly.Infrastructure.Repositories.Invetations;
 /// <param name="dbContext">The Entity Framework database context for SQL Server operations.</param>
 /// <param name="logger">The logger instance for recording operation details and errors.</param>
 public class OrganizationInvitationRepository(
-    SqlServerDbContext dbContext,
+    ApplicationDbContext dbContext,
     ILogger<OrganizationInvitationRepository> logger) : IOrganizationInvitationRepository
 {
     /// <inheritdoc />
@@ -24,7 +23,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
         }
@@ -40,7 +39,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
         }
@@ -56,7 +55,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .Include(i => i.InvitedByMember)
                 .Where(i => i.OrganizationId == organizationId)
@@ -77,7 +76,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(i => i.InvitedUserEmail == email && i.OrganizationId == organizationId,
                     cancellationToken);
@@ -95,7 +94,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .Where(i => i.OrganizationId == organizationId && i.Status == enInvitationStatus.Pending)
                 .ToListAsync(cancellationToken);
@@ -112,7 +111,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .Where(i => (i.Status == enInvitationStatus.Pending ||
                              i.Status == enInvitationStatus.EmailSent) &&
@@ -131,7 +130,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            await dbContext.OrganizationInvitations.AddAsync(entity, cancellationToken);
+            await dbContext.Set<OrganizationInvitation>().AddAsync(entity, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
             return entity;
         }
@@ -148,7 +147,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            dbContext.OrganizationInvitations.Update(entity);
+            dbContext.Set<OrganizationInvitation>().Update(entity);
             return await dbContext.SaveChangesAsync(cancellationToken) > 0;
         }
         catch (Exception ex)
@@ -163,7 +162,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .Where(i => i.Id == id)
                 .ExecuteDeleteAsync(cancellationToken) > 0;
@@ -180,7 +179,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .AnyAsync(i => i.Id == id, cancellationToken);
         }
@@ -196,7 +195,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .AnyAsync(
                     i => i.InvitedUserEmail == email &&
@@ -218,7 +217,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .Where(i => i.Id == invitationId)
                 .ExecuteUpdateAsync(setters => setters
@@ -237,7 +236,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .Where(i => i.Id == invitationId)
                 .ExecuteUpdateAsync(setters => setters
@@ -257,7 +256,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .Where(i => i.Id == invitationId)
                 .ExecuteUpdateAsync(setters => setters
@@ -276,7 +275,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .Where(i => i.Id == invitationId)
                 .ExecuteUpdateAsync(setters => setters
@@ -295,7 +294,7 @@ public class OrganizationInvitationRepository(
     {
         try
         {
-            return await dbContext.OrganizationInvitations
+            return await dbContext.Set<OrganizationInvitation>()
                 .AsNoTracking()
                 .Where(i => i.IsExpired)
                 .ExecuteDeleteAsync() > 0;

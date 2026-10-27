@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.ClickTracking;
-using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.ClickTracking;
 
@@ -14,8 +13,8 @@ namespace Shortly.Infrastructure.Repositories.ClickTracking;
 /// access violations when called via Task.WhenAll.
 /// </summary>
 public class ClickEventRepository(
-    IDbContextFactory<SqlServerDbContext> dbContextFactory,
-    SqlServerDbContext dbContext,
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    ApplicationDbContext dbContext,
     ILogger<ClickEventRepository> logger)
     : IClickEventRepository
 {
@@ -26,7 +25,7 @@ public class ClickEventRepository(
     {
         try
         {
-            await dbContext.ClickEvents.AddAsync(clickEvent).ConfigureAwait(false);
+            await dbContext.Set<ClickEvent>().AddAsync(clickEvent).ConfigureAwait(false);
             await dbContext.SaveChangesAsync().ConfigureAwait(false);
             return clickEvent;
         }
@@ -42,7 +41,7 @@ public class ClickEventRepository(
     {
         try
         {
-            var query = includeTracking ? dbContext.ClickEvents : dbContext.ClickEvents.AsNoTracking();
+            var query = includeTracking ? dbContext.Set<ClickEvent>() : dbContext.Set<ClickEvent>().AsNoTracking();
             return await query
                 .FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
                 .ConfigureAwait(false);
@@ -60,7 +59,7 @@ public class ClickEventRepository(
     {
         try
         {
-            return await dbContext.ClickEvents
+            return await dbContext.Set<ClickEvent>()
                 .AsNoTracking()
                 .Where(c => c.ShortUrlId == shortUrlId)
                 .OrderByDescending(c => c.ClickedAt)
@@ -82,7 +81,7 @@ public class ClickEventRepository(
     {
         try
         {
-            var query = dbContext.ClickEvents
+            var query = dbContext.Set<ClickEvent>()
                 .Where(c => c.ClickedAt >= startDate && c.ClickedAt <= endDate);
 
             if (shortUrlId.HasValue)
@@ -108,7 +107,7 @@ public class ClickEventRepository(
     {
         try
         {
-            return await dbContext.ClickEvents
+            return await dbContext.Set<ClickEvent>()
                 .AsNoTracking()
                 .Where(c => c.ShortUrlId == shortUrlId)
                 .OrderByDescending(c => c.ClickedAt)
@@ -127,7 +126,7 @@ public class ClickEventRepository(
     {
         try
         {
-            return await dbContext.ClickEvents
+            return await dbContext.Set<ClickEvent>()
                 .AsNoTracking()
                 .AnyAsync(c => c.Id == id, cancellationToken);
         }
@@ -143,7 +142,7 @@ public class ClickEventRepository(
     {
         try
         {
-            return await dbContext.ClickEvents
+            return await dbContext.Set<ClickEvent>()
                 .Where(c => c.ClickedAt < olderThan)
                 .ExecuteDeleteAsync(cancellationToken);
         }
@@ -164,7 +163,7 @@ public class ClickEventRepository(
         try
         {
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            return await ctx.ClickEvents
+            return await ctx.Set<ClickEvent>()
                 .AsNoTracking()
                 .Where(c => c.ShortUrlId == shortUrlId)
                 .CountAsync(cancellationToken);
@@ -183,7 +182,7 @@ public class ClickEventRepository(
         try
         {
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            return await ctx.ClickEvents
+            return await ctx.Set<ClickEvent>()
                 .AsNoTracking()
                 .Where(c => c.ShortUrlId == shortUrlId && c.ClickedAt >= startDate && c.ClickedAt <= endDate)
                 .CountAsync(cancellationToken);
@@ -202,7 +201,7 @@ public class ClickEventRepository(
         try
         {
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            return await ctx.ClickEvents
+            return await ctx.Set<ClickEvent>()
                 .AsNoTracking()
                 .Where(c => c.ShortUrlId == shortUrlId)
                 .MinAsync(c => (DateTime?)c.ClickedAt, cancellationToken);
@@ -220,7 +219,7 @@ public class ClickEventRepository(
         try
         {
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            return await ctx.ClickEvents
+            return await ctx.Set<ClickEvent>()
                 .AsNoTracking()
                 .Where(c => c.ShortUrlId == shortUrlId)
                 .MaxAsync(c => (DateTime?)c.ClickedAt, cancellationToken);
@@ -239,7 +238,7 @@ public class ClickEventRepository(
         try
         {
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            var query = ctx.ClickEvents.Where(c => c.ShortUrlId == shortUrlId);
+            var query = ctx.Set<ClickEvent>().Where(c => c.ShortUrlId == shortUrlId);
 
             if (startDate.HasValue) query = query.Where(c => c.ClickedAt >= startDate.Value);
             if (endDate.HasValue) query = query.Where(c => c.ClickedAt <= endDate.Value);
@@ -247,7 +246,7 @@ public class ClickEventRepository(
             return await query
                 .AsNoTracking()
                 .GroupBy(c => c.Country)
-                .Select(g => new { Country = g.Key ?? "Unknown", Count = g.Count() })
+                .Select(g => new { Country = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.Country, x => x.Count, cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -265,7 +264,7 @@ public class ClickEventRepository(
         try
         {
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            var query = ctx.ClickEvents.Where(c => c.ShortUrlId == shortUrlId);
+            var query = ctx.Set<ClickEvent>().Where(c => c.ShortUrlId == shortUrlId);
 
             if (startDate.HasValue) query = query.Where(c => c.ClickedAt >= startDate.Value);
             if (endDate.HasValue) query = query.Where(c => c.ClickedAt <= endDate.Value);
@@ -290,7 +289,7 @@ public class ClickEventRepository(
         try
         {
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            var query = ctx.ClickEvents.Where(c => c.ShortUrlId == shortUrlId);
+            var query = ctx.Set<ClickEvent>().Where(c => c.ShortUrlId == shortUrlId);
 
             if (startDate.HasValue) query = query.Where(c => c.ClickedAt >= startDate.Value);
             if (endDate.HasValue) query = query.Where(c => c.ClickedAt <= endDate.Value);
@@ -315,7 +314,7 @@ public class ClickEventRepository(
         try
         {
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            return await ctx.ClickEvents
+            return await ctx.Set<ClickEvent>()
                 .AsNoTracking()
                 .Where(c => c.ShortUrlId == shortUrlId && c.ClickedAt >= startDate && c.ClickedAt <= endDate)
                 .GroupBy(c => c.ClickedAt.Date)

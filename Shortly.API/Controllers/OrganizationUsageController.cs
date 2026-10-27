@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
 using Shortly.Core.Exceptions.DTOs;
-using Shortly.Core.Organizations.Contracts;
-using Shortly.Core.Organizations.DTOs;
-using Shortly.Domain.Enums;
+using Shortly.Core.Organizations_legacy.Contracts;
+using Shortly.Core.Organizations_legacy.DTOs;
 
 namespace Shortly.API.Controllers;
 

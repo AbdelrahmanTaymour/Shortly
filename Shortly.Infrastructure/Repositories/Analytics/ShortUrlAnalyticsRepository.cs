@@ -6,7 +6,6 @@ using Shortly.Core.ShortUrls.DTOs;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.Analytics;
 using Shortly.Domain.RepositoryContract.ShortUrls;
-using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.Analytics;
 
@@ -21,7 +20,7 @@ namespace Shortly.Infrastructure.Repositories.Analytics;
 ///     on large tables.
 /// </summary>
 public class ShortUrlAnalyticsRepository(
-    SqlServerDbContext dbContext,
+    ApplicationDbContext dbContext,
     ILogger<ShortUrlAnalyticsRepository> logger,
     IShortUrlQueryRepository urlQueryRepository)
     : IShortUrlAnalyticsRepository, IShortUrlAnalyticsDapperQueries
@@ -31,7 +30,7 @@ public class ShortUrlAnalyticsRepository(
     {
         try
         {
-            var query = dbContext.ShortUrls.AsNoTracking();
+            var query = dbContext.Set<ShortUrl>().AsNoTracking();
             if (activeOnly)
                 query = query.Where(s => s.IsActive);
  
@@ -49,7 +48,7 @@ public class ShortUrlAnalyticsRepository(
     {
         try
         {
-            return await dbContext.ShortUrls
+            return await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .Where(s => s.Id == shortUrlId)
                 .Select(s => s.TotalClicks)
@@ -72,7 +71,7 @@ public class ShortUrlAnalyticsRepository(
  
         try
         {
-            var query = dbContext.ShortUrls.AsNoTracking().Where(s => s.IsActive);
+            var query = dbContext.Set<ShortUrl>().AsNoTracking().Where(s => s.IsActive);
  
             if (timeframe.HasValue)
             {

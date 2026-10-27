@@ -2,6 +2,8 @@ using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Members.DTOs;
 using Shortly.Domain.Enums;
+using Shortly.Domain.Members;
+using Shortly.Domain.Users;
 
 namespace Shortly.Core.Members.Contracts;
 
@@ -84,12 +86,12 @@ public interface IOrganizationMemberService
     /// </summary>
     /// <param name="organizationId">The unique identifier of the organization.</param>
     /// <param name="userId">The unique identifier of the user whose role is being updated.</param>
-    /// <param name="newRoleId">The new role to assign to the member.</param>
+    /// <param name="newRole">The new role to assign to the member.</param>
     /// <param name="cancellationToken">Token to cancel the operation if needed.</param>
     /// <returns>True if the role was successfully updated, false otherwise.</returns>
     /// <exception cref="NotFoundException">Thrown when the organization member is not found.</exception>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during an access check.</exception>
-    Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, enUserRole newRoleId, CancellationToken cancellationToken = default);
+    Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, MemberRole newRole, CancellationToken cancellationToken = default);
    
     
     /// <summary>

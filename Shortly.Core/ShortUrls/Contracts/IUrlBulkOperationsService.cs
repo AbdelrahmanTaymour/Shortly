@@ -1,7 +1,7 @@
-using Shortly.Core.Auth.Contracts;
-using Shortly.Core.Common;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.ShortUrls.DTOs;
+using Shortly.Domain.Abstractions;
 
 namespace Shortly.Core.ShortUrls.Contracts;
 
@@ -27,7 +27,7 @@ public interface IUrlBulkOperationsService
     /// Auto-generates short codes for URLs without custom codes using the database ID.
     /// </remarks>
     Task<BulkCreateShortUrlResult> BulkCreateAsync(IReadOnlyCollection<CreateShortUrlRequest> shortUrlRequests,
-        IAuthenticationContext authContext, CancellationToken cancellationToken = default);
+        IUserContext authContext, CancellationToken cancellationToken = default);
     
     
     /// <summary>
@@ -36,10 +36,10 @@ public interface IUrlBulkOperationsService
     /// <param name="ids">Collection of short URL IDs to update.</param>
     /// <param name="newExpirationDate">New expiration date to set, or null to remove expiration.</param>
     /// <param name="cancellationToken">Token to observe for cancellation requests.</param>
-    /// <returns>A <see cref="BulkOperationResult"/> containing the operation results.</returns>
+    /// <returns>A <see cref="BulkOperationResponse"/> containing the operation results.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="ids"/> is null or empty.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<BulkOperationResult> BulkUpdateExpirationAsync(IReadOnlyCollection<long> ids, DateTime? newExpirationDate, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> BulkUpdateExpirationAsync(IReadOnlyCollection<long> ids, DateTime? newExpirationDate, CancellationToken cancellationToken = default);
    
     
     /// <summary>
@@ -47,10 +47,10 @@ public interface IUrlBulkOperationsService
     /// </summary>
     /// <param name="ids">Collection of short URL IDs to delete.</param>
     /// <param name="cancellationToken">Token to observe for cancellation requests.</param>
-    /// <returns>A <see cref="BulkOperationResult"/> containing the operation results.</returns>
+    /// <returns>A <see cref="BulkOperationResponse"/> containing the operation results.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="ids"/> is null or empty.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<BulkOperationResult> BulkDeleteAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> BulkDeleteAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
    
     
     /// <summary>
@@ -58,9 +58,9 @@ public interface IUrlBulkOperationsService
     /// </summary>
     /// <param name="nowUtc">The current UTC time to compare against expiration dates.</param>
     /// <param name="cancellationToken">Token to observe for cancellation requests.</param>
-    /// <returns>A <see cref="BulkOperationResult"/> containing the number of expired URLs deleted.</returns>
+    /// <returns>A <see cref="BulkOperationResponse"/> containing the number of expired URLs deleted.</returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<BulkOperationResult> DeleteExpiredAsync(DateTime nowUtc, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> DeleteExpiredAsync(DateTime nowUtc, CancellationToken cancellationToken = default);
    
     
     /// <summary>
@@ -68,10 +68,10 @@ public interface IUrlBulkOperationsService
     /// </summary>
     /// <param name="ids">Collection of short URL IDs to activate.</param>
     /// <param name="cancellationToken">Token to observe for cancellation requests.</param>
-    /// <returns>A <see cref="BulkOperationResult"/> containing the operation results.</returns>
+    /// <returns>A <see cref="BulkOperationResponse"/> containing the operation results.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="ids"/> is null or empty.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<BulkOperationResult> BulkActivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> BulkActivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
     
     
     /// <summary>
@@ -79,8 +79,8 @@ public interface IUrlBulkOperationsService
     /// </summary>
     /// <param name="ids">Collection of short URL IDs to deactivate.</param>
     /// <param name="cancellationToken">Token to observe for cancellation requests.</param>
-    /// <returns>A <see cref="BulkOperationResult"/> containing the operation results.</returns>
+    /// <returns>A <see cref="BulkOperationResponse"/> containing the operation results.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="ids"/> is null or empty.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<BulkOperationResult> BulkDeactivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> BulkDeactivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
 }

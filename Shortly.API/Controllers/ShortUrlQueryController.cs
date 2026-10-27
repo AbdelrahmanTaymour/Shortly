@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.Common;
-using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions.DTOs;
 using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Core.ShortUrls.DTOs;
+using Shortly.Domain.Abstractions;
 
 namespace Shortly.API.Controllers;
 
@@ -347,7 +347,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService, IUserCo
     /// </param>
     /// <param name="cancellationToken">Propagated to EF Core.</param>
     /// <returns>
-    ///     A <see cref="PagedResult{T}" /> envelope:
+    ///     A <see cref="PagedResponse{T}" /> envelope:
     ///     <c>{ items, totalCount, pageNumber, pageSize, totalPages, hasPrevious, hasNext }</c>
     /// </returns>
     /// <example>
@@ -363,7 +363,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService, IUserCo
     /// <response code="403">User does not have permission to query the specified UserId's links.</response>
     /// <response code="500">An internal server error occurred.</response>
     [HttpGet("search", Name = "SearchShortUrls")]
-    [ProducesResponseType(typeof(PagedResult<ShortUrlDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResponse<ShortUrlDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     // [RequirePermission(enPermissions.ReadOwnLinks)]
@@ -371,7 +371,7 @@ public class ShortUrlQueryController(IShortUrlQueryService queryService, IUserCo
         [FromQuery] ShortUrlSearchRequest request,
         CancellationToken cancellationToken = default)
     {
-        var result = await queryService.SearchByFiltersAsync(userContext.CurrentUserId, request, cancellationToken);
+        var result = await queryService.SearchByFiltersAsync(userContext.UserId, request, cancellationToken);
         return Ok(result);
     }
 }

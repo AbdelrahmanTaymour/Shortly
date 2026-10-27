@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.Auth.Contracts;
-using Shortly.Core.Common;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions.DTOs;
 using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Core.ShortUrls.DTOs;
-using Shortly.Domain.Enums;
+using Shortly.Domain.Abstractions;
 
 namespace Shortly.API.Controllers;
 
@@ -15,7 +13,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOperationsService, IAuthenticationContextProvider contextProvider) : ControllerApiBase
+public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOperationsService, IUserContext contextProvider) : ControllerApiBase
 {
     /// <summary>
     /// Creates multiple short URLs in a single batch operation.
@@ -70,8 +68,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     //[RequirePermission(enPermissions.BulkCreateLinks)]
     public async Task<IActionResult> BulkCreate([FromBody] BulkCreateShortUrlsRequest request, CancellationToken cancellationToken = default)
     {
-        var authContext = contextProvider.GetCurrentContextAsync(HttpContext);
-        var result = await bulkOperationsService.BulkCreateAsync(request.Requests, authContext, cancellationToken);
+        var result = await bulkOperationsService.BulkCreateAsync(request.Requests, contextProvider, cancellationToken);
         return Ok(result);
     }
     
@@ -109,7 +106,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     /// <response code="403">User does not have permission to update URLs in bulk.</response>
     /// <response code="500">An internal server error occurred during bulk processing.</response>
     [HttpPut("update-expiration", Name = "BulkUpdateExpiration")]
-    [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BulkOperationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     //[RequirePermission(enPermissions.BulkUpdateLinks)]
@@ -154,7 +151,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     /// <response code="403">User does not have permission to delete URLs in bulk.</response>
     /// <response code="500">An internal server error occurred during bulk processing.</response>
     [HttpDelete("delete", Name = "BulkDeleteShortUrls")]
-    [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BulkOperationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     //[RequirePermission(enPermissions.BulkDeleteLinks)]
@@ -194,7 +191,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     /// <response code="403">User does not have permission to perform system-wide cleanup operations.</response>
     /// <response code="500">An internal server error occurred during cleanup processing.</response>
     [HttpDelete("delete-expired", Name = "DeleteExpiredShortUrls")]
-    [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BulkOperationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     //[RequirePermission(enPermissions.CleanupSystemData)]
     public async Task<IActionResult> DeleteExpired(CancellationToken cancellationToken = default)
@@ -238,7 +235,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     /// <response code="403">User does not have permission to activate URLs in bulk.</response>
     /// <response code="500">An internal server error occurred during bulk processing.</response>
     [HttpPut("activate", Name = "BulkActivateShortUrls")]
-    [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BulkOperationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     //[RequirePermission(enPermissions.BulkUpdateLinks)]
@@ -280,7 +277,7 @@ public class ShortUrlBulkOperationsController(IUrlBulkOperationsService bulkOper
     /// <response code="403">User does not have permission to deactivate URLs in bulk.</response>
     /// <response code="500">An internal server error occurred during bulk processing.</response>
     [HttpPut("deactivate", Name = "BulkDeactivateShortUrls")]
-    [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BulkOperationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     //[RequirePermission(enPermissions.BulkUpdateLinks)]

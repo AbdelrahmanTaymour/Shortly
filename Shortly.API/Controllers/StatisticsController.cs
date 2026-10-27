@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Analytics.Contracts;
 using Shortly.Core.Analytics.DTOs;
 using Shortly.Core.Analytics.Services;
-using Shortly.Core.Common.Abstractions;
 using Shortly.Core.Exceptions.DTOs;
 
 namespace Shortly.API.Controllers;
@@ -175,7 +175,7 @@ public class StatisticsController(
     {
         ValidateDateOrder(startDate, endDate);
         return Ok(await statisticsService.GetUserOverviewAsync(
-            userContext.CurrentUserId, startDate, endDate, cancellationToken));
+            userContext.UserId, startDate, endDate, cancellationToken));
     }
 
     /// <summary>
@@ -191,7 +191,7 @@ public class StatisticsController(
     {
         ValidateDateOrder(startDate, endDate);
         return Ok(await statisticsService.GetUserTimeSeriesAsync(
-            userContext.CurrentUserId, startDate, endDate, cancellationToken));
+            userContext.UserId, startDate, endDate, cancellationToken));
     }
 
     /// <summary>
@@ -213,7 +213,7 @@ public class StatisticsController(
     {
         ValidateDateOrder(startDate, endDate);
         return Ok(await statisticsService.GetUserEngagementAsync(
-            userContext.CurrentUserId, startDate, endDate, cancellationToken));
+            userContext.UserId, startDate, endDate, cancellationToken));
     }
 
     /// <summary>
@@ -237,7 +237,7 @@ public class StatisticsController(
     {
         ValidateDateOrder(startDate, endDate);
         return Ok(await statisticsService.GetUserTopUrlsAsync(
-            userContext.CurrentUserId, startDate, endDate, cancellationToken));
+            userContext.UserId, startDate, endDate, cancellationToken));
     }
 
     /// <summary>
@@ -253,7 +253,7 @@ public class StatisticsController(
     {
         ValidateDateOrder(startDate, endDate);
         return Ok(await statisticsService.GetUserGeographyAsync(
-            userContext.CurrentUserId, startDate, endDate, cancellationToken));
+            userContext.UserId, startDate, endDate, cancellationToken));
     }
 
     /// <summary>
@@ -269,7 +269,7 @@ public class StatisticsController(
     {
         ValidateDateOrder(startDate, endDate);
         return Ok(await statisticsService.GetUserTrafficAsync(
-            userContext.CurrentUserId, startDate, endDate, cancellationToken));
+            userContext.UserId, startDate, endDate, cancellationToken));
     }
 
     /// <summary>
@@ -285,7 +285,7 @@ public class StatisticsController(
     {
         ValidateDateOrder(startDate, endDate);
         return Ok(await statisticsService.GetUserDevicesAsync(
-            userContext.CurrentUserId, startDate, endDate, cancellationToken));
+            userContext.UserId, startDate, endDate, cancellationToken));
     }
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
 using Shortly.Core.ClickTracking.Contracts;
 using Shortly.Core.ClickTracking.DTOs;
-using Shortly.Core.Common;
 using Shortly.Core.Exceptions.DTOs;
 using Shortly.Core.ShortUrls.Contracts;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 
 namespace Shortly.API.Controllers;
@@ -302,7 +302,7 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// <response code="404">Short URL with the specified ID was not found.</response>
     /// <response code="500">An internal server error occurred.</response>
     [HttpGet("{shortUrlId:long}/click-history", Name = "GetClickHistory")]
-    [ProducesResponseType(typeof(PagedResult<ClickEvent>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResponse<ClickEvent>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]

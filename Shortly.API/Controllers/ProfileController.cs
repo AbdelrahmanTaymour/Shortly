@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions.DTOs;
 using Shortly.Core.Profile.Contracts;
 using Shortly.Core.Profile.DTOs;
-using Shortly.Core.Users.DTOs.Usage;
+using Shortly.Core.Users_legacy.DTOs.Usage;
 
 namespace Shortly.API.Controllers;
 
@@ -44,7 +44,7 @@ public class ProfileController(IUserProfileService profileService, IUserContext 
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetProfile(CancellationToken cancellationToken = default)
     {
-        var profile = await profileService.GetProfileAsync(userContext.CurrentUserId, cancellationToken);
+        var profile = await profileService.GetProfileAsync(userContext.UserId, cancellationToken);
         return Ok(profile);
     }
 
@@ -70,7 +70,7 @@ public class ProfileController(IUserProfileService profileService, IUserContext 
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetMonthlyQuotaStatus(CancellationToken cancellationToken = default)
     {
-        var quotaStatus = await profileService.GetMonthlyQuotaStatusAsync(userContext.CurrentUserId, cancellationToken);
+        var quotaStatus = await profileService.GetMonthlyQuotaStatusAsync(userContext.UserId, cancellationToken);
         return Ok(quotaStatus);
     }
 
@@ -100,7 +100,7 @@ public class ProfileController(IUserProfileService profileService, IUserContext 
     public async Task<IActionResult> UpdateProfile(UpdateUserProfileRequest request,
         CancellationToken cancellationToken = default)
     {
-        await profileService.UpdateProfileAsync(userContext.CurrentUserId, request, cancellationToken);
+        await profileService.UpdateProfileAsync(userContext.UserId, request, cancellationToken);
         return Ok();
     }
 
@@ -135,7 +135,7 @@ public class ProfileController(IUserProfileService profileService, IUserContext 
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RequestAccountDeletion(CancellationToken cancellationToken = default)
     {
-        var succeed = await profileService.RequestAccountDeletionAsync(userContext.CurrentUserId, cancellationToken);
+        var succeed = await profileService.RequestAccountDeletionAsync(userContext.UserId, cancellationToken);
         return Ok(succeed);
     }
 }

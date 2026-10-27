@@ -1,5 +1,6 @@
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
+using Shortly.Domain.Tokens;
 
 namespace Shortly.Domain.RepositoryContract.Tokens;
 

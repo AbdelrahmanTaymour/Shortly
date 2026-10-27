@@ -3,8 +3,7 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.Teams;
-using Shortly.Infrastructure.DbContexts;
-using Shortly.Infrastructure.Repositories.Memebrs;
+using Shortly.Infrastructure.Repositories.Members;
 
 namespace Shortly.Infrastructure.Repositories.Teams;
 
@@ -15,14 +14,16 @@ namespace Shortly.Infrastructure.Repositories.Teams;
 /// </summary>
 /// <param name="dbContext">The Entity Framework database context for SQL Server operations.</param>
 /// <param name="logger">The logger instance for recording operation details and errors.</param>
-public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<OrganizationMemberRepository> logger) : IOrganizationTeamRepository
+internal sealed class OrganizationTeamRepository(
+    ApplicationDbContext dbContext, 
+    ILogger<OrganizationMemberRepository> logger) : IOrganizationTeamRepository
 {
     /// <inheritdoc />
     public async Task<IEnumerable<OrganizationTeam>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            return await dbContext.OrganizationTeams
+            return await dbContext.Set<OrganizationTeam>()
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
         }
@@ -38,7 +39,7 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     {
         try
         {
-            return await dbContext.OrganizationTeams
+            return await dbContext.Set<OrganizationTeam>()
                 .FindAsync([id], cancellationToken);
         }
         catch (Exception ex)
@@ -53,7 +54,7 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     {
         try
         {
-            return await dbContext.OrganizationTeams
+            return await dbContext.Set<OrganizationTeam>()
                 .AsNoTracking()
                 .Include(t => t.TeamManager)
                 .Where(t => t.OrganizationId == organizationId)
@@ -72,7 +73,7 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     {
         try
         {
-            return await dbContext.OrganizationTeams
+            return await dbContext.Set<OrganizationTeam>()
                 .AsNoTracking()
                 .Where(t => t.TeamManagerId == managerId)
                 .ToListAsync(cancellationToken);
@@ -89,7 +90,7 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     {
         try
         {
-            return await dbContext.OrganizationTeams
+            return await dbContext.Set<OrganizationTeam>()
                 .AsNoTracking()
                 .Include(t => t.TeamMembers)
                     .ThenInclude(tm => tm.Member)
@@ -109,7 +110,7 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     {
         try
         {
-            return await dbContext.OrganizationTeams
+            return await dbContext.Set<OrganizationTeam>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Name == name && t.OrganizationId == organizationId, cancellationToken);
         }
@@ -142,7 +143,7 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     {
         try
         {
-            await dbContext.OrganizationTeams.AddAsync(entity, cancellationToken);
+            await dbContext.Set<OrganizationTeam>().AddAsync(entity, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
             return entity;
         }
@@ -159,7 +160,7 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     {
         try
         {
-            return await dbContext.OrganizationTeams
+            return await dbContext.Set<OrganizationTeam>()
                 .Where(t => t.Id == id)
                 .ExecuteDeleteAsync(cancellationToken) > 0;
         }
@@ -175,7 +176,7 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     {
         try
         {
-            return await dbContext.OrganizationTeams
+            return await dbContext.Set<OrganizationTeam>()
                 .AsNoTracking()
                 .AnyAsync(t => t.Id == id, cancellationToken);
         }
@@ -191,7 +192,7 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     {
         try
         {
-            return await dbContext.OrganizationTeams
+            return await dbContext.Set<OrganizationTeam>()
                 .AsNoTracking()
                 .AnyAsync(t => t.Id == teamId && t.TeamManagerId == managerId,
                     cancellationToken);
@@ -209,7 +210,7 @@ public class OrganizationTeamRepository(SqlServerDbContext dbContext, ILogger<Or
     {
         try
         {
-            return await dbContext.OrganizationTeams
+            return await dbContext.Set<OrganizationTeam>()
                 .AsNoTracking()
                 .AnyAsync(t => t.Name == name && t.OrganizationId == organizationId,
                     cancellationToken);

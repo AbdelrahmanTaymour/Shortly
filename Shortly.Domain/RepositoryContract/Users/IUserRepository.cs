@@ -1,6 +1,8 @@
+using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
+using Shortly.Domain.Users;
 
 namespace Shortly.Domain.RepositoryContract.Users;
 

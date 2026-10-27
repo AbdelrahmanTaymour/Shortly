@@ -6,7 +6,7 @@ using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 using Shortly.Domain.RepositoryContract.Users;
-using Shortly.Infrastructure.DbContexts;
+using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Repositories.Users;
 
@@ -17,14 +17,14 @@ namespace Shortly.Infrastructure.Repositories.Users;
 ///     Implements comprehensive user management with soft delete pattern, bulk operations for performance,
 ///     and transactional user creation with related entities.
 /// </remarks>
-public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository> logger) : IUserRepository
+public class UserRepository(ApplicationDbContext dbContext, ILogger<UserRepository> logger) : IUserRepository
 {
     /// <inheritdoc />
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
-            return await dbContext.Users.FindAsync([id], cancellationToken);
+            return await dbContext.Set<User>().FindAsync([id], cancellationToken);
         }
         catch (Exception ex)
         {
@@ -39,7 +39,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Email.Equals(email) && !u.IsDeleted, cancellationToken);
         }
@@ -55,7 +55,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Username.Equals(username) && !u.IsDeleted, cancellationToken);
         }
@@ -72,7 +72,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Email.Equals(emailOrUsername) ||
                                           (u.Username.Equals(emailOrUsername) && !u.IsDeleted),
@@ -90,7 +90,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.GoogleId == googleId && !u.IsDeleted, cancellationToken);
         }
@@ -106,7 +106,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Include(u => u.Profile)
                 .FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted, cancellationToken);
@@ -123,7 +123,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Include(u => u.UserSecurity)
                 .FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted, cancellationToken);
@@ -140,7 +140,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Include(u => u.UserUsage)
                 .FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted, cancellationToken);
@@ -157,7 +157,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Include(u => u.Profile)
                 .Include(u => u.UserSecurity)
@@ -178,7 +178,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Where(u => u.Id == id && !u.IsDeleted)
                 .Select(u => u.SubscriptionPlanId)
@@ -235,7 +235,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Where(u => u.Id == id && !u.IsDeleted)
                 .ExecuteUpdateAsync(setters => setters
@@ -256,7 +256,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Where(u => u.Id == id && !u.IsDeleted)
                 .ExecuteUpdateAsync(setters => setters
@@ -276,7 +276,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            var rawAffected = await dbContext.Users
+            var rawAffected = await dbContext.Set<User>()
                 .AsNoTracking()
                 .Where(u => u.Id == id && !u.IsDeleted)
                 .ExecuteUpdateAsync(setters => setters
@@ -300,7 +300,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Where(u => u.Id == id && !u.IsDeleted && !u.IsActive)
                 .ExecuteUpdateAsync(setters => setters
@@ -320,7 +320,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Where(u => u.Id == id && !u.IsDeleted && u.IsActive)
                 .ExecuteUpdateAsync(setters => setters
@@ -340,7 +340,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Where(u => u.Id == id && !u.IsDeleted && !u.IsEmailConfirmed)
                 .ExecuteUpdateAsync(setters => setters
@@ -360,7 +360,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .AnyAsync(u => u.Id == id && !u.IsDeleted, cancellationToken);
         }
@@ -376,7 +376,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .AnyAsync(u => u.Email.Equals(email), cancellationToken);
         }
@@ -392,7 +392,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .AnyAsync(u => u.Username.Equals(username), cancellationToken);
         }
@@ -409,7 +409,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .AnyAsync(u => u.Username == username || u.Email == email, cancellationToken);
         }
@@ -432,7 +432,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
 
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Where(u => !u.IsDeleted)
                 .OrderBy(u => u.CreatedAt)
@@ -454,7 +454,7 @@ public class UserRepository(SqlServerDbContext dbContext, ILogger<UserRepository
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Where(predicateint)
                 .OrderBy(u => u.CreatedAt)

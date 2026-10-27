@@ -1,4 +1,3 @@
-using Shortly.Core.Tokens.DTOs;
 
 namespace Shortly.Core.Common;
 

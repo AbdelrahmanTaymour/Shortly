@@ -1,12 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
 using Shortly.Core.Exceptions.DTOs;
 using Shortly.Core.Security.Contracts;
 using Shortly.Core.Security.DTOs;
-using Shortly.Core.Users.Contracts;
-using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
 

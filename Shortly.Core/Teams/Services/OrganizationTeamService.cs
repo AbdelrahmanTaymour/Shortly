@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
-using Shortly.Core.Abstractions;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Teams.Contracts;
 using Shortly.Core.Teams.DTOs;
 using Shortly.Core.Teams.Mappers;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.RepositoryContract.Teams;

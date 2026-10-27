@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.ShortUrls;
-using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.ShortUrls;
 
@@ -12,7 +11,7 @@ namespace Shortly.Infrastructure.Repositories.ShortUrls;
 ///     This class implements the <see cref="IShortUrlRepository" /> interface and provides
 ///     CRUD operations for the ShortUrl database model.
 /// </summary>
-public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRepository> logger) : IShortUrlRepository
+public class ShortUrlRepository(ApplicationDbContext dbContext, ILogger<ShortUrlRepository> logger) : IShortUrlRepository
 {
     /// <inheritdoc />
     public async Task<ShortUrl?> GetByIdAsync(long id, bool includeTracking = false,
@@ -20,7 +19,8 @@ public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRe
     {
         try
         {
-            return await dbContext.ShortUrls.FindAsync([id], cancellationToken);
+            return await dbContext.Set<ShortUrl>()
+                .FindAsync([id], cancellationToken);
         }
         catch (Exception ex)
         {
@@ -36,7 +36,7 @@ public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRe
     {
         try
         {
-            var query = includeTracking ? dbContext.ShortUrls : dbContext.ShortUrls.AsNoTracking();
+            var query = includeTracking ? dbContext.Set<ShortUrl>() : dbContext.Set<ShortUrl>().AsNoTracking();
 
             return await query
                 .FirstOrDefaultAsync(u => u.ShortCode == shortCode, cancellationToken)
@@ -55,7 +55,7 @@ public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRe
     {
         try
         {
-            await dbContext.ShortUrls.AddAsync(shortUrl, cancellationToken).ConfigureAwait(false);
+            await dbContext.Set<ShortUrl>().AddAsync(shortUrl, cancellationToken).ConfigureAwait(false);
             await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             logger.LogInformation("Created short URL with ID: {Id}, Code: {ShortCode}", shortUrl.Id, shortUrl.ShortCode);
@@ -74,7 +74,7 @@ public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRe
     {
         try
         {
-            return await dbContext.ShortUrls
+            return await dbContext.Set<ShortUrl>()
                 .Where(s => s.Id == id)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.ShortCode, newShortCode)
@@ -95,7 +95,7 @@ public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRe
     {
         try
         {
-            var affected = await dbContext.ShortUrls
+            var affected = await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .Where(s => s.Id == id)
                 .ExecuteDeleteAsync(cancellationToken)
@@ -119,7 +119,7 @@ public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRe
     {
         try
         {
-            var affected = await dbContext.ShortUrls
+            var affected = await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .Where(s => s.ShortCode == shortCode)
                 .ExecuteDeleteAsync(cancellationToken)
@@ -143,7 +143,7 @@ public class ShortUrlRepository(SqlServerDbContext dbContext, ILogger<ShortUrlRe
     {
         try
         {
-            return await dbContext.ShortUrls
+            return await dbContext.Set<ShortUrl>()
                 .AsNoTracking()
                 .AnyAsync(s => s.ShortCode == shortCode, cancellationToken)
                 .ConfigureAwait(false);

@@ -1,8 +1,7 @@
 using System.Diagnostics;
 using Dapper;
-using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Analytics.Contracts;
 using Shortly.Core.Analytics.DTOs;
 
@@ -11,17 +10,10 @@ namespace Shortly.Infrastructure.Repositories.ClickTracking;
 /// <summary>
 ///     Dapper query implementation for analytics.
 /// </summary>
-public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<ClickStatisticsDapperQueries> logger) : IClickStatisticsDapperQueries
+public class ClickStatisticsDapperQueries(
+    ISqlConnectionFactory sqlConnectionFactory,
+    ILogger<ClickStatisticsDapperQueries> logger) : IClickStatisticsDapperQueries
 {
-    private readonly string _connectionString =
-        configuration.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException("DefaultConnection not found.");
-
-    private SqlConnection OpenConnection()
-    {
-        return new SqlConnection(_connectionString);
-    }
-
     private enum DateBucket
     {
         Daily,
@@ -39,55 +31,63 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
     // PER-URL STATISTICS  (unchanged from previous revision)
     // ═════════════════════════════════════════════════════════════════════════
 
-    #region Per-URL Statistics
+#region Per-URL Statistics
 
     public async Task<UrlOverview> GetUrlOverviewAsync(
         long shortUrlId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
     {
         // language=sql
         const string sql = """
-                           DECLARE @End     DATETIME2 = ISNULL(@E, GETUTCDATE());
-                           DECLARE @Start   DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
-                           DECLARE @Now     DATETIME2 = GETUTCDATE();
-                           DECLARE @Today   DATE      = CAST(@Now AS DATE);
-                           DECLARE @WkStart DATE      = DATEADD(DAY, -6, @Today);
-                           DECLARE @MoStart DATE      = DATEFROMPARTS(YEAR(@Today), MONTH(@Today), 1);
-
                            -- RS1: Core click metrics (date-range scoped).
-                           -- COUNT_BIG + COUNT_BIG(DISTINCT) — index seek on (ShortUrlId, ClickedAt), no grouping.
-                           SELECT COUNT_BIG(*)                               AS TotalClicks,
-                                  COUNT_BIG(DISTINCT ce.SessionId)           AS UniqueClicks,
-                                  COUNT(DISTINCT CAST(ce.ClickedAt AS DATE)) AS ActiveDays,
-                                  MIN(ce.ClickedAt)                          AS FirstClickDate,
-                                  MAX(ce.ClickedAt)                          AS LastClickDate
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End;
+                           SELECT COUNT(*)                          AS TotalClicks,
+                                  COUNT(DISTINCT ce.session_id)     AS UniqueClicks,
+                                  COUNT(DISTINCT ce.clicked_at::date) AS ActiveDays,
+                                  MIN(ce.clicked_at)                AS FirstClickDate,
+                                  MAX(ce.clicked_at)                AS LastClickDate
+                           FROM click_events ce
+                           CROSS JOIN (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           ) p
+                           WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date;
 
                            -- RS2: Time-window counters.
-                           -- @MoStart cap keeps this scan ≤ 30 days regardless of @Start.
-                           SELECT ISNULL(CAST(SUM(CASE WHEN CAST(ce.ClickedAt AS DATE) = @Today THEN 1 ELSE 0 END) AS BIGINT), 0) AS ClicksToday,
-                                  ISNULL(CAST(SUM(CASE WHEN ce.ClickedAt >= @WkStart             THEN 1 ELSE 0 END) AS BIGINT), 0) AS ClicksThisWeek,
-                                  ISNULL(CAST(SUM(CASE WHEN ce.ClickedAt >= @MoStart             THEN 1 ELSE 0 END) AS BIGINT), 0) AS ClicksThisMonth
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.ShortUrlId = @Id AND ce.ClickedAt >= @MoStart;
+                           SELECT COALESCE(SUM(CASE WHEN ce.clicked_at::date = CURRENT_TIMESTAMP::date THEN 1 ELSE 0 END), 0)::bigint AS ClicksToday,
+                                  COALESCE(SUM(CASE WHEN ce.clicked_at >= (CURRENT_TIMESTAMP::date - INTERVAL '6 days') THEN 1 ELSE 0 END), 0)::bigint AS ClicksThisWeek,
+                                  COALESCE(SUM(CASE WHEN ce.clicked_at >= date_trunc('month', CURRENT_TIMESTAMP) THEN 1 ELSE 0 END), 0)::bigint AS ClicksThisMonth
+                           FROM click_events ce
+                           WHERE ce.short_url_id = @Id AND ce.clicked_at >= date_trunc('month', CURRENT_TIMESTAMP);
 
-                           -- RS3: Top country — TOP 1, one GROUP BY, one row returned.
-                           SELECT TOP 1 ISNULL(NULLIF(ce.Country, ''), 'Unknown') AS Name
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                             AND ce.Country IS NOT NULL AND ce.Country != ''
-                           GROUP BY ce.Country
-                           ORDER BY COUNT(*) DESC;
+                           -- RS3: Top country
+                           SELECT COALESCE(NULLIF(ce.country, ''), 'Unknown') AS Name
+                           FROM click_events ce
+                           CROSS JOIN (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           ) p
+                           WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                             AND ce.country IS NOT NULL AND ce.country != ''
+                           GROUP BY ce.country
+                           ORDER BY COUNT(*) DESC
+                           LIMIT 1;
 
-                           -- RS4: Top referrer domain — TOP 1, one GROUP BY, one row returned.
-                           SELECT TOP 1 ISNULL(NULLIF(ce.ReferrerDomain, ''), 'Direct') AS Name
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ce.ReferrerDomain
-                           ORDER BY COUNT(*) DESC;
+                           -- RS4: Top referrer domain
+                           SELECT COALESCE(NULLIF(ce.referrer_domain, ''), 'Direct') AS Name
+                           FROM click_events ce
+                           CROSS JOIN (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           ) p
+                           WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY ce.referrer_domain
+                           ORDER BY COUNT(*) DESC
+                           LIMIT 1;
                            """;
 
-        await using var connection = OpenConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         await using var multi = await connection.QueryMultipleAsync(
             new CommandDefinition(sql, new { Id = shortUrlId, S = startDate, E = endDate },
                 cancellationToken: ct));
@@ -122,37 +122,36 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
         };
     }
 
-
     public async Task<EngagementMetrics> GetUrlEngagementAsync(
         long shortUrlId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
     {
         // language=sql
         const string sql = """
-                           DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-                           DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
-
-                           -- Full GROUP BY SessionId over the date-range partition for this URL.
-                           -- Deferred intentionally — this is the expensive operation.
-                           WITH SessionStats AS (
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           ),
+                           SessionStats AS (
                                SELECT
-                                   ce.SessionId,
-                                   COUNT(*)                                                AS SessionClicks,
-                                   DATEDIFF(SECOND, MIN(ce.ClickedAt), MAX(ce.ClickedAt)) AS DurationSeconds
-                               FROM ClickEvents ce WITH (NOLOCK)
-                               WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                               GROUP BY ce.SessionId
+                                   ce.session_id,
+                                   COUNT(*) AS SessionClicks,
+                                   EXTRACT(EPOCH FROM (MAX(ce.clicked_at) - MIN(ce.clicked_at)))::double precision AS DurationSeconds
+                               FROM click_events ce
+                               CROSS JOIN params p
+                               WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                               GROUP BY ce.session_id
                            )
                            SELECT
-                               COUNT(*)                                                                        AS TotalSessions,
-                               CAST(ISNULL(SUM(SessionClicks), 0) AS BIGINT)                                  AS TotalClicksForEngagement,
-                               ISNULL(SUM(CASE WHEN SessionClicks = 1 THEN 1 ELSE 0 END), 0)                  AS BouncedSessions,
-                               ISNULL(SUM(CASE WHEN SessionClicks > 1 THEN 1 ELSE 0 END), 0)                  AS ReturningSessions,
-                               ISNULL(AVG(CASE WHEN SessionClicks > 1 THEN CAST(DurationSeconds AS FLOAT) END), 0.0)
-                                   AS AvgSessionDurationSeconds
+                               COUNT(*)::bigint AS TotalSessions,
+                               COALESCE(SUM(SessionClicks), 0)::bigint AS TotalClicksForEngagement,
+                               COALESCE(SUM(CASE WHEN SessionClicks = 1 THEN 1 ELSE 0 END), 0)::bigint AS BouncedSessions,
+                               COALESCE(SUM(CASE WHEN SessionClicks > 1 THEN 1 ELSE 0 END), 0)::bigint AS ReturningSessions,
+                               COALESCE(AVG(CASE WHEN SessionClicks > 1 THEN DurationSeconds END), 0.0) AS AvgSessionDurationSeconds
                            FROM SessionStats;
                            """;
 
-        await using var connection = OpenConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         var engRow = await connection.QuerySingleAsync<EngagementRow>(
             new CommandDefinition(sql, new { Id = shortUrlId, S = startDate, E = endDate },
                 cancellationToken: ct));
@@ -181,51 +180,60 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
     {
         // language=sql
         const string sql = """
-                           DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-                           DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
-
-                           SELECT q.Name, q.Clicks, q.IsOther, q.TotalDistinct
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT q.name, q.clicks, q.is_other, q.total_distinct
                            FROM (
                                SELECT
-                                   CASE WHEN rn <= 5 THEN Name ELSE 'Other' END          AS Name,
-                                   SUM(Clicks)                                            AS Clicks,
-                                   CAST(CASE WHEN MIN(rn) <= 5 THEN 0 ELSE 1 END AS BIT) AS IsOther,
-                                   MAX(TotalDistinct)                                     AS TotalDistinct
+                                   CASE WHEN rn <= 5 THEN name ELSE 'Other' END AS name,
+                                   SUM(clicks) AS clicks,
+                                   CASE WHEN MIN(rn) <= 5 THEN false ELSE true END AS is_other,
+                                   MAX(total_distinct) AS total_distinct
                                FROM (
                                    SELECT
-                                       ISNULL(NULLIF(ce.Country, ''), 'Unknown')    AS Name,
-                                       COUNT(*)                                      AS Clicks,
-                                       ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC)   AS rn,
-                                       COUNT(*) OVER ()                             AS TotalDistinct
-                                   FROM ClickEvents ce WITH (NOLOCK)
-                                   WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                                   GROUP BY ce.Country
+                                       COALESCE(NULLIF(ce.country, ''), 'Unknown') AS name,
+                                       COUNT(*) AS clicks,
+                                       ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn,
+                                       COUNT(*) OVER () AS total_distinct
+                                   FROM click_events ce
+                                   CROSS JOIN params p
+                                   WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                                   GROUP BY ce.country
                                ) Ranked
-                               GROUP BY CASE WHEN rn <= 5 THEN Name ELSE 'Other' END
-                           ) q ORDER BY q.IsOther, q.Clicks DESC;
+                               GROUP BY CASE WHEN rn <= 5 THEN name ELSE 'Other' END
+                           ) q ORDER BY q.is_other, q.clicks DESC;
 
-                           SELECT q.Name, q.Clicks, q.IsOther, q.TotalDistinct
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT q.name, q.clicks, q.is_other, q.total_distinct
                            FROM (
                                SELECT
-                                   CASE WHEN rn <= 5 THEN Name ELSE 'Other' END          AS Name,
-                                   SUM(Clicks)                                            AS Clicks,
-                                   CAST(CASE WHEN MIN(rn) <= 5 THEN 0 ELSE 1 END AS BIT) AS IsOther,
-                                   MAX(TotalDistinct)                                     AS TotalDistinct
+                                   CASE WHEN rn <= 5 THEN name ELSE 'Other' END AS name,
+                                   SUM(clicks) AS clicks,
+                                   CASE WHEN MIN(rn) <= 5 THEN false ELSE true END AS is_other,
+                                   MAX(total_distinct) AS total_distinct
                                FROM (
                                    SELECT
-                                       ISNULL(NULLIF(ce.City, ''), 'Unknown')       AS Name,
-                                       COUNT(*)                                      AS Clicks,
-                                       ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC)   AS rn,
-                                       COUNT(*) OVER ()                             AS TotalDistinct
-                                   FROM ClickEvents ce WITH (NOLOCK)
-                                   WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                                   GROUP BY ce.City
+                                       COALESCE(NULLIF(ce.city, ''), 'Unknown') AS name,
+                                       COUNT(*) AS clicks,
+                                       ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn,
+                                       COUNT(*) OVER () AS total_distinct
+                                   FROM click_events ce
+                                   CROSS JOIN params p
+                                   WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                                   GROUP BY ce.city
                                ) Ranked
-                               GROUP BY CASE WHEN rn <= 5 THEN Name ELSE 'Other' END
-                           ) q ORDER BY q.IsOther, q.Clicks DESC;
+                               GROUP BY CASE WHEN rn <= 5 THEN name ELSE 'Other' END
+                           ) q ORDER BY q.is_other, q.clicks DESC;
                            """;
 
-        await using var connection = OpenConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         await using var multi = await connection.QueryMultipleAsync(
             new CommandDefinition(sql, new { Id = shortUrlId, S = startDate, E = endDate },
                 cancellationToken: ct));
@@ -240,33 +248,48 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
     {
         // language=sql
         const string sql = """
-                           DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-                           DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.device_type, ''), 'Unknown') AS Name,
+                                  COUNT(*) AS Clicks,
+                                  COUNT(DISTINCT ce.session_id) AS UniqueUsers
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY ce.device_type ORDER BY Clicks DESC
+                           LIMIT 5;
 
-                           SELECT TOP 5
-                               ISNULL(NULLIF(ce.DeviceType, ''), 'Unknown') AS Name,
-                               COUNT(*)                                      AS Clicks,
-                               COUNT(DISTINCT ce.SessionId)                  AS UniqueUsers
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ce.DeviceType ORDER BY Clicks DESC;
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.browser, ''), 'Unknown') AS BrowserName,
+                                  COUNT(*) AS Clicks
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY ce.browser ORDER BY Clicks DESC
+                           LIMIT 6;
 
-                           SELECT TOP 6
-                               ISNULL(NULLIF(ce.Browser, ''), 'Unknown') AS BrowserName,
-                               COUNT(*)                                   AS Clicks
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ce.Browser ORDER BY Clicks DESC;
-
-                           SELECT TOP 6
-                               ISNULL(NULLIF(ce.OperatingSystem, ''), 'Unknown') AS OsName,
-                               COUNT(*)                                           AS Clicks
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ce.OperatingSystem ORDER BY Clicks DESC;
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.operating_system, ''), 'Unknown') AS OsName,
+                                  COUNT(*) AS Clicks
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY ce.operating_system ORDER BY Clicks DESC
+                           LIMIT 6;
                            """;
 
-        await using var connection = OpenConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         await using var multi = await connection.QueryMultipleAsync(
             new CommandDefinition(sql, new { Id = shortUrlId, S = startDate, E = endDate },
                 cancellationToken: ct));
@@ -282,37 +305,52 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
     {
         // language=sql
         const string sql = """
-                           DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-                           DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.traffic_source, ''), 'Direct') AS Source,
+                                  COUNT(*) AS Clicks
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY COALESCE(NULLIF(ce.traffic_source, ''), 'Direct') ORDER BY Clicks DESC
+                           LIMIT 6;
 
-                           SELECT TOP 6
-                               ISNULL(NULLIF(ce.TrafficSource, ''), 'Direct') AS Source,
-                               COUNT(*) AS Clicks
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ISNULL(NULLIF(ce.TrafficSource, ''), 'Direct') ORDER BY Clicks DESC;
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.referrer_domain, ''), 'Direct/Typed') AS Domain,
+                                  COUNT(*) AS Clicks
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY COALESCE(NULLIF(ce.referrer_domain, ''), 'Direct/Typed') ORDER BY Clicks DESC
+                           LIMIT 10;
 
-                           SELECT TOP 10
-                               ISNULL(NULLIF(ce.ReferrerDomain, ''), 'Direct/Typed') AS Domain,
-                               COUNT(*) AS Clicks
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ISNULL(NULLIF(ce.ReferrerDomain, ''), 'Direct/Typed') ORDER BY Clicks DESC;
-
-                           SELECT TOP 10
-                               ISNULL(NULLIF(ce.UtmCampaign, ''), 'Unknown') AS CampaignName,
-                               NULLIF(ce.UtmSource, '')  AS Source,
-                               NULLIF(ce.UtmMedium, '')  AS Medium,
-                               COUNT(*)                  AS Clicks,
-                               MIN(ce.ClickedAt)         AS FirstSeen,
-                               MAX(ce.ClickedAt)         AS LastSeen
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-                             AND ce.UtmCampaign IS NOT NULL AND ce.UtmCampaign != ''
-                           GROUP BY ce.UtmCampaign, ce.UtmSource, ce.UtmMedium ORDER BY Clicks DESC;
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.utm_campaign, ''), 'Unknown') AS CampaignName,
+                                  NULLIF(ce.utm_source, '') AS Source,
+                                  NULLIF(ce.utm_medium, '') AS Medium,
+                                  COUNT(*) AS Clicks,
+                                  MIN(ce.clicked_at) AS FirstSeen,
+                                  MAX(ce.clicked_at) AS LastSeen
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                             AND ce.utm_campaign IS NOT NULL AND ce.utm_campaign != ''
+                           GROUP BY ce.utm_campaign, ce.utm_source, ce.utm_medium ORDER BY Clicks DESC
+                           LIMIT 10;
                            """;
 
-        await using var connection = OpenConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         await using var multi = await connection.QueryMultipleAsync(
             new CommandDefinition(sql, new { Id = shortUrlId, S = startDate, E = endDate },
                 cancellationToken: ct));
@@ -331,7 +369,7 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
             ? BuildUrlWeeklyTimeSeriesSql()
             : BuildUrlDailyTimeSeriesSql();
 
-        await using var connection = OpenConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         await using var multi = await connection.QueryMultipleAsync(
             new CommandDefinition(sql, new { Id = shortUrlId, S = startDate, E = endDate },
                 cancellationToken: ct));
@@ -347,25 +385,40 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
     {
         // language=sql
         return """
-               DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-               DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT ce.clicked_at::date AS Date,
+                      COUNT(*) AS Clicks,
+                      COUNT(DISTINCT ce.session_id) AS UniqueClicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY ce.clicked_at::date ORDER BY Date;
 
-               SELECT CAST(ce.ClickedAt AS DATE) AS Date,
-                      COUNT(*)                  AS Clicks,
-                      COUNT(DISTINCT ce.SessionId) AS UniqueClicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY CAST(ce.ClickedAt AS DATE) ORDER BY Date;
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT EXTRACT(HOUR FROM ce.clicked_at)::int AS Hour, COUNT(*) AS Clicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY EXTRACT(HOUR FROM ce.clicked_at) ORDER BY Hour;
 
-               SELECT DATEPART(HOUR, ce.ClickedAt) AS Hour, COUNT(*) AS Clicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY DATEPART(HOUR, ce.ClickedAt) ORDER BY Hour;
-
-               SELECT DATEPART(WEEKDAY, ce.ClickedAt) - 1 AS DayOfWeek, COUNT(*) AS Clicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY DATEPART(WEEKDAY, ce.ClickedAt) ORDER BY DayOfWeek;
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT EXTRACT(DOW FROM ce.clicked_at)::int AS DayOfWeek, COUNT(*) AS Clicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY EXTRACT(DOW FROM ce.clicked_at) ORDER BY DayOfWeek;
                """;
     }
 
@@ -373,102 +426,127 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
     {
         // language=sql
         return """
-               DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-               DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
-
-               SELECT DATEADD(DAY, 1 - DATEPART(WEEKDAY, CAST(ce.ClickedAt AS DATE)), CAST(ce.ClickedAt AS DATE)) AS Date,
-                      COUNT(*)                     AS Clicks,
-                      COUNT(DISTINCT ce.SessionId) AS UniqueClicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY DATEADD(DAY, 1 - DATEPART(WEEKDAY, CAST(ce.ClickedAt AS DATE)), CAST(ce.ClickedAt AS DATE))
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT (date_trunc('week', ce.clicked_at))::date AS Date,
+                      COUNT(*) AS Clicks,
+                      COUNT(DISTINCT ce.session_id) AS UniqueClicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY (date_trunc('week', ce.clicked_at))::date
                ORDER BY Date;
 
-               SELECT DATEPART(HOUR, ce.ClickedAt) AS Hour, COUNT(*) AS Clicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY DATEPART(HOUR, ce.ClickedAt) ORDER BY Hour;
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT EXTRACT(HOUR FROM ce.clicked_at)::int AS Hour, COUNT(*) AS Clicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY EXTRACT(HOUR FROM ce.clicked_at) ORDER BY Hour;
 
-               SELECT DATEPART(WEEKDAY, ce.ClickedAt) - 1 AS DayOfWeek, COUNT(*) AS Clicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.ShortUrlId = @Id AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY DATEPART(WEEKDAY, ce.ClickedAt) ORDER BY DayOfWeek;
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT EXTRACT(DOW FROM ce.clicked_at)::int AS DayOfWeek, COUNT(*) AS Clicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.short_url_id = @Id AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY EXTRACT(DOW FROM ce.clicked_at) ORDER BY DayOfWeek;
                """;
     }
 
     #endregion
-
+    
     // ═════════════════════════════════════════════════════════════════════════
     // PER-USER STATISTICS
     // ═════════════════════════════════════════════════════════════════════════
 
-    #region Per-User Statistics
-
-    // ── OVERVIEW (lightweight — no session grouping, no URL ranking) ──────────
+#region Per-User Statistics
 
     public async Task<UserOverview> GetUserOverviewAsync(
         Guid userId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
     {
         // language=sql
         const string sql = """
-                           DECLARE @End     DATETIME2 = ISNULL(@E, GETUTCDATE());
-                           DECLARE @Start   DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
-                           DECLARE @Now     DATETIME2 = GETUTCDATE();
-                           DECLARE @Today   DATE      = CAST(@Now AS DATE);
-                           DECLARE @WkStart DATE      = DATEADD(DAY, -6, @Today);
-                           DECLARE @MoStart DATE      = DATEFROMPARTS(YEAR(@Today), MONTH(@Today), 1);
-
-                           -- ── Result set 1: URL portfolio shape ────────────────────────────
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date,
+                                   CURRENT_TIMESTAMP AS now_time
+                           )
+                           -- RS1: URL portfolio shape
                            SELECT
-                               COUNT(*)                                                                              AS TotalUrls,
-                               ISNULL(SUM(CASE WHEN IsActive = 1 AND (ExpiresAt IS NULL OR ExpiresAt > @Now) THEN 1 ELSE 0 END), 0) AS ActiveUrls,
-                               ISNULL(SUM(CASE WHEN ExpiresAt IS NOT NULL AND ExpiresAt <= @Now THEN 1 ELSE 0 END), 0)              AS ExpiredUrls,
-                               ISNULL(SUM(CASE WHEN TrackingEnabled = 1 THEN 1 ELSE 0 END), 0)                                      AS TotalTrackedUrls,
-                               MIN(CreatedAt)                                                                        AS FirstUrlCreated,
-                               MAX(CreatedAt)                                                                        AS MostRecentUrlCreated
-                           FROM ShortUrls WITH (NOLOCK)
-                           WHERE UserId = @UserId AND OwnerType = 1;
+                               COUNT(*)::bigint AS TotalUrls,
+                               COALESCE(SUM(CASE WHEN is_active = true AND (expires_at IS NULL OR expires_at > p.now_time) THEN 1 ELSE 0 END), 0)::bigint AS ActiveUrls,
+                               COALESCE(SUM(CASE WHEN expires_at IS NOT NULL AND expires_at <= p.now_time THEN 1 ELSE 0 END), 0)::bigint AS ExpiredUrls,
+                               COALESCE(SUM(CASE WHEN tracking_enabled = true THEN 1 ELSE 0 END), 0)::bigint AS TotalTrackedUrls,
+                               MIN(created_at) AS FirstUrlCreated,
+                               MAX(created_at) AS MostRecentUrlCreated
+                           FROM short_urls
+                           CROSS JOIN params p
+                           WHERE user_id = @UserId AND owner_type = 1;
 
-                           -- ── Result set 2: Click totals (date-range scoped) ───────────────
-                           -- Index seek on (UserId, ClickedAt).
+                           -- RS2: Click totals
                            SELECT
-                               COUNT_BIG(*)                     AS TotalClicks,
-                               COUNT_BIG(DISTINCT ce.SessionId) AS UniqueClicks,
-                               MIN(ce.ClickedAt)                AS FirstClickDate,
-                               MAX(ce.ClickedAt)                AS LastClickDate
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End;
+                               COUNT(*)::bigint AS TotalClicks,
+                               COUNT(DISTINCT ce.session_id)::bigint AS UniqueClicks,
+                               MIN(ce.clicked_at) AS FirstClickDate,
+                               MAX(ce.clicked_at) AS LastClickDate
+                           FROM click_events ce
+                           CROSS JOIN (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           ) p
+                           WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date;
 
-                           -- ── Result set 3: Time-window counters (month-scoped) ─────────────
-                           -- @MoStart caps the scan to ~30 days regardless of date-range param.
+                           -- RS3: Time-window counters
                            SELECT
-                               ISNULL(CAST(SUM(CASE WHEN CAST(ce.ClickedAt AS DATE) = @Today THEN 1 ELSE 0 END) AS BIGINT), 0) AS ClicksToday,
-                               ISNULL(CAST(SUM(CASE WHEN ce.ClickedAt >= @WkStart             THEN 1 ELSE 0 END) AS BIGINT), 0) AS ClicksThisWeek,
-                               ISNULL(CAST(SUM(CASE WHEN ce.ClickedAt >= @MoStart             THEN 1 ELSE 0 END) AS BIGINT), 0) AS ClicksThisMonth
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.UserId = @UserId AND ce.ClickedAt >= @MoStart;
+                               COALESCE(SUM(CASE WHEN ce.clicked_at::date = CURRENT_TIMESTAMP::date THEN 1 ELSE 0 END), 0)::bigint AS ClicksToday,
+                               COALESCE(SUM(CASE WHEN ce.clicked_at >= (CURRENT_TIMESTAMP::date - INTERVAL '6 days') THEN 1 ELSE 0 END), 0)::bigint AS ClicksThisWeek,
+                               COALESCE(SUM(CASE WHEN ce.clicked_at >= date_trunc('month', CURRENT_TIMESTAMP) THEN 1 ELSE 0 END), 0)::bigint AS ClicksThisMonth
+                           FROM click_events ce
+                           WHERE ce.user_id = @UserId AND ce.clicked_at >= date_trunc('month', CURRENT_TIMESTAMP);
 
-                           -- ── Result set 4a: Top country (single row) ──────────────────────
-                           SELECT TOP 1
-                               ISNULL(NULLIF(ce.Country, ''), 'Unknown') AS Name
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.UserId = @UserId
-                             AND ce.ClickedAt BETWEEN @Start AND @End
-                             AND ce.Country IS NOT NULL AND ce.Country != ''
-                           GROUP BY ce.Country
-                           ORDER BY COUNT(*) DESC;
+                           -- RS4a: Top country
+                           SELECT COALESCE(NULLIF(ce.country, ''), 'Unknown') AS Name
+                           FROM click_events ce
+                           CROSS JOIN (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           ) p
+                           WHERE ce.user_id = @UserId
+                             AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                             AND ce.country IS NOT NULL AND ce.country != ''
+                           GROUP BY ce.country
+                           ORDER BY COUNT(*) DESC
+                           LIMIT 1;
 
-                           -- ── Result set 4b: Top referrer (single row) ─────────────────────
-                           SELECT TOP 1
-                               ISNULL(NULLIF(ce.ReferrerDomain, ''), 'Direct') AS Name
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ce.ReferrerDomain
-                           ORDER BY COUNT(*) DESC;
+                           -- RS4b: Top referrer
+                           SELECT COALESCE(NULLIF(ce.referrer_domain, ''), 'Direct') AS Name
+                           FROM click_events ce
+                           CROSS JOIN (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           ) p
+                           WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY ce.referrer_domain
+                           ORDER BY COUNT(*) DESC
+                           LIMIT 1;
                            """;
 
-        await using var connection = OpenConnection();
-        
+        using var connection = sqlConnectionFactory.CreateConnection();
         var sw = Stopwatch.StartNew();
         
         await using var multi = await connection.QueryMultipleAsync(
@@ -487,10 +565,7 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
         var topReferrer = await multi.ReadFirstOrDefaultAsync<string>();
         
         sw.Stop();
-        
-        logger.LogInformation(
-            "SQL QueryMultiple = {Time} ms",
-            sw.ElapsedMilliseconds);
+        logger.LogInformation("SQL QueryMultiple = {Time} ms", sw.ElapsedMilliseconds);
 
         return new UserOverview
         {
@@ -520,38 +595,36 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
         };
     }
 
-    // ── ENGAGEMENT (heavy — deferred until Engagement tab activated) ──────────
-
     public async Task<EngagementMetrics> GetUserEngagementAsync(
         Guid userId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
     {
         // language=sql
         const string sql = """
-                           DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-                           DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
-
-                           -- Full GROUP BY SessionId over the date-range partition.
-                           -- This is an expensive operation deferred intentionally.
-                           WITH SessionStats AS (
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           ),
+                           SessionStats AS (
                                SELECT
-                                   ce.SessionId,
-                                   COUNT(*)                                                AS SessionClicks,
-                                   DATEDIFF(SECOND, MIN(ce.ClickedAt), MAX(ce.ClickedAt)) AS DurationSeconds
-                               FROM ClickEvents ce WITH (NOLOCK)
-                               WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-                               GROUP BY ce.SessionId
+                                   ce.session_id,
+                                   COUNT(*) AS SessionClicks,
+                                   EXTRACT(EPOCH FROM (MAX(ce.clicked_at) - MIN(ce.clicked_at)))::double precision AS DurationSeconds
+                               FROM click_events ce
+                               CROSS JOIN params p
+                               WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                               GROUP BY ce.session_id
                            )
                            SELECT
-                               COUNT(*)                                                                        AS TotalSessions,
-                               CAST(ISNULL(SUM(SessionClicks), 0) AS BIGINT)                                  AS TotalClicksForEngagement,
-                               ISNULL(SUM(CASE WHEN SessionClicks = 1 THEN 1 ELSE 0 END), 0)                  AS BouncedSessions,
-                               ISNULL(SUM(CASE WHEN SessionClicks > 1 THEN 1 ELSE 0 END), 0)                  AS ReturningSessions,
-                               ISNULL(AVG(CASE WHEN SessionClicks > 1 THEN CAST(DurationSeconds AS FLOAT) END), 0.0)
-                                   AS AvgSessionDurationSeconds
+                               COUNT(*)::bigint AS TotalSessions,
+                               COALESCE(SUM(SessionClicks), 0)::bigint AS TotalClicksForEngagement,
+                               COALESCE(SUM(CASE WHEN SessionClicks = 1 THEN 1 ELSE 0 END), 0)::bigint AS BouncedSessions,
+                               COALESCE(SUM(CASE WHEN SessionClicks > 1 THEN 1 ELSE 0 END), 0)::bigint AS ReturningSessions,
+                               COALESCE(AVG(CASE WHEN SessionClicks > 1 THEN DurationSeconds END), 0.0) AS AvgSessionDurationSeconds
                            FROM SessionStats;
                            """;
 
-        await using var connection = OpenConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         var engRow = await connection.QuerySingleAsync<EngagementRow>(
             new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate },
                 cancellationToken: ct));
@@ -575,70 +648,40 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
         };
     }
 
-    // ── TOP URLs (heavy — deferred until Top URLs tab activated) ─────────────
-
     public async Task<UserTopUrls> GetUserTopUrlsAsync(
-        Guid userId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
+        Guid userId, DateTime? startDate, DateTime? endDate, int limit = 10, CancellationToken ct = default)
     {
         // language=sql
         const string sql = """
-                           WITH Aggregated AS (
+                           WITH params AS (
                                SELECT 
-                                   ce.ShortUrlId,
-                                   ce.Country,
-                                   COUNT(*) AS ClickCount,
-                                   MAX(ce.ClickedAt) AS LastClickAt
-                               FROM ClickEvents ce WITH (NOLOCK)
-                               WHERE ce.UserId = @UserId 
-                                 AND ce.ClickedAt >= ISNULL(@S, DATEADD(DAY, -30, GETUTCDATE()))
-                                 AND ce.ClickedAt <  ISNULL(@E, GETUTCDATE())
-                               GROUP BY ce.ShortUrlId, ce.Country
-                           ),
-                           TopUrls AS (
-                               SELECT TOP 10
-                                   ShortUrlId,
-                                   SUM(ClickCount) AS TotalClicks,
-                                   MAX(LastClickAt) AS LastClickAt
-                               FROM Aggregated
-                               GROUP BY ShortUrlId
-                               ORDER BY SUM(ClickCount) DESC
-                           ),
-                           CountryRanked AS (
-                               SELECT 
-                                   a.ShortUrlId,
-                                   a.Country,
-                                   ROW_NUMBER() OVER (
-                                       PARTITION BY a.ShortUrlId 
-                                       ORDER BY a.ClickCount DESC
-                                   ) AS rn
-                               FROM Aggregated a
-                               INNER JOIN TopUrls t ON t.ShortUrlId = a.ShortUrlId
-                               WHERE a.Country IS NOT NULL AND a.Country != ''
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
                            )
-                           SELECT
-                               t.ShortUrlId,
-                               su.ShortCode,
-                               su.OriginalUrl,
-                               t.TotalClicks,
-                               su.CreatedAt,
-                               t.LastClickAt,
-                               cr.Country AS TopCountry
-                           FROM TopUrls t
-                           INNER JOIN ShortUrls su WITH (NOLOCK) ON su.Id = t.ShortUrlId
-                           LEFT JOIN CountryRanked cr 
-                               ON cr.ShortUrlId = t.ShortUrlId AND cr.rn = 1
-                           ORDER BY t.TotalClicks DESC;
+                           SELECT 
+                               su.id AS ShortUrlId,
+                               su.title AS Title,
+                               su.short_code AS ShortCode,
+                               su.original_url AS OriginalUrl,
+                               COUNT(ce.id) AS TotalClicks,
+                               COUNT(DISTINCT ce.session_id) AS UniqueClicks
+                           FROM short_urls su
+                           LEFT JOIN click_events ce ON ce.short_url_id = su.id 
+                               AND ce.clicked_at BETWEEN (SELECT start_date FROM params) AND (SELECT end_date FROM params)
+                           WHERE su.user_id = @UserId AND su.owner_type = 1
+                           GROUP BY su.id, su.title, su.short_code, su.original_url
+                           ORDER BY TotalClicks DESC
+                           LIMIT @Limit;
                            """;
 
-        await using var connection = OpenConnection();
-
-        var topUrls = (await connection.QueryAsync<TopUrlRow>(
-            new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate }, cancellationToken: ct)
-        )).ToList();
+        using var connection = sqlConnectionFactory.CreateConnection();
+        var urls = await connection.QueryAsync<TopUrlRow>(
+            new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate, Limit = limit },
+                cancellationToken: ct));
 
         return new UserTopUrls
         {
-            TopUrls = topUrls.Select(r => new TopPerformingUrl
+            TopUrls = urls.Select(r => new TopPerformingUrl
             {
                 ShortUrlId = r.ShortUrlId,
                 ShortCode = r.ShortCode,
@@ -651,7 +694,191 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
         };
     }
 
-    // ── Unchanged user slice queries ─────────────────────────────────────────
+    public async Task<GeographicalStats> GetUserGeographyAsync(
+        Guid userId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
+    {
+        // language=sql
+        const string sql = """
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT q.name, q.clicks, q.is_other, q.total_distinct
+                           FROM (
+                               SELECT
+                                   CASE WHEN rn <= 5 THEN name ELSE 'Other' END AS name,
+                                   SUM(clicks) AS clicks,
+                                   CASE WHEN MIN(rn) <= 5 THEN false ELSE true END AS is_other,
+                                   MAX(total_distinct) AS total_distinct
+                               FROM (
+                                   SELECT
+                                       COALESCE(NULLIF(ce.country, ''), 'Unknown') AS name,
+                                       COUNT(*) AS clicks,
+                                       ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn,
+                                       COUNT(*) OVER () AS total_distinct
+                                   FROM click_events ce
+                                   CROSS JOIN params p
+                                   WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                                   GROUP BY ce.country
+                               ) Ranked
+                               GROUP BY CASE WHEN rn <= 5 THEN name ELSE 'Other' END
+                           ) q ORDER BY q.is_other, q.clicks DESC;
+
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT q.name, q.clicks, q.is_other, q.total_distinct
+                           FROM (
+                               SELECT
+                                   CASE WHEN rn <= 5 THEN name ELSE 'Other' END AS name,
+                                   SUM(clicks) AS clicks,
+                                   CASE WHEN MIN(rn) <= 5 THEN false ELSE true END AS is_other,
+                                   MAX(total_distinct) AS total_distinct
+                               FROM (
+                                   SELECT
+                                       COALESCE(NULLIF(ce.city, ''), 'Unknown') AS name,
+                                       COUNT(*) AS clicks,
+                                       ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn,
+                                       COUNT(*) OVER () AS total_distinct
+                                   FROM click_events ce
+                                   CROSS JOIN params p
+                                   WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                                   GROUP BY ce.city
+                               ) Ranked
+                               GROUP BY CASE WHEN rn <= 5 THEN name ELSE 'Other' END
+                           ) q ORDER BY q.is_other, q.clicks DESC;
+                           """;
+
+        using var connection = sqlConnectionFactory.CreateConnection();
+        await using var multi = await connection.QueryMultipleAsync(
+            new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate },
+                cancellationToken: ct));
+
+        return BuildGeoStats(
+            (await multi.ReadAsync<GeoStatRow>()).ToList(),
+            (await multi.ReadAsync<GeoStatRow>()).ToList());
+    }
+
+    public async Task<DeviceStats> GetUserDevicesAsync(
+        Guid userId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
+    {
+        // language=sql
+        const string sql = """
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.device_type, ''), 'Unknown') AS Name,
+                                  COUNT(*) AS Clicks,
+                                  COUNT(DISTINCT ce.session_id) AS UniqueUsers
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY ce.device_type ORDER BY Clicks DESC
+                           LIMIT 5;
+
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.browser, ''), 'Unknown') AS BrowserName,
+                                  COUNT(*) AS Clicks
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY ce.browser ORDER BY Clicks DESC
+                           LIMIT 6;
+
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.operating_system, ''), 'Unknown') AS OsName,
+                                  COUNT(*) AS Clicks
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY ce.operating_system ORDER BY Clicks DESC
+                           LIMIT 6;
+                           """;
+
+        using var connection = sqlConnectionFactory.CreateConnection();
+        await using var multi = await connection.QueryMultipleAsync(
+            new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate },
+                cancellationToken: ct));
+
+        return BuildDeviceStats(
+            (await multi.ReadAsync<DeviceRow>()).ToList(),
+            (await multi.ReadAsync<BrowserRow>()).ToList(),
+            (await multi.ReadAsync<OsRow>()).ToList());
+    }
+
+    public async Task<TrafficStats> GetUserTrafficAsync(
+        Guid userId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
+    {
+        // language=sql
+        const string sql = """
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.traffic_source, ''), 'Direct') AS Source,
+                                  COUNT(*) AS Clicks
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY COALESCE(NULLIF(ce.traffic_source, ''), 'Direct') ORDER BY Clicks DESC
+                           LIMIT 6;
+
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.referrer_domain, ''), 'Direct/Typed') AS Domain,
+                                  COUNT(*) AS Clicks
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                           GROUP BY COALESCE(NULLIF(ce.referrer_domain, ''), 'Direct/Typed') ORDER BY Clicks DESC
+                           LIMIT 10;
+
+                           WITH params AS (
+                               SELECT 
+                                   COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                                   COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+                           )
+                           SELECT COALESCE(NULLIF(ce.utm_campaign, ''), 'Unknown') AS CampaignName,
+                                  NULLIF(ce.utm_source, '') AS Source,
+                                  NULLIF(ce.utm_medium, '') AS Medium,
+                                  COUNT(*) AS Clicks,
+                                  MIN(ce.clicked_at) AS FirstSeen,
+                                  MAX(ce.clicked_at) AS LastSeen
+                           FROM click_events ce
+                           CROSS JOIN params p
+                           WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+                             AND ce.utm_campaign IS NOT NULL AND ce.utm_campaign != ''
+                           GROUP BY ce.utm_campaign, ce.utm_source, ce.utm_medium ORDER BY Clicks DESC
+                           LIMIT 10;
+                           """;
+
+        using var connection = sqlConnectionFactory.CreateConnection();
+        await using var multi = await connection.QueryMultipleAsync(
+            new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate },
+                cancellationToken: ct));
+
+        return BuildTrafficStats(
+            (await multi.ReadAsync<TrafficSourceRow>()).ToList(),
+            (await multi.ReadAsync<ReferrerRow>()).ToList(),
+            (await multi.ReadAsync<CampaignRow>()).ToList());
+    }
 
     public async Task<TimeSeriesStats> GetUserTimeSeriesAsync(
         Guid userId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
@@ -661,7 +888,7 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
             ? BuildUserWeeklyTimeSeriesSql()
             : BuildUserDailyTimeSeriesSql();
 
-        await using var connection = OpenConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         await using var multi = await connection.QueryMultipleAsync(
             new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate },
                 cancellationToken: ct));
@@ -677,25 +904,40 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
     {
         // language=sql
         return """
-               DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-               DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT ce.clicked_at::date AS Date,
+                      COUNT(*) AS Clicks,
+                      COUNT(DISTINCT ce.session_id) AS UniqueClicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY ce.clicked_at::date ORDER BY Date;
 
-               SELECT CAST(ce.ClickedAt AS DATE)   AS Date,
-                      COUNT(*)                     AS Clicks,
-                      COUNT(DISTINCT ce.SessionId) AS UniqueClicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY CAST(ce.ClickedAt AS DATE) ORDER BY Date;
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT EXTRACT(HOUR FROM ce.clicked_at)::int AS Hour, COUNT(*) AS Clicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY EXTRACT(HOUR FROM ce.clicked_at) ORDER BY Hour;
 
-               SELECT DATEPART(HOUR, ce.ClickedAt) AS Hour, COUNT(*) AS Clicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY DATEPART(HOUR, ce.ClickedAt) ORDER BY Hour;
-
-               SELECT DATEPART(WEEKDAY, ce.ClickedAt) - 1 AS DayOfWeek, COUNT(*) AS Clicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY DATEPART(WEEKDAY, ce.ClickedAt) ORDER BY DayOfWeek;
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT EXTRACT(DOW FROM ce.clicked_at)::int AS DayOfWeek, COUNT(*) AS Clicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY EXTRACT(DOW FROM ce.clicked_at) ORDER BY DayOfWeek;
                """;
     }
 
@@ -703,158 +945,49 @@ public class ClickStatisticsDapperQueries(IConfiguration configuration, ILogger<
     {
         // language=sql
         return """
-               DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-               DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
-
-               SELECT DATEADD(DAY, 1 - DATEPART(WEEKDAY, CAST(ce.ClickedAt AS DATE)), CAST(ce.ClickedAt AS DATE)) AS Date,
-                      COUNT(*)                     AS Clicks,
-                      COUNT(DISTINCT ce.SessionId) AS UniqueClicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY DATEADD(DAY, 1 - DATEPART(WEEKDAY, CAST(ce.ClickedAt AS DATE)), CAST(ce.ClickedAt AS DATE))
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT (date_trunc('week', ce.clicked_at))::date AS Date,
+                      COUNT(*) AS Clicks,
+                      COUNT(DISTINCT ce.session_id) AS UniqueClicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY (date_trunc('week', ce.clicked_at))::date
                ORDER BY Date;
 
-               SELECT DATEPART(HOUR, ce.ClickedAt) AS Hour, COUNT(*) AS Clicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY DATEPART(HOUR, ce.ClickedAt) ORDER BY Hour;
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT EXTRACT(HOUR FROM ce.clicked_at)::int AS Hour, COUNT(*) AS Clicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY EXTRACT(HOUR FROM ce.clicked_at) ORDER BY Hour;
 
-               SELECT DATEPART(WEEKDAY, ce.ClickedAt) - 1 AS DayOfWeek, COUNT(*) AS Clicks
-               FROM ClickEvents ce WITH (NOLOCK)
-               WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-               GROUP BY DATEPART(WEEKDAY, ce.ClickedAt) ORDER BY DayOfWeek;
+               WITH params AS (
+                   SELECT 
+                       COALESCE(@E, CURRENT_TIMESTAMP) AS end_date,
+                       COALESCE(@S, COALESCE(@E, CURRENT_TIMESTAMP) - INTERVAL '30 days') AS start_date
+               )
+               SELECT EXTRACT(DOW FROM ce.clicked_at)::int AS DayOfWeek, COUNT(*) AS Clicks
+               FROM click_events ce
+               CROSS JOIN params p
+               WHERE ce.user_id = @UserId AND ce.clicked_at BETWEEN p.start_date AND p.end_date
+               GROUP BY EXTRACT(DOW FROM ce.clicked_at) ORDER BY DayOfWeek;
                """;
     }
 
-    public async Task<GeographicalStats> GetUserGeographyAsync(
+    public async Task<UserTopUrls> GetUserTopUrlsAsync(
         Guid userId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
     {
-        // language=sql
-        const string sql = """
-                           DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-                           DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
-
-                           SELECT q.Name, q.Clicks, q.IsOther, q.TotalDistinct FROM (
-                               SELECT
-                                   CASE WHEN rn <= 5 THEN Name ELSE 'Other' END          AS Name,
-                                   SUM(Clicks)                                            AS Clicks,
-                                   CAST(CASE WHEN MIN(rn) <= 5 THEN 0 ELSE 1 END AS BIT) AS IsOther,
-                                   MAX(TotalDistinct)                                     AS TotalDistinct
-                               FROM (
-                                   SELECT ISNULL(NULLIF(ce.Country, ''), 'Unknown') AS Name, COUNT(*) AS Clicks,
-                                          ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn, COUNT(*) OVER () AS TotalDistinct
-                                   FROM ClickEvents ce WITH (NOLOCK)
-                                   WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-                                   GROUP BY ce.Country
-                               ) r GROUP BY CASE WHEN rn <= 5 THEN Name ELSE 'Other' END
-                           ) q ORDER BY q.IsOther, q.Clicks DESC;
-
-                           SELECT q.Name, q.Clicks, q.IsOther, q.TotalDistinct FROM (
-                               SELECT
-                                   CASE WHEN rn <= 5 THEN Name ELSE 'Other' END          AS Name,
-                                   SUM(Clicks)                                            AS Clicks,
-                                   CAST(CASE WHEN MIN(rn) <= 5 THEN 0 ELSE 1 END AS BIT) AS IsOther,
-                                   MAX(TotalDistinct)                                     AS TotalDistinct
-                               FROM (
-                                   SELECT ISNULL(NULLIF(ce.City, ''), 'Unknown') AS Name, COUNT(*) AS Clicks,
-                                          ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn, COUNT(*) OVER () AS TotalDistinct
-                                   FROM ClickEvents ce WITH (NOLOCK)
-                                   WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-                                   GROUP BY ce.City
-                               ) r GROUP BY CASE WHEN rn <= 5 THEN Name ELSE 'Other' END
-                           ) q ORDER BY q.IsOther, q.Clicks DESC;
-                           """;
-
-        await using var connection = OpenConnection();
-        await using var multi = await connection.QueryMultipleAsync(
-            new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate },
-                cancellationToken: ct));
-
-        return BuildGeoStats(
-            (await multi.ReadAsync<GeoStatRow>()).ToList(),
-            (await multi.ReadAsync<GeoStatRow>()).ToList());
+        return await GetUserTopUrlsAsync(userId, startDate, endDate, limit: 10, ct);
     }
-
-    public async Task<TrafficStats> GetUserTrafficAsync(
-        Guid userId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
-    {
-        // language=sql
-        const string sql = """
-                           DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-                           DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
-
-                           SELECT TOP 6
-                               ISNULL(NULLIF(ce.TrafficSource, ''), 'Direct') AS Source, COUNT(*) AS Clicks
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ISNULL(NULLIF(ce.TrafficSource, ''), 'Direct') ORDER BY Clicks DESC;
-
-                           SELECT TOP 10
-                               ISNULL(NULLIF(ce.ReferrerDomain, ''), 'Direct/Typed') AS Domain, COUNT(*) AS Clicks
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ISNULL(NULLIF(ce.ReferrerDomain, ''), 'Direct/Typed') ORDER BY Clicks DESC;
-
-                           SELECT TOP 10
-                               ISNULL(NULLIF(ce.UtmCampaign, ''), 'Unknown') AS CampaignName,
-                               NULLIF(ce.UtmSource, '') AS Source, NULLIF(ce.UtmMedium, '') AS Medium,
-                               COUNT(*) AS Clicks, MIN(ce.ClickedAt) AS FirstSeen, MAX(ce.ClickedAt) AS LastSeen
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-                             AND ce.UtmCampaign IS NOT NULL AND ce.UtmCampaign != ''
-                           GROUP BY ce.UtmCampaign, ce.UtmSource, ce.UtmMedium ORDER BY Clicks DESC;
-                           """;
-
-        await using var connection = OpenConnection();
-        await using var multi = await connection.QueryMultipleAsync(
-            new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate },
-                cancellationToken: ct));
-
-        return BuildTrafficStats(
-            (await multi.ReadAsync<TrafficSourceRow>()).ToList(),
-            (await multi.ReadAsync<ReferrerRow>()).ToList(),
-            (await multi.ReadAsync<CampaignRow>()).ToList());
-    }
-
-    public async Task<DeviceStats> GetUserDevicesAsync(
-        Guid userId, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
-    {
-        // language=sql
-        const string sql = """
-                           DECLARE @End   DATETIME2 = ISNULL(@E, GETUTCDATE());
-                           DECLARE @Start DATETIME2 = ISNULL(@S, DATEADD(DAY, -30, @End));
-
-                           SELECT TOP 5
-                               ISNULL(NULLIF(ce.DeviceType, ''), 'Unknown') AS Name,
-                               COUNT(*) AS Clicks, COUNT(DISTINCT ce.SessionId) AS UniqueUsers
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ce.DeviceType ORDER BY Clicks DESC;
-
-                           SELECT TOP 6
-                               ISNULL(NULLIF(ce.Browser, ''), 'Unknown') AS BrowserName, COUNT(*) AS Clicks
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ce.Browser ORDER BY Clicks DESC;
-
-                           SELECT TOP 6
-                               ISNULL(NULLIF(ce.OperatingSystem, ''), 'Unknown') AS OsName, COUNT(*) AS Clicks
-                           FROM ClickEvents ce WITH (NOLOCK)
-                           WHERE ce.UserId = @UserId AND ce.ClickedAt BETWEEN @Start AND @End
-                           GROUP BY ce.OperatingSystem ORDER BY Clicks DESC;
-                           """;
-
-        await using var connection = OpenConnection();
-        await using var multi = await connection.QueryMultipleAsync(
-            new CommandDefinition(sql, new { UserId = userId, S = startDate, E = endDate },
-                cancellationToken: ct));
-
-        return BuildDeviceStats(
-            (await multi.ReadAsync<DeviceRow>()).ToList(),
-            (await multi.ReadAsync<BrowserRow>()).ToList(),
-            (await multi.ReadAsync<OsRow>()).ToList());
-    }
-
     #endregion
 
     // ═════════════════════════════════════════════════════════════════════════

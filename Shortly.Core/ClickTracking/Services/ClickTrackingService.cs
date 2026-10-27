@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.Analytics.Contracts;
 using Shortly.Core.ClickTracking.Contracts;
 using Shortly.Core.ClickTracking.DTOs;
-using Shortly.Core.Common;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.ClickTracking;
 
@@ -145,13 +145,19 @@ public class ClickTrackingService (
 
     
     /// <inheritdoc />
-    public async Task<PagedResult<ClickEvent>> GetClickHistoryAsync(long shortUrlId, int pageNumber = 1, int pageSize = 50,
+    public async Task<PagedResponse<ClickEvent>> GetClickHistoryAsync(long shortUrlId, int pageNumber = 1, int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
         var clicks = await clickEventRepository.GetByShortUrlIdAsync(shortUrlId, pageNumber, pageSize, cancellationToken);
         var totalCount = await shortUrlAnalyticsService.GetTotalClicksAsync(shortUrlId, cancellationToken);
-        
-        return new PagedResult<ClickEvent>(clicks, totalCount, pageNumber, pageSize);
+
+        return new PagedResponse<ClickEvent>
+        {
+            Items = clicks.ToList(),
+            Page = pageNumber,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     

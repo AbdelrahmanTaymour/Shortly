@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.Users;
-using Shortly.Infrastructure.DbContexts;
+using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Repositories.Users;
 
@@ -14,7 +14,7 @@ namespace Shortly.Infrastructure.Repositories.Users;
 /// Uses bulk update operations (ExecuteUpdateAsync) for optimal performance when incrementing usage counters.
 /// Designed for high-frequency operations like tracking link and QR code creation.
 /// </remarks>
-public class UserUsageRepository(SqlServerDbContext dbContext, ILogger<UserUsageRepository> logger)
+public class UserUsageRepository(ApplicationDbContext dbContext, ILogger<UserUsageRepository> logger)
     : IUserUsageRepository
 {
     /// <inheritdoc/>
@@ -22,7 +22,7 @@ public class UserUsageRepository(SqlServerDbContext dbContext, ILogger<UserUsage
     {
         try
         {
-            return await dbContext.UserUsage
+            return await dbContext.Set<UserUsage>()
                 .FindAsync([userId], cancellationToken);
         }
         catch (Exception ex)
@@ -37,7 +37,7 @@ public class UserUsageRepository(SqlServerDbContext dbContext, ILogger<UserUsage
     {
         try
         {
-            dbContext.UserUsage.Update(usage);
+            dbContext.Set<UserUsage>().Update(usage);
             return await dbContext.SaveChangesAsync(cancellationToken) > 0;
         }
         catch (Exception ex)
@@ -52,7 +52,7 @@ public class UserUsageRepository(SqlServerDbContext dbContext, ILogger<UserUsage
     {
         try
         {
-            var rawAffected = await dbContext.UserUsage
+            var rawAffected = await dbContext.Set<UserUsage>()
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.MonthlyLinksCreated, u => u.MonthlyLinksCreated + 1)
@@ -72,7 +72,7 @@ public class UserUsageRepository(SqlServerDbContext dbContext, ILogger<UserUsage
     {
         try
         {
-            var rawAffected = await dbContext.UserUsage
+            var rawAffected = await dbContext.Set<UserUsage>()
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.MonthlyQrCodesCreated, u => u.MonthlyQrCodesCreated + 1)
@@ -92,7 +92,7 @@ public class UserUsageRepository(SqlServerDbContext dbContext, ILogger<UserUsage
     {
         try
         {
-            var rawAffected = await dbContext.UserUsage
+            var rawAffected = await dbContext.Set<UserUsage>()
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.MonthlyLinksCreated, 0)
@@ -114,8 +114,8 @@ public class UserUsageRepository(SqlServerDbContext dbContext, ILogger<UserUsage
         try
         {
             var affectedRows = await (
-                    from usage in dbContext.UserUsage
-                    join user in dbContext.Users on usage.UserId equals user.Id
+                    from usage in dbContext.Set<UserUsage>()
+                    join user in dbContext.Set<User>() on usage.UserId equals user.Id
                     where !user.IsDeleted && usage.MonthlyResetDate < resetDate
                     select usage
                 )
@@ -142,7 +142,7 @@ public class UserUsageRepository(SqlServerDbContext dbContext, ILogger<UserUsage
     {
         try
         {
-            return await dbContext.UserUsage
+            return await dbContext.Set<UserUsage>()
                 .AsNoTracking()
                 .Where(uu =>
                     uu.MonthlyResetDate.Date >= from.Date &&

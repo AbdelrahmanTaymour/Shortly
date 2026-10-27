@@ -1,22 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Shortly.Core.Common;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Profile.DTOs;
 using Shortly.Core.Security.DTOs;
-using Shortly.Core.Users.Contracts;
-using Shortly.Core.Users.DTOs.Search;
-using Shortly.Core.Users.DTOs.Usage;
-using Shortly.Core.Users.DTOs.User;
-using Shortly.Core.Users.Mappers;
+using Shortly.Core.Users_legacy.Contracts;
+using Shortly.Core.Users_legacy.DTOs.Search;
+using Shortly.Core.Users_legacy.DTOs.Usage;
+using Shortly.Core.Users_legacy.DTOs.User;
+using Shortly.Core.Users_legacy.Mappers;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
-using Shortly.Infrastructure.DbContexts;
+using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Repositories.Users;
 
-public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logger)
+public class UserQueries(ApplicationDbContext dbContext, ILogger<UserQueries> logger)
     : IUserQueries
 {
     /// <inheritdoc />
@@ -74,7 +74,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
             }
 
             await DeleteUserShortUrlsIfRequiredAsync(user, userId);
-            dbContext.Users.Remove(user);
+            dbContext.Set<User>().Remove(user);
 
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -100,7 +100,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
 
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkActivateUsersAsync(ICollection<Guid> userIds,
+    public async Task<BulkOperationResponse> BulkActivateUsersAsync(ICollection<Guid> userIds,
         CancellationToken cancellationToken = default)
     {
         var idsCount = userIds.Count();
@@ -108,7 +108,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
 
         try
         {
-            var successCount = await dbContext.Users
+            var successCount = await dbContext.Set<User>()
                 .Where(u => userIds.Contains(u.Id) && !u.IsActive)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.IsActive, true)
@@ -120,7 +120,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
                 "Bulk activation completed. {SuccessCount} users activated, {SkippedCount} users were already active or don't exist.",
                 successCount, skippedCount);
 
-            return new BulkOperationResult(idsCount, successCount, skippedCount);
+            return new BulkOperationResponse(idsCount, successCount, skippedCount);
         }
         catch (Exception ex)
         {
@@ -130,7 +130,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkDeactivateUsersAsync(ICollection<Guid> userIds,
+    public async Task<BulkOperationResponse> BulkDeactivateUsersAsync(ICollection<Guid> userIds,
         CancellationToken cancellationToken)
     {
         var idsCount = userIds.Count;
@@ -138,7 +138,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
 
         try
         {
-            var successCount = await dbContext.Users
+            var successCount = await dbContext.Set<User>()
                 .Where(u => userIds.Contains(u.Id) && u.IsActive)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.IsActive, false)
@@ -147,7 +147,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
 
             var skippedCount = idsCount - successCount;
 
-            return new BulkOperationResult(idsCount, successCount, skippedCount);
+            return new BulkOperationResponse(idsCount, successCount, skippedCount);
         }
         catch (Exception ex)
         {
@@ -157,7 +157,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy,
+    public async Task<BulkOperationResponse> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy,
         CancellationToken cancellationToken = default)
     {
         var idsCount = userIds.Count;
@@ -165,7 +165,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
 
         try
         {
-            var successCount = await dbContext.Users
+            var successCount = await dbContext.Set<User>()
                 .Where(u => userIds.Contains(u.Id) && !u.IsDeleted)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.IsDeleted, true)
@@ -177,7 +177,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
 
             var skippedCount = idsCount - successCount;
 
-            return new BulkOperationResult(idsCount, successCount, skippedCount);
+            return new BulkOperationResponse(idsCount, successCount, skippedCount);
         }
         catch (Exception ex)
         {
@@ -217,7 +217,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
     {
         try
         {
-            var result = await dbContext.Users
+            var result = await dbContext.Set<User>()
                 .Where(u => u.Id == userId && u.IsActive && !u.IsDeleted)
                 .Select(u => new UserUsageWithPlan
                 (
@@ -239,9 +239,6 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
             throw new DatabaseException("Error retrieving user usage and subscription plan.", ex);
         }
     }
-    
-    
-
 
     #region Private Helper Methods
 
@@ -252,7 +249,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
     /// <returns>The user entity with all related entities loaded, or null if not found.</returns>
     private async Task<User?> LoadUserWithRelatedEntitiesAsync(Guid userId)
     {
-        return await dbContext.Users
+        return await dbContext.Set<User>()
             .Include(u => u.Profile)
             .Include(u => u.UserSecurity)
             .Include(u => u.UserUsage)
@@ -310,7 +307,6 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
         user.Email = dto.Email;
         user.Username = dto.Username;
         user.SubscriptionPlanId = dto.SubscriptionPlanId;
-        user.Permissions = dto.Permissions;
         user.IsActive = dto.IsActive;
         user.IsEmailConfirmed = dto.IsEmailConfirmed;
         user.UpdatedAt = dto.UpdatedAt;
@@ -378,7 +374,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
     private async Task<User?> GetUserForDeletionAsync(Guid userId, bool includeShortUrls,
         CancellationToken cancellationToken)
     {
-        var query = dbContext.Users.AsQueryable();
+        var query = dbContext.Set<User>().AsQueryable();
 
         if (includeShortUrls) query = query.Include(u => u.OwnedShortUrls);
 
@@ -394,7 +390,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
     {
         if (user.OwnedShortUrls?.Count > 0)
         {
-            dbContext.ShortUrls.RemoveRange(user.OwnedShortUrls);
+            dbContext.Set<ShortUrl>().RemoveRange(user.OwnedShortUrls);
             logger.LogInformation(
                 "Deleted {Count} short URLs for user {UserId}.",
                 user.OwnedShortUrls.Count,
@@ -442,7 +438,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
     /// <returns>An IQueryable of User entities with applied filters and ordering by username.</returns>
     private IQueryable<User> BuildUserQuery1409496384(UserSearchRequest request)
     {
-        var query = dbContext.Users
+        var query = dbContext.Set<User>()
             .AsNoTracking()
             .AsQueryable();
 
@@ -570,8 +566,8 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
             u.Id,
             u.Email,
             u.Username,
+            
             u.SubscriptionPlanId,
-            u.Permissions,
             u.IsActive,
             u.IsEmailConfirmed,
             u.UpdatedAt,
@@ -597,8 +593,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
             u.Email,
             u.Username,
             u.SubscriptionPlanId,
-            u.IsActive,
-            u.Permissions
+            u.IsActive
         );
     }
     
@@ -609,7 +604,7 @@ public class UserQueries(SqlServerDbContext dbContext, ILogger<UserQueries> logg
     /// <returns>An IQueryable of User entities with applied filters and ordering by username.</returns>
     private IQueryable<User> BuildUserQuery(UserSearchRequest request)
     {
-        var query = dbContext.Users
+        var query = dbContext.Set<User>()
             .AsNoTracking()
             .AsQueryable();
 

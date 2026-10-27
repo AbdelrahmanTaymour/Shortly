@@ -6,12 +6,11 @@ using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 using Shortly.Domain.RepositoryContract.ShortUrls;
-using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.ShortUrls;
 
 public class ShortUrlQueryRepository(
-    IDbContextFactory<SqlServerDbContext> dbContextFactory,
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
     ILogger<ShortUrlQueryRepository> logger)
     : IShortUrlQueryRepository
 {
@@ -29,7 +28,7 @@ public class ShortUrlQueryRepository(
         {
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-            return await ctx.ShortUrls
+            return await ctx.Set<ShortUrl>()
                 .AsNoTracking()
                 .Where(predicate)
                 .OrderByDescending(s => s.CreatedAt)
@@ -107,7 +106,7 @@ public class ShortUrlQueryRepository(
             // so one context is correct and safe here.
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-            var query = ctx.ShortUrls.AsNoTracking();
+            var query = ctx.Set<ShortUrl>().AsNoTracking();
 
             if (userId.HasValue)
                 query = query.Where(s => s.UserId == userId);
@@ -153,7 +152,7 @@ public class ShortUrlQueryRepository(
 
         // Project to only the 7 columns analytics needs.
         // EF Core generates a tight SELECT with no JOINs — SQL Server can satisfy
-        return await ctx.ShortUrls
+        return await ctx.Set<ShortUrl>()
             .AsNoTracking()
             .Where(s => s.UserId == userId)
             .OrderByDescending(s => s.CreatedAt)
@@ -202,7 +201,7 @@ public class ShortUrlQueryRepository(
             await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
             // Base scope: always restrict to the owner
-            var query = ctx.ShortUrls
+            var query = ctx.Set<ShortUrl>()
                 .AsNoTracking()
                 .Where(s => s.UserId == userId);
 

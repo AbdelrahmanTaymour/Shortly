@@ -1,7 +1,7 @@
-using Shortly.Core.Common;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.ShortUrls.DTOs;
+using Shortly.Domain.Abstractions;
 
 namespace Shortly.Core.ShortUrls.Contracts;
 
@@ -180,7 +180,7 @@ public interface IShortUrlQueryService
         CancellationToken cancellationToken = default);
 
 
-    Task<PagedResult<ShortUrlDto>> SearchByFiltersAsync(
+    Task<PagedResponse<ShortUrlDto>> SearchByFiltersAsync(
         Guid userId,
         ShortUrlSearchRequest request,
         CancellationToken cancellationToken = default);

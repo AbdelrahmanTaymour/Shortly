@@ -1,6 +1,6 @@
 using Shortly.Core.ClickTracking.DTOs;
-using Shortly.Core.Common;
 using Shortly.Core.Exceptions.ServerErrors;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Core.ClickTracking.Contracts;
@@ -252,7 +252,7 @@ public interface IClickTrackingService
     /// <param name="pageSize">The number of clicks per page (default: 50, must be positive)</param>
     /// <param name="cancellationToken">Token to monitor for cancellation requests during the async operation</param>
     /// <returns>
-    /// A <see cref="PagedResult{ClickEvent}"/> containing the requested page of click events
+    /// A <see cref="PagedResponse{T}"/> containing the requested page of click events
     /// along with pagination metadata (total count, page info, etc.)
     /// </returns>
     /// <remarks>
@@ -314,7 +314,7 @@ public interface IClickTrackingService
     /// }
     /// </code>
     /// </example>
-    Task<PagedResult<ClickEvent>> GetClickHistoryAsync(long shortUrlId, int pageNumber = 1, int pageSize = 50,
+    Task<PagedResponse<ClickEvent>> GetClickHistoryAsync(long shortUrlId, int pageNumber = 1, int pageSize = 50,
         CancellationToken cancellationToken = default);
    
     

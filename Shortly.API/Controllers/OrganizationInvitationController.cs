@@ -1,13 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Authorization;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions.DTOs;
 using Shortly.Core.Invitations.Contracts;
 using Shortly.Core.Invitations.DTOs;
-using Shortly.Core.Organizations.Contracts;
-using Shortly.Core.Organizations.DTOs;
-using Shortly.Domain.Enums;
 
 namespace Shortly.API.Controllers;
 
@@ -169,7 +165,7 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     //[RequirePermission(enPermissions.ManageInvitations)]
     public async Task<IActionResult> Accept([FromQuery] string token, CancellationToken cancellationToken = default)
     {
-        var result = await invitationService.AcceptInvitationAsync(token, userContext.CurrentUserId, cancellationToken);
+        var result = await invitationService.AcceptInvitationAsync(token, userContext.UserId, cancellationToken);
         return Ok(result);
     }
 
@@ -228,7 +224,7 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     //[RequirePermission(enPermissions.ManageInvitations)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken = default)
     {
-        await invitationService.CancelInvitationAsync(id, userContext.CurrentUserId, cancellationToken);
+        await invitationService.CancelInvitationAsync(id, userContext.UserId, cancellationToken);
         return NoContent();
     }
 
@@ -258,7 +254,7 @@ public class OrganizationInvitationController(IOrganizationInvitationService inv
     //[RequirePermission(enPermissions.CreateInvitations)]
     public async Task<IActionResult> Resend(Guid id, CancellationToken cancellationToken = default)
     {
-        var result = await invitationService.ResendInvitationAsync(id, userContext.CurrentUserId, cancellationToken);
+        var result = await invitationService.ResendInvitationAsync(id, userContext.UserId, cancellationToken);
         return Ok(result);
     }
 

@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Shortly.Core.Common;
 using Shortly.Core.Exceptions.ServerErrors;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Core.ShortUrls.Contracts;
@@ -23,7 +24,7 @@ public interface IUrlBulkOperationsCommand
     /// This operation is atomic and optimized for performance. It logs the operation
     /// for audit purposes.
     /// </remarks>
-    Task<BulkOperationResult> BulkDeleteAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> BulkDeleteAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
     
     
     /// <summary>
@@ -38,7 +39,7 @@ public interface IUrlBulkOperationsCommand
     /// <exception cref="ArgumentNullException">Thrown when ids collection is null.</exception>
     /// <exception cref="ArgumentException">Thrown when ids collection is empty.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<BulkOperationResult> BulkDeactivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> BulkDeactivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
     
     
     /// <summary>
@@ -53,7 +54,7 @@ public interface IUrlBulkOperationsCommand
     /// <exception cref="ArgumentNullException">Thrown when ids collection is null.</exception>
     /// <exception cref="ArgumentException">Thrown when ids collection is empty.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<BulkOperationResult> BulkActivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> BulkActivateAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default);
     
     
     /// <summary>
@@ -70,7 +71,7 @@ public interface IUrlBulkOperationsCommand
     /// This method is typically used by background services for cleanup operations.
     /// It only deletes URLs where ExpiresAt is not null and is less than or equal to nowUtc.
     /// </remarks>
-    Task<BulkOperationResult> DeleteExpiredAsync(DateTime nowUtc, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> DeleteExpiredAsync(DateTime nowUtc, CancellationToken cancellationToken = default);
     
     
     /// <summary>
@@ -86,7 +87,7 @@ public interface IUrlBulkOperationsCommand
     /// <exception cref="ArgumentNullException">Thrown when ids collection is null.</exception>
     /// <exception cref="ArgumentException">Thrown when ids collection is empty.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<BulkOperationResult> BulkUpdateExpirationAsync(IReadOnlyCollection<long> ids, DateTime? newExpirationDate, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> BulkUpdateExpirationAsync(IReadOnlyCollection<long> ids, DateTime? newExpirationDate, CancellationToken cancellationToken = default);
     
     
     /// <summary>
@@ -102,7 +103,7 @@ public interface IUrlBulkOperationsCommand
     /// <exception cref="ArgumentException">Thrown when shortUrls collection is empty.</exception>
     /// <exception cref="ValidationException">Thrown when any URL fails validation.</exception>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
-    Task<BulkOperationResult> BulkCreateAsync(IReadOnlyCollection<ShortUrl> shortUrls, CancellationToken cancellationToken = default);
+    Task<BulkOperationResponse> BulkCreateAsync(IReadOnlyCollection<ShortUrl> shortUrls, CancellationToken cancellationToken = default);
 
     
     /// <summary>
@@ -112,14 +113,14 @@ public interface IUrlBulkOperationsCommand
     /// <param name="shortUrlsMap">Dictionary mapping short URL IDs to their new short codes. Values can be null to clear the short code.</param>
     /// <param name="cancellationToken">Token to observe for cancellation requests.</param>
     /// <returns>
-    /// A <see cref="BulkOperationResult"/> containing the total processed, success count, and failure count.
+    /// A <see cref="BulkOperationResponse"/> containing the total processed, success count, and failure count.
     /// </returns>
     /// <exception cref="DatabaseException">Thrown when database operation fails.</exception>
     /// <remarks>
     /// Uses ExecuteUpdateAsync for optimal performance. Non-existent IDs are counted as failures.
     /// UpdatedAt is automatically set to current UTC time. Null short code values will clear the existing short code.
     /// </remarks>
-    Task<BulkOperationResult> BulkUpdateShortCodeAsync(IReadOnlyDictionary<long, string?> shortUrlsMap,
+    Task<BulkOperationResponse> BulkUpdateShortCodeAsync(IReadOnlyDictionary<long, string?> shortUrlsMap,
         CancellationToken cancellationToken = default);
 
 

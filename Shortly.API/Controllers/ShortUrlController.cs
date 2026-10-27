@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.Auth.Contracts;
 using Shortly.Core.Exceptions.DTOs;
 using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Core.ShortUrls.DTOs;
@@ -19,7 +18,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-public class ShortUrlController(IShortUrlsService shortUrlsService, IAuthenticationContextProvider contextProvider) : ControllerApiBase
+public class ShortUrlController(IShortUrlsService shortUrlsService) : ControllerApiBase
 {
 
     /// <summary>

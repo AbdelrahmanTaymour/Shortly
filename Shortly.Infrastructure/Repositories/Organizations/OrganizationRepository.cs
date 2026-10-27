@@ -1,30 +1,30 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
+using Shortly.Domain.Members;
 using Shortly.Domain.RepositoryContract.Organizations;
-using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.Organizations;
 
 /// <summary>
-/// Repository implementation for managing Organization entities in the database.
+/// Repository implementation for managing Organization entities in the database using PostgreSQL.
 /// Provides CRUD operations, querying capabilities, and organization-specific business logic
 /// with comprehensive error handling and logging.
 /// </summary>
-/// <param name="dbContext">The Entity Framework database context for SQL Server operations.</param>
-/// <param name="logger">The logger instance for recording operation details and errors.</param>
-public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<OrganizationRepository> logger)
-    : IOrganizationRepository
+internal sealed class OrganizationRepository(
+    ApplicationDbContext dbContext, 
+    ILogger<OrganizationRepository> logger)
+    : Repository<Organization>(dbContext), IOrganizationRepository
 {
     /// <inheritdoc/>
     public async Task<IEnumerable<Organization>> GetAllAsync(int page = 1, int pageSize = 50, CancellationToken cancellationToken = default)
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.DeletedAt == null)
                 .OrderBy(o => o.Name)
@@ -40,34 +40,17 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     }
 
     /// <inheritdoc/>
-    public async Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            return await dbContext.Organizations
-                .FindAsync([id], cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error retrieving organization with ID {OrganizationId}.", id);
-            throw new DatabaseException("An error occurred while retrieving the organization.", ex);
-        }
-    }
-
-    /// <inheritdoc/>
     public async Task<Organization> AddAsync(Organization organization)
     {
         try
         {
-            await dbContext.Organizations.AddAsync(organization);
-            await dbContext.SaveChangesAsync();
+            await DbContext.Set<Organization>().AddAsync(organization);
+            await DbContext.SaveChangesAsync();
             return organization;
         }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 2627 || sqlEx.Number == 2601))
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23505")
         {
-            // SQL Server error codes:
-            // 2601 - Cannot insert duplicate key row in object with unique index
-            // 2627 - Violation of UNIQUE KEY constraint
+            // PostgreSQL error code 23505: unique_violation
             logger.LogWarning(ex,
                 "Conflict: Organization with name {OrganizationName} already exists for owner {OwnerId}.",
                 organization.Name, organization.OwnerId);
@@ -86,14 +69,12 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await DbContext.SaveChangesAsync(cancellationToken);
             return organization;
         }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 2627 || sqlEx.Number == 2601))
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23505")
         {
-            // SQL Server error codes:
-            // 2601 - Cannot insert duplicate key row in object with unique index
-            // 2627 - Violation of UNIQUE KEY constraint
+            // PostgreSQL error code 23505: unique_violation
             logger.LogWarning(ex,
                 "Conflict: Organization with updated name {OrganizationName} already exists for owner {OwnerId}.",
                 organization.Name, organization.OwnerId);
@@ -112,7 +93,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.Id == organizationId)
                 .ExecuteUpdateAsync(setters => setters
@@ -133,9 +114,9 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
-                .AnyAsync(o => o.Id == organizationId, cancellationToken); // Deleted organization included
+                .AnyAsync(o => o.Id == organizationId, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -149,7 +130,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Include(o => o.Members)
                 .ThenInclude(m => m.User)
@@ -167,7 +148,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Include(o => o.Teams)
                 .ThenInclude(t => t.TeamMembers)
@@ -185,7 +166,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Include(o => o.Owner)
                 .Include(o => o.Members)
@@ -206,7 +187,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.OwnerId == ownerId && o.DeletedAt == null)
                 .ToListAsync(cancellationToken);
@@ -223,7 +204,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.IsActive && o.DeletedAt == null)
                 .ToListAsync(cancellationToken);
@@ -240,7 +221,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.IsSubscribed && o.DeletedAt == null)
                 .ToListAsync(cancellationToken);
@@ -257,7 +238,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(o => o.Name == name && o.DeletedAt == null, cancellationToken);
         }
@@ -273,7 +254,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .AnyAsync(o => o.Id == organizationId && o.OwnerId == userId && o.DeletedAt == null,
                     cancellationToken);
@@ -290,9 +271,9 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Set<OrganizationMember>()
+            return await DbContext.Set<OrganizationMember>()
                 .AsNoTracking()
-                .CountAsync(cancellationToken);
+                .CountAsync(m => m.OrganizationId == organizationId, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -306,7 +287,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.Name.Contains(searchTerm) && o.DeletedAt == null)
                 .OrderBy(o => o.Name)
@@ -327,7 +308,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.Id == organizationId && o.OwnerId == currentOwnerId && o.DeletedAt == null)
                 .ExecuteUpdateAsync(setters => setters
@@ -347,7 +328,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.Id == id)
                 .ExecuteUpdateAsync(setters => setters
@@ -368,7 +349,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.Id == organizationId && o.DeletedAt == null && !o.IsActive)
                 .ExecuteUpdateAsync(setters => setters
@@ -388,7 +369,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.Id == organizationId && o.DeletedAt == null && o.IsActive)
                 .ExecuteUpdateAsync(setters => setters
@@ -408,7 +389,7 @@ public class OrganizationRepository(SqlServerDbContext dbContext, ILogger<Organi
     {
         try
         {
-            return await dbContext.Organizations
+            return await DbContext.Set<Organization>()
                 .AsNoTracking()
                 .AnyAsync(o => o.OwnerId == userId);
         }

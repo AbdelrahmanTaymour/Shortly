@@ -1,7 +1,7 @@
-using Shortly.Core.Common;
 using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Core.ShortUrls.DTOs;
 using Shortly.Core.ShortUrls.Mappers;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.RepositoryContract.ShortUrls;
 
 namespace Shortly.Core.ShortUrls.Services;
@@ -99,7 +99,7 @@ public class ShortUrlQueryService(IShortUrlQueryRepository queryRepository) : IS
         return urls.MapToShortUrlDtos();
     }
 
-    public async Task<PagedResult<ShortUrlDto>> SearchByFiltersAsync(
+    public async Task<PagedResponse<ShortUrlDto>> SearchByFiltersAsync(
         Guid userId,
         ShortUrlSearchRequest request,
         CancellationToken cancellationToken = default)
@@ -111,10 +111,12 @@ public class ShortUrlQueryService(IShortUrlQueryRepository queryRepository) : IS
 
         var dtoItems = shortUrls.MapToShortUrlDtos();
 
-        return new PagedResult<ShortUrlDto>(
-            dtoItems,
-            totalCount,
-            request.PageNumber,
-            request.PageSize);
+        return new PagedResponse<ShortUrlDto>
+        {
+            Items = dtoItems.ToList(),
+            Page = request.PageNumber,
+            PageSize = request.PageSize,
+            TotalCount = totalCount
+        };
     }
 }

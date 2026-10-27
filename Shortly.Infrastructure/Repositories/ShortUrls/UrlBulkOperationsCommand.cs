@@ -1,20 +1,22 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
+using NpgsqlTypes;
 using Shortly.Core.Common;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.ShortUrls.Contracts;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
-using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.ShortUrls;
 
 public class UrlBulkOperationsCommand(
-    SqlServerDbContext dbContext,
+    ApplicationDbContext dbContext,
     ILogger<UrlBulkOperationsCommand> logger) : IUrlBulkOperationsCommand
 {
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkDeleteAsync(IReadOnlyCollection<long> ids,
+    public async Task<BulkOperationResponse> BulkDeleteAsync(IReadOnlyCollection<long> ids,
         CancellationToken cancellationToken = default)
     {
         if (ids == null)
@@ -28,7 +30,7 @@ public class UrlBulkOperationsCommand(
 
         try
         {
-            var successCount = await dbContext.ShortUrls
+            var successCount = await dbContext.Set<ShortUrl>()
                 .Where(s => ids.Contains(s.Id))
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -37,7 +39,7 @@ public class UrlBulkOperationsCommand(
             logger.LogInformation("Bulk deletion completed: {SuccessCount} deleted, {SkippedCount} skipped",
                 successCount, skippedCount);
 
-            return new BulkOperationResult(idsCount, successCount, skippedCount);
+            return new BulkOperationResponse(idsCount, successCount, skippedCount);
         }
         catch (Exception ex)
         {
@@ -47,7 +49,7 @@ public class UrlBulkOperationsCommand(
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkDeactivateAsync(IReadOnlyCollection<long> ids,
+    public async Task<BulkOperationResponse> BulkDeactivateAsync(IReadOnlyCollection<long> ids,
         CancellationToken cancellationToken = default)
     {
         if (ids == null)
@@ -62,7 +64,7 @@ public class UrlBulkOperationsCommand(
         try
         {
             var now = DateTime.UtcNow;
-            var successCount = await dbContext.ShortUrls
+            var successCount = await dbContext.Set<ShortUrl>()
                 .Where(s => ids.Contains(s.Id))
                 .ExecuteUpdateAsync(s => s
                         .SetProperty(x => x.IsActive, false)
@@ -74,7 +76,7 @@ public class UrlBulkOperationsCommand(
             logger.LogInformation("Bulk deactivation completed: {SuccessCount} deactivated, {SkippedCount} skipped",
                 successCount, skippedCount);
 
-            return new BulkOperationResult(idsCount, successCount, skippedCount);
+            return new BulkOperationResponse(idsCount, successCount, skippedCount);
         }
         catch (Exception ex)
         {
@@ -84,7 +86,7 @@ public class UrlBulkOperationsCommand(
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkActivateAsync(IReadOnlyCollection<long> ids,
+    public async Task<BulkOperationResponse> BulkActivateAsync(IReadOnlyCollection<long> ids,
         CancellationToken cancellationToken = default)
     {
         if (ids == null)
@@ -99,7 +101,7 @@ public class UrlBulkOperationsCommand(
         try
         {
             var now = DateTime.UtcNow;
-            var successCount = await dbContext.ShortUrls
+            var successCount = await dbContext.Set<ShortUrl>()
                 .Where(s => ids.Contains(s.Id))
                 .ExecuteUpdateAsync(s => s
                         .SetProperty(x => x.IsActive, true)
@@ -111,7 +113,7 @@ public class UrlBulkOperationsCommand(
             logger.LogInformation("Bulk activation completed: {SuccessCount} activated, {SkippedCount} skipped",
                 successCount, skippedCount);
 
-            return new BulkOperationResult(idsCount, successCount, skippedCount);
+            return new BulkOperationResponse(idsCount, successCount, skippedCount);
         }
         catch (Exception ex)
         {
@@ -121,20 +123,20 @@ public class UrlBulkOperationsCommand(
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> DeleteExpiredAsync(DateTime nowUtc,
+    public async Task<BulkOperationResponse> DeleteExpiredAsync(DateTime nowUtc,
         CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Starting deletion of expired short URLs");
 
         try
         {
-            var successCount = await dbContext.ShortUrls
+            var successCount = await dbContext.Set<ShortUrl>()
                 .Where(s => s.ExpiresAt != null && s.ExpiresAt <= nowUtc)
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             logger.LogInformation("Deleted {SuccessCount} expired short URLs", successCount);
-            return new BulkOperationResult(-1, successCount, -1);
+            return new BulkOperationResponse(-1, successCount, -1);
         }
         catch (Exception ex)
         {
@@ -144,7 +146,7 @@ public class UrlBulkOperationsCommand(
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkUpdateExpirationAsync(IReadOnlyCollection<long> ids,
+    public async Task<BulkOperationResponse> BulkUpdateExpirationAsync(IReadOnlyCollection<long> ids,
         DateTime? newExpirationDate, CancellationToken cancellationToken = default)
     {
         var idsCount = ids.Count;
@@ -153,7 +155,7 @@ public class UrlBulkOperationsCommand(
         try
         {
             var now = DateTime.UtcNow;
-            var successCount = await dbContext.ShortUrls
+            var successCount = await dbContext.Set<ShortUrl>()
                 .Where(s => ids.Contains(s.Id))
                 .ExecuteUpdateAsync(s => s
                         .SetProperty(x => x.ExpiresAt, newExpirationDate)
@@ -165,7 +167,7 @@ public class UrlBulkOperationsCommand(
             logger.LogInformation("Bulk expiration update completed: {SuccessCount} updated, {SkippedCount} skipped",
                 successCount, skippedCount);
 
-            return new BulkOperationResult(idsCount, successCount, skippedCount);
+            return new BulkOperationResponse(idsCount, successCount, skippedCount);
         }
         catch (Exception ex)
         {
@@ -175,7 +177,7 @@ public class UrlBulkOperationsCommand(
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkCreateAsync(IReadOnlyCollection<ShortUrl> shortUrls,
+    public async Task<BulkOperationResponse> BulkCreateAsync(IReadOnlyCollection<ShortUrl> shortUrls,
         CancellationToken cancellationToken = default)
     {
         var count = shortUrls.Count;
@@ -183,11 +185,11 @@ public class UrlBulkOperationsCommand(
 
         try
         {
-            await dbContext.ShortUrls.AddRangeAsync(shortUrls, cancellationToken).ConfigureAwait(false);
+            await dbContext.Set<ShortUrl>().AddRangeAsync(shortUrls, cancellationToken).ConfigureAwait(false);
             var affected = await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             logger.LogInformation("Bulk creation completed: {Affected} short URLs created", affected);
-            return new BulkOperationResult(count, affected, count - affected);
+            return new BulkOperationResponse(count, affected, count - affected);
         }
         catch (Exception ex)
         {
@@ -196,15 +198,14 @@ public class UrlBulkOperationsCommand(
         }
     }
 
-
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkUpdateShortCodeAsync(IReadOnlyDictionary<long, string?> shortUrlsMap,
+    public async Task<BulkOperationResponse> BulkUpdateShortCodeAsync(IReadOnlyDictionary<long, string?> shortUrlsMap,
         CancellationToken cancellationToken = default)
     {
         var idsCount = shortUrlsMap.Count;
 
         if (idsCount == 0)
-            return new BulkOperationResult(0, 0, 0);
+            return new BulkOperationResponse(0, 0, 0);
 
         logger.LogInformation("Starting bulk short code update for {IdsCount} short URLs", idsCount);
 
@@ -217,11 +218,11 @@ public class UrlBulkOperationsCommand(
             if (validUpdates.Count == 0)
             {
                 logger.LogWarning("No valid short codes provided for update");
-                return new BulkOperationResult(idsCount, 0, idsCount);
+                return new BulkOperationResponse(idsCount, 0, idsCount);
             }
 
             var successCount = 0;
-            const int batchSize = 500; // SQL Server parameter limit considerations
+            const int batchSize = 500;
 
             for (var i = 0; i < validUpdates.Count; i += batchSize)
             {
@@ -237,7 +238,7 @@ public class UrlBulkOperationsCommand(
             logger.LogInformation("Bulk short code update completed: {SuccessCount} updated, {SkippedCount} skipped",
                 successCount, skippedCount);
 
-            return new BulkOperationResult(idsCount, successCount, skippedCount);
+            return new BulkOperationResponse(idsCount, successCount, skippedCount);
         }
         catch (OperationCanceledException)
         {
@@ -257,10 +258,12 @@ public class UrlBulkOperationsCommand(
     {
         try
         {
-            return await dbContext.ShortUrls
+            var codes = await dbContext.Set<ShortUrl>()
                 .Where(su => customCodes.Contains(su.ShortCode))
                 .Select(su => su.ShortCode)
-                .ToHashSetAsync(cancellationToken);
+                .ToListAsync(cancellationToken);
+
+            return [.. codes];
         }
         catch (Exception ex)
         {
@@ -269,29 +272,29 @@ public class UrlBulkOperationsCommand(
         }
     }
 
-
-    private static string BuildUpdateSql(List<KeyValuePair<long, string>> batch, out object[] parameters)
+    private static string BuildUpdateSql(List<KeyValuePair<long, string?>> batch, out object[] parameters)
     {
         var sqlBuilder = new StringBuilder();
-        var paramList = new List<object>();
+        var paramList = new List<NpgsqlParameter>();
 
-        sqlBuilder.AppendLine("UPDATE ShortUrls SET");
-        sqlBuilder.AppendLine("    ShortCode = CASE Id");
+        // Assumes snake_case table and column names matching EFCore naming conventions
+        sqlBuilder.AppendLine("UPDATE short_urls SET");
+        sqlBuilder.AppendLine("    short_code = CASE id");
 
         var paramIndex = 0;
         foreach (var kvp in batch)
         {
             sqlBuilder.AppendLine($"        WHEN @p{paramIndex} THEN @p{paramIndex + 1}");
-            paramList.Add(kvp.Key);
-            paramList.Add(kvp.Value);
+            paramList.Add(new NpgsqlParameter($"@p{paramIndex}", NpgsqlDbType.Bigint) { Value = kvp.Key });
+            paramList.Add(new NpgsqlParameter($"@p{paramIndex + 1}", NpgsqlDbType.Text) { Value = (object?)kvp.Value ?? DBNull.Value });
             paramIndex += 2;
         }
 
         sqlBuilder.AppendLine("    END,");
-        sqlBuilder.AppendLine($"    UpdatedAt = @p{paramIndex}");
-        paramList.Add(DateTime.UtcNow);
+        sqlBuilder.AppendLine($"    updated_at = @p{paramIndex}");
+        paramList.Add(new NpgsqlParameter($"@p{paramIndex}", NpgsqlDbType.TimestampTz) { Value = DateTime.UtcNow });
 
-        sqlBuilder.Append("WHERE Id IN (");
+        sqlBuilder.Append("WHERE id IN (");
         var idParams = batch.Select((_, idx) => $"@p{idx * 2}");
         sqlBuilder.Append(string.Join(", ", idParams));
         sqlBuilder.AppendLine(")");
