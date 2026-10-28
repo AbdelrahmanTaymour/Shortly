@@ -1,3 +1,4 @@
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Email;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Extensions;
@@ -12,11 +13,14 @@ namespace Shortly.Core.Account.SendEmailVerification;
 internal sealed class SendEmailVerificationCommandHandler(
     IUserRepository userRepository,
     IUserActionTokenRepository tokenRepository,
+    IUserContext userContext,
     IEmailNotifier emailNotifier) : ICommandHandler<SendEmailVerificationCommand>
 {
     public async Task<Result> Handle(SendEmailVerificationCommand request, CancellationToken cancellationToken)
     {
-        var user = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        var email = request.Email ?? userContext.Email;
+        
+        var user = await userRepository.GetByEmailAsync(email , cancellationToken);
         if (user is null)
             return Result.Success(); // never reveal whether the email exists
 

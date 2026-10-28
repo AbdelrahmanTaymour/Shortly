@@ -1,11 +1,12 @@
 
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
+using Shortly.Domain.ShortUrls;
 using Shortly.Domain.Users;
 
 namespace Shortly.Domain.Members;
 
-public class OrganizationMember : Entity
+public class OrganizationMember : Entity<Guid>
 {
     public Guid OrganizationId { get; set; }
     public Guid UserId { get; set; }

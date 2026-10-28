@@ -14,32 +14,29 @@ using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Email;
-using Shortly.Core.Analytics.Contracts;
 using Shortly.Core.ClickTracking.Contracts;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Organizations_legacy.Contracts;
-using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Core.Users_legacy.Contracts;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.RepositoryContract.Analytics;
 using Shortly.Domain.RepositoryContract.ClickTracking;
 using Shortly.Domain.RepositoryContract.Invitations;
 using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.RepositoryContract.Organizations;
 using Shortly.Domain.RepositoryContract.Profile;
 using Shortly.Domain.RepositoryContract.Security;
-using Shortly.Domain.RepositoryContract.ShortUrls;
 using Shortly.Domain.RepositoryContract.Teams;
 using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Domain.RepositoryContract.UserAuditLog;
 using Shortly.Domain.RepositoryContract.Users;
+using Shortly.Domain.ShortUrls;
 using Shortly.Infrastructure.Authentication;
 using Shortly.Infrastructure.Authorization;
 using Shortly.Infrastructure.BackgroundServices;
 using Shortly.Infrastructure.Clock;
 using Shortly.Infrastructure.Data;
 using Shortly.Infrastructure.Email;
-using Shortly.Infrastructure.Repositories.Analytics;
+using Shortly.Infrastructure.Repositories;
 using Shortly.Infrastructure.Repositories.Tokens;
 using Shortly.Infrastructure.Repositories.ClickTracking;
 using Shortly.Infrastructure.Repositories.Invetations;
@@ -47,7 +44,6 @@ using Shortly.Infrastructure.Repositories.Members;
 using Shortly.Infrastructure.Repositories.Organizations;
 using Shortly.Infrastructure.Repositories.Profile;
 using Shortly.Infrastructure.Repositories.Security;
-using Shortly.Infrastructure.Repositories.ShortUrls;
 using Shortly.Infrastructure.Repositories.Teams;
 using Shortly.Infrastructure.Repositories.UserAuditLog;
 using Shortly.Infrastructure.Repositories.Users;
@@ -72,7 +68,6 @@ public static class DependencyInjection
         AddAuthorization(services);
         AddEmail(services, configuration);
         AddBackgroundJobs(services);
-        AddAnalytics(services);
         AddGeoLocation(services);
 
         return services;
@@ -110,10 +105,6 @@ public static class DependencyInjection
  
         // URL Management
         services.AddScoped<IShortUrlRepository, ShortUrlRepository>();
-        services.AddScoped<IUrlBulkOperationsCommand, UrlBulkOperationsCommand>();
-        services.AddScoped<IShortUrlQueryRepository, ShortUrlQueryRepository>();
-        services.AddScoped<IShortUrlRedirectRepository, ShortUrlRedirectRepository>();
-        services.AddScoped<IShortUrlRedirectQueries, ShortUrlRedirectRepository>();
         
         // Click Tracking
         services.AddScoped<IClickEventRepository, ClickEventRepository>();
@@ -219,15 +210,6 @@ public static class DependencyInjection
         services.AddScoped<MonthlyUsageResetJob>();
 
         services.AddHostedService<ClickTrackingBackgroundWorker>();
-    }
-
-    private static void AddAnalytics(IServiceCollection services)
-    {
-        services.AddScoped<IClickStatisticsDapperQueries, ClickStatisticsDapperQueries>();
-
-        services.AddScoped<ShortUrlAnalyticsRepository>();
-        services.AddScoped<IShortUrlAnalyticsRepository>(sp => sp.GetRequiredService<ShortUrlAnalyticsRepository>());
-        services.AddScoped<IShortUrlAnalyticsDapperQueries>(sp => sp.GetRequiredService<ShortUrlAnalyticsRepository>());
     }
 
     private static void AddGeoLocation(IServiceCollection services)

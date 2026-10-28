@@ -4,8 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.Abstractions.Behaviors;
 using Shortly.Core.Admin.Contracts;
 using Shortly.Core.Admin.Services;
-using Shortly.Core.Analytics.Contracts;
-using Shortly.Core.Analytics.Services;
 using Shortly.Core.ClickTracking.Contracts;
 using Shortly.Core.ClickTracking.Services;
 using Shortly.Core.Common;
@@ -19,14 +17,13 @@ using Shortly.Core.Profile.Contracts;
 using Shortly.Core.Profile.Services;
 using Shortly.Core.Security.Contracts;
 using Shortly.Core.Security.Services;
-using Shortly.Core.ShortUrls.Contracts;
-using Shortly.Core.ShortUrls.Services;
 using Shortly.Core.Teams.Contracts;
 using Shortly.Core.Teams.Services;
 using Shortly.Core.UserAuditLog.Contracts;
 using Shortly.Core.UserAuditLog.Services;
 using Shortly.Core.Users_legacy.Contracts;
 using Shortly.Core.Users_legacy.Services;
+using Shortly.Domain.ShortUrls;
 
 namespace Shortly.Core;
 
@@ -42,17 +39,11 @@ public static class DependencyInjection
         });
 
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+        
+        services.AddTransient<ShortCodeGenerator>();
 
         services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
-
-        // URL Management
-        services.AddScoped<IShortUrlsService, ShortUrlsService>();
-        services.AddScoped<IShortUrlRedirectService, ShortUrlRedirectService>();
-        services.AddScoped<IShortUrlQueryService, ShortUrlQueryService>();
-        services.AddScoped<IShortUrlAnalyticsService, ShortUrlAnalyticsService>();
-        services.AddScoped<IUrlBulkOperationsService, UrlBulkOperationsService>();
-        services.AddScoped<IUrlStatisticsService, UrlStatisticsService>();
-
+        
         // User Management (legacy, not yet migrated to CQRS)
         services.AddScoped<IUserSecurityService, UserSecurityService>();
         services.AddScoped<IUserAdministrationService, UserAdministrationService>();

@@ -11,3 +11,15 @@ public abstract class Entity
 
     public Guid Id { get; init; }
 }
+
+public abstract class Entity<TId>
+{
+    protected Entity(TId id)
+    {
+        Id = id;
+    }
+
+    protected Entity() { }
+
+    public TId Id { get; set; }
+}

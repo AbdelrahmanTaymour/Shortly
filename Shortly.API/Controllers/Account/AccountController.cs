@@ -18,7 +18,7 @@ namespace Shortly.API.Controllers.Account;
 [ApiController]
 [Route("api/account")] // Changed from api/auth to avoid collisions
 [Produces("application/json")]
-public class AccountController(ISender sender, IUserContext userContext) : ControllerBase
+public class AccountController(ISender sender) : ControllerBase
 {
     [HttpPost("send-email-verification", Name = "Account_SendEmailVerification")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -30,8 +30,7 @@ public class AccountController(ISender sender, IUserContext userContext) : Contr
         [FromBody] SendEmailVerificationRequest request,
         CancellationToken cancellationToken = default)
     {
-        var email = request.Email ?? userContext.Email!;
-        var command = new SendEmailVerificationCommand(email);
+        var command = new SendEmailVerificationCommand(request.Email);
 
         var result = await sender.Send(command, cancellationToken);
 

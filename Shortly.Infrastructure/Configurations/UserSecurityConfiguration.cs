@@ -4,14 +4,14 @@ using Shortly.Domain.Entities;
 
 namespace Shortly.Infrastructure.Configurations;
 
-public class UserSecurityConfiguration : IEntityTypeConfiguration<UserSecurity>
+public sealed class UserSecurityConfiguration : IEntityTypeConfiguration<UserSecurity>
 {
     public void Configure(EntityTypeBuilder<UserSecurity> builder)
     {
-        // Primary Key
+        builder.ToTable("user_security");
+
         builder.HasKey(us => us.UserId);
 
-        // Properties configuration
         builder.Property(us => us.FailedLoginAttempts).HasDefaultValue(0);
         builder.Property(us => us.LockoutReason).HasMaxLength(100);
         builder.Property(us => us.TwoFactorEnabled).HasDefaultValue(false);

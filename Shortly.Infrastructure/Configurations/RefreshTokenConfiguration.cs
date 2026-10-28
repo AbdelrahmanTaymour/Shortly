@@ -4,36 +4,42 @@ using Shortly.Domain.Entities;
 
 namespace Shortly.Infrastructure.Configurations;
 
-public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
+public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 {
     public void Configure(EntityTypeBuilder<RefreshToken> builder)
     {
-        // Primary key
-        builder.HasKey(x => x.Id);
+        builder.ToTable("refresh_tokens");
 
-        // Properties configuration
-        builder.Property(e => e.TokenHash)
-            .HasMaxLength(128)
-            .IsUnicode(false);
+        builder.HasKey(rt => rt.Id);
 
-        builder.Property(r => r.OrganizationId);
+        builder.Property(rt => rt.TokenHash).HasMaxLength(128).IsUnicode(false);
+        builder.Property(rt => rt.IsRevoked).HasDefaultValue(false);
+        builder.Property(rt => rt.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        builder.Property(rt => rt.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-        builder.Property(e => e.IsRevoked)
-            .HasDefaultValue(false);
+        builder.HasIndex(rt => rt.TokenHash)
+            .IsUnique()
+            .HasDatabaseName("ux_refresh_tokens_token_hash");
 
-        builder.Property(e => e.CreatedAt)
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+        builder.HasIndex(rt => new { rt.UserId, rt.IsRevoked, rt.ExpiresAt })
+            .HasDatabaseName("ix_refresh_tokens_user_id_is_revoked_expires_at");
 
-        builder.Property(e => e.UpdatedAt)
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+        builder.HasIndex(rt => rt.OrganizationId)
+            .HasDatabaseName("ix_refresh_tokens_organization_id");
 
-        // Indexes
-        builder.HasIndex(rt => rt.TokenHash).IsUnique();
-        builder.HasIndex(rt => rt.UserId);
-        builder.HasIndex(rt => new { rt.UserId, rt.IsRevoked, rt.ExpiresAt });
+        builder.Ignore(rt => rt.IsExpired);
+        builder.Ignore(rt => rt.IsActive);
 
-        // Ignore computed properties
-        builder.Ignore(e => e.IsExpired);
-        builder.Ignore(e => e.IsActive);
+        builder.HasOne(rt => rt.User)
+            .WithMany(u => u.RefreshTokens)
+            .HasForeignKey(rt => rt.UserId)
+            .HasConstraintName("fk_refresh_tokens_users")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne<Organization>()
+            .WithMany()
+            .HasForeignKey(rt => rt.OrganizationId)
+            .HasConstraintName("fk_refresh_tokens_organizations")
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

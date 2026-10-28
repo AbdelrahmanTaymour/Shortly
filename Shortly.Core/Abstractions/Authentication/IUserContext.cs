@@ -11,7 +11,7 @@ namespace Shortly.Core.Abstractions.Authentication;
 public interface IUserContext
 {
     Guid UserId { get; }
-    string? Email { get; }
+    string Email { get; }
     bool IsAuthenticated { get; }
 
     UserRole? Role { get; }

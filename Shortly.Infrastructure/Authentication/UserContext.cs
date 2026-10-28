@@ -15,7 +15,9 @@ internal sealed class UserContext(IHttpContextAccessor httpContextAccessor) : IU
         User?.GetUserId() ??
         throw new ApplicationException("User context is unavailable");
 
-    public string? Email => User?.GetEmail();
+    public string Email => 
+        User?.GetEmail() ??
+        throw new ApplicationException("User context is unavailable");
 
     public bool IsAuthenticated => User?.Identity?.IsAuthenticated == true;
 

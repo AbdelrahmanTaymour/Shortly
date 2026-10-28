@@ -1,18 +1,19 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Shortly.Domain.Entities;
+using Shortly.Domain.ClickEvents;
+using Shortly.Domain.ShortUrls;
 
 namespace Shortly.Infrastructure.Configurations;
 
-public class ClickEventConfiguration : IEntityTypeConfiguration<ClickEvent>
+public sealed class ClickEventConfiguration : IEntityTypeConfiguration<ClickEvent>
 {
     public void Configure(EntityTypeBuilder<ClickEvent> builder)
     {
-        // Primary key
+        builder.ToTable("click_events");
+
         builder.HasKey(ce => ce.Id);
 
-        // Properties
-        builder.Property(ce => ce.ClickedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        builder.Property(ce => ce.ClickedAtUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
         builder.Property(ce => ce.IpAddress).HasMaxLength(45).IsUnicode(false);
         builder.Property(ce => ce.SessionId).HasMaxLength(128).IsUnicode(false);
         builder.Property(ce => ce.UserAgent).HasMaxLength(500);
@@ -26,57 +27,19 @@ public class ClickEventConfiguration : IEntityTypeConfiguration<ClickEvent>
         builder.Property(ce => ce.ReferrerDomain).HasMaxLength(100);
         builder.Property(ce => ce.TrafficSource).HasMaxLength(50);
 
-        // UTM parameters
         builder.Property(ce => ce.UtmSource).HasMaxLength(100);
         builder.Property(ce => ce.UtmMedium).HasMaxLength(100);
         builder.Property(ce => ce.UtmCampaign).HasMaxLength(100);
         builder.Property(ce => ce.UtmTerm).HasMaxLength(100);
         builder.Property(ce => ce.UtmContent).HasMaxLength(100);
 
-        builder.Property(ce => ce.UserId).IsRequired(false);
+        builder.HasIndex(ce => new { ce.ShortUrlId, ce.ClickedAtUtc })
+            .HasDatabaseName("ix_click_events_short_url_id_clicked_at");
 
-        // ── Indexes ───────────────────────────────────────────────────────────
-
-        builder.HasIndex(c => c.ShortUrlId)
-            .HasDatabaseName("IX_ClickEvents_ShortUrlId");
-
-        builder.HasIndex(c => new { c.ShortUrlId, c.ClickedAt })
-            .HasDatabaseName("IX_ClickEvents_Analytics_Covering")
-            .IncludeProperties(c => new
-            {
-                c.Browser,
-                c.City,
-                c.Country,
-                c.DeviceType,
-                c.IpAddress,
-                c.OperatingSystem,
-                c.ReferrerDomain,
-                c.SessionId,
-                c.TrafficSource,
-                c.UtmCampaign,
-                c.UtmMedium,
-                c.UtmSource,
-                c.UtmTerm,
-                c.UtmContent
-            });
-
-        builder.HasIndex(c => new { c.UserId, c.ClickedAt })
-            .HasDatabaseName("IX_ClickEvents_UserId_ClickedAt")
-            .HasFilter("user_id IS NOT NULL")
-            .IncludeProperties(c => new
-            {
-                c.ShortUrlId,
-                c.SessionId,
-                c.Country,
-                c.City,
-                c.Browser,
-                c.OperatingSystem,
-                c.DeviceType,
-                c.ReferrerDomain,
-                c.TrafficSource,
-                c.UtmCampaign,
-                c.UtmMedium,
-                c.UtmSource
-            });
+        builder.HasOne<ShortUrl>()
+            .WithMany()
+            .HasForeignKey(ce => ce.ShortUrlId)
+            .HasConstraintName("fk_click_events_short_urls")
+            .OnDelete(DeleteBehavior.Cascade); // clicks have no meaning once their URL is gone
     }
 }

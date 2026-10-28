@@ -1,3 +1,4 @@
+using Shortly.Domain.ClickEvents;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Domain.RepositoryContract.ClickTracking;

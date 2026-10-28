@@ -1,11 +1,12 @@
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
+using Shortly.Domain.ShortUrls;
 using Shortly.Domain.Users;
 
 namespace Shortly.Domain.Entities;
 
-public class Organization : Entity
+public class Organization : Entity<Guid>
 {
     public required string Name { get; set; }
     public string? Description { get; set; }

@@ -5,35 +5,41 @@ using Shortly.Domain.Enums;
 
 namespace Shortly.Infrastructure.Configurations;
 
-public class OrganizationInvitationConfiguration : IEntityTypeConfiguration<OrganizationInvitation>
+public sealed class OrganizationInvitationConfiguration : IEntityTypeConfiguration<OrganizationInvitation>
 {
     public void Configure(EntityTypeBuilder<OrganizationInvitation> builder)
     {
-        // Primary key
+        builder.ToTable("organization_invitations");
+
         builder.HasKey(oi => oi.Id);
 
-        // Properties configuration
-        builder.Property(oi => oi.InvitedUserEmail).HasMaxLength(320);
+        builder.Property(oi => oi.InvitedUserEmail).HasMaxLength(320).IsUnicode(false);
         builder.Property(oi => oi.InvitedUserRoleId).HasConversion<byte>();
         builder.Property(oi => oi.InvitedUserPermissions).HasConversion<long>();
-        builder.Property(oi => oi.Status).HasConversion<byte>()
+        builder.Property(oi => oi.Status)
+            .HasConversion<byte>()
             .HasDefaultValue(enInvitationStatus.Pending);
-        builder.Property(oi => oi.RegisteredAt);
-        builder.Property(oi => oi.ExpiresAt)
-            .HasDefaultValueSql("NOW() + INTERVAL '5 days'");
+        builder.Property(oi => oi.ExpiresAt).HasDefaultValueSql("NOW() + INTERVAL '5 days'");
         builder.Property(oi => oi.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-        // Ignore database generated column; compute in C# entity instead
         builder.Ignore(oi => oi.IsExpired);
 
-        // Indexes
-        builder.HasIndex(oi => new { oi.OrganizationId, oi.InvitedUserEmail, oi.Status });
-        builder.HasIndex(oi => oi.InvitedBy);
+        builder.HasIndex(oi => new { oi.OrganizationId, oi.InvitedUserEmail, oi.Status })
+            .HasDatabaseName("ix_organization_invitations_organization_id_email_status");
 
-        // Relationships
+        builder.HasIndex(oi => oi.InvitedBy)
+            .HasDatabaseName("ix_organization_invitations_invited_by");
+
+        builder.HasOne<Organization>()
+            .WithMany()
+            .HasForeignKey(oi => oi.OrganizationId)
+            .HasConstraintName("fk_organization_invitations_organizations")
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasOne(oi => oi.InvitedByMember)
             .WithMany()
             .HasForeignKey(oi => oi.InvitedBy)
+            .HasConstraintName("fk_organization_invitations_organization_members")
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

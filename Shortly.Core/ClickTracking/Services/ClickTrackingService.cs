@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
-using Shortly.Core.Analytics.Contracts;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.ClickTracking.Contracts;
 using Shortly.Core.ClickTracking.DTOs;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Entities;
+using Shortly.Domain.ClickEvents;
 using Shortly.Domain.RepositoryContract.ClickTracking;
 
 namespace Shortly.Core.ClickTracking.Services;
@@ -28,18 +28,17 @@ namespace Shortly.Core.ClickTracking.Services;
 /// All operations are designed to be asynchronous and support cancellation for optimal performance
 /// and resource management in high-traffic scenarios.
 /// </remarks>
-/// <param name="shortUrlAnalyticsService">Service for URL-specific analytics operations</param>
 /// <param name="clickEventRepository">Repository for click event data persistence and retrieval</param>
 /// <param name="geoLocationService">Service for IP address geolocation lookup</param>
 /// <param name="userAgentParsingService">Service for parsing User-Agent strings</param>
 /// <param name="trafficSourceAnalyzer">Service for analyzing traffic source attribution</param>
 /// <param name="logger">Logger instance for operation tracking and error reporting</param>
 public class ClickTrackingService (
-    IShortUrlAnalyticsService shortUrlAnalyticsService,
     IClickEventRepository clickEventRepository, 
     IGeoLocationService geoLocationService,
     IUserAgentParsingService userAgentParsingService,
     ITrafficSourceAnalyzer trafficSourceAnalyzer,
+    IDateTimeProvider dateTimeProvider,
     ILogger<ClickTrackingService> logger
     ) : IClickTrackingService
 {
@@ -54,29 +53,27 @@ public class ClickTrackingService (
 
             var trafficSourceInfo = trafficSourceAnalyzer.AnalyzeTrafficSource(trackingData.Referrer,
                 trackingData.UtmSource, trackingData.UtmMedium);
-            var clickEvent = new ClickEvent
-            {
-                ShortUrlId = shortUrlId,
-                ClickedAt = DateTime.UtcNow,
-                UserId = shortUrlOwnerId,
-                IpAddress = trackingData.IpAddress,
-                SessionId = trackingData.SessionId,
-                UserAgent = trackingData.UserAgent,
-                Referrer = trackingData.Referrer,
-                UtmSource = trackingData.UtmSource,
-                UtmMedium = trackingData.UtmMedium,
-                UtmCampaign = trackingData.UtmCampaign,
-                UtmTerm = trackingData.UtmTerm,
-                UtmContent = trackingData.UtmContent,
-                Country = geoInfo.Country,
-                City = geoInfo.City,
-                Browser = userAgentInfo.Browser,
-                OperatingSystem = userAgentInfo.OperatingSystem,
-                Device = userAgentInfo.Device,
-                DeviceType = userAgentInfo.DeviceType,
-                ReferrerDomain = trafficSourceInfo.ReferrerDomain,
-                TrafficSource = trafficSourceInfo.TrafficSource
-            };
+
+            var clickEvent = ClickEvent.Record(
+                shortUrlId,
+                dateTimeProvider.UtcNow,
+                trackingData.IpAddress,
+                trackingData.SessionId,
+                trackingData.UserAgent,
+                trackingData.Referrer,
+                trackingData.UtmSource,
+                trackingData.UtmMedium,
+                trackingData.UtmCampaign,
+                trackingData.UtmTerm,
+                trackingData.UtmContent,
+                geoInfo.Country,
+                geoInfo.City,
+                userAgentInfo.Browser,
+                userAgentInfo.OperatingSystem,
+                userAgentInfo.Device,
+                userAgentInfo.DeviceType,
+                trafficSourceInfo.ReferrerDomain,
+                trafficSourceInfo.TrafficSource);
 
             var savedClickEvent = await clickEventRepository.CreateAsync(clickEvent);
             logger.LogInformation("Click tracked successfully for ShortUrlId: {ShortUrlId}, ClickEventId: {ClickEventId}", shortUrlId, savedClickEvent.Id);
@@ -149,7 +146,7 @@ public class ClickTrackingService (
         CancellationToken cancellationToken = default)
     {
         var clicks = await clickEventRepository.GetByShortUrlIdAsync(shortUrlId, pageNumber, pageSize, cancellationToken);
-        var totalCount = await shortUrlAnalyticsService.GetTotalClicksAsync(shortUrlId, cancellationToken);
+        var totalCount = await clickEventRepository.GetTotalClicksAsync(shortUrlId, cancellationToken);
 
         return new PagedResponse<ClickEvent>
         {

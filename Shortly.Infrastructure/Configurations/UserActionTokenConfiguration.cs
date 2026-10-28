@@ -1,34 +1,35 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shortly.Domain.Tokens;
+using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Configurations;
 
-public class UserActionTokenConfiguration : IEntityTypeConfiguration<UserActionToken>
+public sealed class UserActionTokenConfiguration : IEntityTypeConfiguration<UserActionToken>
 {
     public void Configure(EntityTypeBuilder<UserActionToken> builder)
     {
-        // Primary key
+        builder.ToTable("user_action_tokens");
+
         builder.HasKey(x => x.Id);
 
-        // Properties configuration
-        builder.Property(x => x.Id).IsRequired().ValueGeneratedOnAdd();
-        builder.Property(x => x.UserId).IsRequired();
-        builder.Property(x => x.TokenType).IsRequired().HasConversion<byte>();
-        builder.Property(x => x.TokenHash).IsRequired().HasMaxLength(255);
-        builder.Property(x => x.ExpiresAt).IsRequired();
-        builder.Property(x => x.Used).IsRequired().HasDefaultValue(false);
-        builder.Property(x => x.CreatedAt).IsRequired().HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-        // Indexes for performance
-        builder.HasIndex(x => x.UserId)
-            .HasDatabaseName("IX_UserActionTokens_UserId");
+        builder.Property(x => x.Id).ValueGeneratedOnAdd();
+        builder.Property(x => x.TokenType).HasConversion<byte>();
+        builder.Property(x => x.TokenHash).IsRequired().HasMaxLength(255).IsUnicode(false);
+        builder.Property(x => x.Used).HasDefaultValue(false);
+        builder.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
         builder.HasIndex(x => x.TokenHash)
             .IsUnique()
-            .HasDatabaseName("IX_UserActionTokens_TokenHash");
+            .HasDatabaseName("ux_user_action_tokens_token_hash");
 
         builder.HasIndex(x => new { x.UserId, x.TokenType, x.Used })
-            .HasDatabaseName("IX_UserActionTokens_UserId_TokenType_Used");
+            .HasDatabaseName("ix_user_action_tokens_user_id_token_type_used");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .HasConstraintName("fk_user_action_tokens_users")
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

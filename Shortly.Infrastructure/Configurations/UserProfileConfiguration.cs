@@ -4,15 +4,15 @@ using Shortly.Domain.Entities;
 
 namespace Shortly.Infrastructure.Configurations;
 
-public class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
+public sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
 {
     public void Configure(EntityTypeBuilder<UserProfile> builder)
     {
-        // Primary Key
+        builder.ToTable("user_profile");
+
         builder.HasKey(up => up.UserId);
 
-        // Properties configuration
-        builder.Property(u => u.Name).HasMaxLength(100);
+        builder.Property(up => up.Name).HasMaxLength(100);
         builder.Property(up => up.Bio).HasMaxLength(500);
         builder.Property(up => up.PhoneNumber).HasMaxLength(20);
         builder.Property(up => up.ProfilePictureUrl).HasMaxLength(500);

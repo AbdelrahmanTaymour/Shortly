@@ -4,9 +4,8 @@ using Shortly.API.Controllers.Base;
 using Shortly.Core.ClickTracking.Contracts;
 using Shortly.Core.ClickTracking.DTOs;
 using Shortly.Core.Exceptions.DTOs;
-using Shortly.Core.ShortUrls.Contracts;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Entities;
+using Shortly.Domain.ClickEvents;
 
 namespace Shortly.API.Controllers;
 
@@ -15,7 +14,7 @@ namespace Shortly.API.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-public class ClickTrackingController(IClickTrackingService clickTrackingService, IShortUrlRedirectService shortUrlRedirectService) : ControllerApiBase
+public class ClickTrackingController(IClickTrackingService clickTrackingService) : ControllerApiBase
 {
     /// <summary>
     /// Tracks a click event for a specific short URL and returns the recorded click data.
@@ -57,7 +56,7 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
     /// <response code="400">The request is invalid (e.g., invalid shortUrlId).</response>
     /// <response code="404">Short URL with the specified ID was not found.</response>
     /// <response code="500">An internal server error occurred during click tracking.</response>
-    [HttpPost("{shortUrlId:long}/click", Name = "TrackClick")]
+    /*[HttpPost("{shortUrlId:long}/click", Name = "TrackClick")]
     [ProducesResponseType(typeof(ClickEvent), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
@@ -68,7 +67,7 @@ public class ClickTrackingController(IClickTrackingService clickTrackingService,
         var trackingData = shortUrlRedirectService.ExtractTrackingDataAsync(HttpContext, cancellationToken);
         var clickEvent = await clickTrackingService.TrackClickAsync(shortUrlId, shortUrlOwnerId, trackingData);
         return Ok(clickEvent);
-    }
+    }*/
 
 
     /// <summary>

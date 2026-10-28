@@ -1,6 +1,7 @@
 using Shortly.Core.ClickTracking.DTOs;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Abstractions;
+using Shortly.Domain.ClickEvents;
 using Shortly.Domain.Entities;
 
 namespace Shortly.Core.ClickTracking.Contracts;

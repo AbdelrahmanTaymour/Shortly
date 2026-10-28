@@ -12,6 +12,7 @@ using Shortly.Core.Users_legacy.Mappers;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
+using Shortly.Domain.ShortUrls;
 using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Repositories.Users;
