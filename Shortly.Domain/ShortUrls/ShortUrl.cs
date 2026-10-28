@@ -144,10 +144,52 @@ public sealed class ShortUrl : Entity<long>
             clickLimit, trackingEnabled: true, isPrivate: false, expiresAt,
             title: null, description: null, utcNow);
     }
+
+    public Result Update(
+        OriginalUrl newUrl, 
+        ShortCode newCode, 
+        string? title, 
+        string? description, 
+        int clickLimit,
+        bool isActive,
+        bool isPrivate,
+        bool isPasswordProtected,
+        string? passwordHash,
+        bool trackingEnabled,
+        DateTime? expiresAt,
+        DateTime utcNow)
+    {
+        var clickLimitCheck = ValidateClickLimit(clickLimit);
+        if (clickLimitCheck.IsFailure) 
+            return Result.Failure(ShortUrlErrors.InvalidClickLimit);
+        
+        var expirationCheck = ValidateExpiration(expiresAt, utcNow);
+        if (expirationCheck.IsFailure) 
+            return Result.Failure(ShortUrlErrors.InvalidExpiration);
+        
+        if(isPasswordProtected && string.IsNullOrWhiteSpace(passwordHash))
+            return Result.Failure(ShortUrlErrors.PasswordRequired);
+        
+        OriginalUrl = newUrl;
+        ShortCode = newCode;
+        Title = title;
+        Description = description;
+        ClickLimit = clickLimit;
+        IsActive = isActive;
+        IsPrivate = isPrivate;
+        IsPasswordProtected = isPasswordProtected;
+        PasswordHash = passwordHash;
+        TrackingEnabled = trackingEnabled;
+        
+        UpdatedAtUtc = utcNow;
+        
+        return Result.Success();
+    }
     
-    public Result AssignShortCode(ShortCode newCode)
+    public Result AssignShortCode(ShortCode newCode, DateTime utcNow)
     {
         ShortCode = newCode;
+        UpdatedAtUtc = utcNow;
         return Result.Success();
     }
 
@@ -167,28 +209,6 @@ public sealed class ShortUrl : Entity<long>
         return Result.Success();
     }
 
-    public Result UpdateDestination(OriginalUrl newUrl)
-    {
-        OriginalUrl = newUrl;
-        return Result.Success();
-    }
-
-    public Result UpdateMetadata(string? title, string? description)
-    {
-        Title = title;
-        Description = description;
-        return Result.Success();
-    }
-
-    public Result SetClickLimit(int clickLimit)
-    {
-        var check = ValidateClickLimit(clickLimit);
-        if (check.IsFailure) return check;
-
-        ClickLimit = clickLimit;
-        return Result.Success();
-    }
-
     public Result SetExpiration(DateTime? expiresAt, DateTime utcNow)
     {
         var check = ValidateExpiration(expiresAt, utcNow);
@@ -198,22 +218,10 @@ public sealed class ShortUrl : Entity<long>
         return Result.Success();
     }
 
-    public Result SetPrivate(bool isPrivate)
-    {
-        IsPrivate = isPrivate;
-        return Result.Success();
-    }
-
-    public Result SetTrackingEnabled(bool trackingEnabled)
-    {
-        TrackingEnabled = trackingEnabled;
-        return Result.Success();
-    }
-
     public Result ProtectWithPassword(string passwordHash)
     {
         if (string.IsNullOrWhiteSpace(passwordHash))
-            return Result.Failure(ShortUrlErrors.OriginalUrlEmpty); // guard-only; validity of the hash itself is Application's concern
+            return Result.Failure(ShortUrlErrors.PasswordRequired);
 
         IsPasswordProtected = true;
         PasswordHash = passwordHash;

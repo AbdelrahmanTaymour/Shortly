@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Extensions;
 using Shortly.Core.Exceptions.DTOs;
 using Shortly.Core.ShortUrls.ActivateShortUrl;
+using Shortly.Core.ShortUrls.AssignShortCode;
 using Shortly.Core.ShortUrls.BulkActivateShortUrls;
 using Shortly.Core.ShortUrls.BulkCreateShortUrls;
 using Shortly.Core.ShortUrls.BulkDeactivateShortUrls;
 using Shortly.Core.ShortUrls.BulkDeleteShortUrls;
 using Shortly.Core.ShortUrls.BulkUpdateExpiration;
+using Shortly.Core.ShortUrls.CheckShortCodeAvailability;
 using Shortly.Core.ShortUrls.CreateShortUrl;
 using Shortly.Core.ShortUrls.DeactivateShortUrl;
 using Shortly.Core.ShortUrls.DeleteShortUrl;
@@ -85,15 +87,36 @@ public class ShortUrlController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(long id, [FromBody] UpdateShortUrlRequest request, CancellationToken cancellationToken = default)
     {
-        var command = new UpdateShortUrlCommand(id, request.OriginalUrl, request.Title, request.Description);
+        var command = new UpdateShortUrlCommand(
+            id, request.OriginalUrl, request.ShortCode, request.Title, request.Description,
+            request.ClickLimit, request.IsActive, request.IsPrivate, request.TrackingEnabled, request.ExpiresAt);
 
         var result = await sender.Send(command, cancellationToken);
 
-        return result.IsFailure
-            ? result.ToProblemDetails()
-            : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : Ok();
+    }
+    
+    [HttpPatch("{id:long}/short-code", Name = "AssignShortCode")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> AssignShortCode(long id, [FromBody] AssignShortCodeRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new AssignShortCodeCommand(id, request.NewShortCode), cancellationToken);
+        return result.IsFailure ? result.ToProblemDetails() : Ok();
+    }
+
+    [HttpGet("code-available", Name = "CheckShortCodeAvailability")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CheckCodeAvailability([FromQuery] string shortCode, CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new CheckShortCodeAvailabilityQuery(shortCode), cancellationToken);
+        return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
     [HttpPost("{id:long}/activate", Name = "ActivateShortUrl")]

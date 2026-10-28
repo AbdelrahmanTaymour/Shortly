@@ -7,7 +7,8 @@ public static class ShortUrlErrors
     public static readonly Error ShortCodeEmpty = Error.Validation("ShortUrl.ShortCodeEmpty", "Short code cannot be empty.");
     public static readonly Error ShortCodeInvalidLength = Error.Validation("ShortUrl.ShortCodeInvalidLength", $"Short code must be between {ShortCode.MinLength} and {ShortCode.MaxLength} characters.");
     public static readonly Error ShortCodeInvalidCharacters = Error.Validation("ShortUrl.ShortCodeInvalidCharacters", "Short code may only contain letters, digits, hyphens and underscores.");
-
+    public static readonly Error ShortCodeAlreadyExists = Error.Conflict("ShortUrl.ShortCodeAlreadyExists", "This short code is already in use.");
+    
     public static readonly Error OriginalUrlEmpty = Error.Validation("ShortUrl.OriginalUrlEmpty", "URL cannot be empty.");
     public static readonly Error OriginalUrlTooLong = Error.Validation("ShortUrl.OriginalUrlTooLong", "URL is too long.");
     public static readonly Error OriginalUrlInvalid = Error.Validation("ShortUrl.OriginalUrlInvalid", "URL must be a valid absolute http or https address.");

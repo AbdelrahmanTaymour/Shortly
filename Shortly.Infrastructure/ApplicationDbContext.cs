@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Shortly.Core.Exceptions;
 using Shortly.Domain.Abstractions;
 
@@ -12,9 +13,10 @@ public sealed class ApplicationDbContext(DbContextOptions options) : DbContext(o
         {
             return await base.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateConcurrencyException ex)
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException
+                                               { SqlState: PostgresErrorCodes.UniqueViolation } pgEx)
         {
-            throw new ConcurrencyException("Concurrency exception occurred.", ex);
+            throw new UniqueConstraintViolationException(pgEx.ConstraintName ?? string.Empty);
         }
     }
 
