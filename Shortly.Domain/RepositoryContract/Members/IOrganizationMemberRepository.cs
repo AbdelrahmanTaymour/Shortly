@@ -1,5 +1,6 @@
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
+using Shortly.Domain.Members;
 
 namespace Shortly.Domain.RepositoryContract.Members;
 
@@ -9,6 +10,8 @@ namespace Shortly.Domain.RepositoryContract.Members;
 /// </summary>
 public interface IOrganizationMemberRepository
 {
+    void Add(OrganizationMember member);
+    
     /// <summary>
     /// Retrieves all active organization members from the database.
     /// </summary>
@@ -79,11 +82,11 @@ public interface IOrganizationMemberRepository
     /// Retrieves all active members of a specific organization with a specific role including user details.
     /// </summary>
     /// <param name="organizationId">The unique identifier of the organization.</param>
-    /// <param name="roleId">The role identifier to filter members by.</param>
+    /// <param name="role">The role identifier to filter members by.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A collection of organization members with the specified role and user details.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<IEnumerable<OrganizationMember>> GetMembersByRoleAsync(Guid organizationId, enUserRole roleId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OrganizationMember>> GetMembersByRoleAsync(Guid organizationId, MemberRole role, CancellationToken cancellationToken = default);
    
     /// <summary>
     /// Gets the total count of active members in a specific organization.
@@ -127,11 +130,11 @@ public interface IOrganizationMemberRepository
     /// </summary>
     /// <param name="organizationId">The unique identifier of the organization.</param>
     /// <param name="userId">The unique identifier of the member whose role is being updated.</param>
-    /// <param name="newRoleId">The new role to assign to the member.</param>
+    /// <param name="newRole">The new role to assign to the member.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>True if the update was successful; otherwise, false.</returns>
     /// <exception cref="DatabaseException">Thrown when a database error occurs during the update operation.</exception>
-    Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, enUserRole newRoleId, CancellationToken cancellationToken = default);
+    Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, MemberRole newRole, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Updates the custom permissions of a specific organization member.

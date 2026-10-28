@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Security.Contracts;
 using Shortly.Core.Security.DTOs;
-using Shortly.Core.Tokens.Contracts;
 using Shortly.Domain.RepositoryContract.Security;
 
 namespace Shortly.Core.Security.Services;
@@ -12,7 +12,7 @@ namespace Shortly.Core.Security.Services;
 /// </summary>
 public class UserSecurityService(
     IUserSecurityRepository securityRepository,
-    ITokenService tokenService,
+    IJwtService tokenService,
     ILogger<UserSecurityService> logger)
     : IUserSecurityService
 {
@@ -71,7 +71,7 @@ public class UserSecurityService(
             throw new NotFoundException($"User with id {userId} not found or already locked.");
 
         // Revoke all user tokens
-        var tokensRevoked = await tokenService.RevokeAllUserTokensAsync(userId, cancellationToken);
+        var tokensRevoked = await tokenService.RevokeAllForUserAsync(userId, cancellationToken);
 
         return new LockUserResponse
         {
@@ -79,7 +79,7 @@ public class UserSecurityService(
             Message = "User account locked successfully",
             UserId = userId,
             LockedUntil = request.LockUntil,
-            TokensRevoked = tokensRevoked
+            TokensRevoked = tokensRevoked.IsSuccess
         };
     }
 

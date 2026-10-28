@@ -5,6 +5,7 @@ using Shortly.Core.Members.DTOs;
 using Shortly.Core.Members.Mappers;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
+using Shortly.Domain.Members;
 using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.RepositoryContract.Organizations;
 
@@ -76,13 +77,13 @@ public class OrganizationMemberService(
         {
             OrganizationId = request.OrganizationId,
             UserId = request.UserId,
-            RoleId = request.RoleId,
+            Role = request.Role,
             InvitedBy = request.InvitedBy,
             JoinedAt = DateTime.UtcNow
         };
         
         var created = await memberRepository.AddAsync(member, cancellationToken);
-        logger.LogInformation("User {UserId} added to organization {OrganizationId} with role {RoleId}", request.UserId, request.OrganizationId, request.RoleId);
+        logger.LogInformation("User {UserId} added to organization {OrganizationId} with role {RoleId}", request.UserId, request.OrganizationId, request.Role);
         return created.MapToOrganizationMemberDto();
     }
 
@@ -104,17 +105,17 @@ public class OrganizationMemberService(
     }
 
     /// <inheritdoc />
-    public async Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, enUserRole newRoleId, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateMemberRoleAsync(Guid organizationId, Guid userId, MemberRole newRole, CancellationToken cancellationToken = default)
     {
         var isOwner = await organizationRepository.IsOwnerAsync(organizationId, userId, cancellationToken);
         if(isOwner)
             throw new BusinessRuleException("Can not change the owner role.");
         
-        var updated = await memberRepository.UpdateMemberRoleAsync(organizationId, userId, newRoleId, cancellationToken);
+        var updated = await memberRepository.UpdateMemberRoleAsync(organizationId, userId, newRole, cancellationToken);
         if(!updated)
             throw new NotFoundException("OrganizationMemberDto", userId);
         
-        logger.LogInformation("User {UserId} updated role of organization {OrganizationId} to {NewRoleId}", userId, organizationId, newRoleId);
+        logger.LogInformation("User {UserId} updated role of organization {OrganizationId} to {NewRoleId}", userId, organizationId, newRole);
         return updated;
     }
 

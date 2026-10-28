@@ -1,8 +1,8 @@
 using Shortly.Core.Admin.Contracts;
-using Shortly.Core.Common;
 using Shortly.Core.Exceptions.ClientErrors;
-using Shortly.Core.Users.Contracts;
-using Shortly.Core.Users.DTOs.User;
+using Shortly.Core.Users_legacy.Contracts;
+using Shortly.Core.Users_legacy.DTOs.User;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.RepositoryContract.Organizations;
 
 namespace Shortly.Core.Admin.Services;
@@ -31,7 +31,7 @@ public class UserAdministrationService(
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkActivateUsersAsync(ICollection<Guid> userIds,
+    public async Task<BulkOperationResponse> BulkActivateUsersAsync(ICollection<Guid> userIds,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(userIds);
@@ -43,7 +43,7 @@ public class UserAdministrationService(
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkDeactivateUsersAsync(ICollection<Guid> userIds,
+    public async Task<BulkOperationResponse> BulkDeactivateUsersAsync(ICollection<Guid> userIds,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(userIds);
@@ -55,7 +55,7 @@ public class UserAdministrationService(
     }
 
     /// <inheritdoc />
-    public async Task<BulkOperationResult> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy,
+    public async Task<BulkOperationResponse> BulkDeleteUsersAsync(ICollection<Guid> userIds, Guid deletedBy,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(userIds);

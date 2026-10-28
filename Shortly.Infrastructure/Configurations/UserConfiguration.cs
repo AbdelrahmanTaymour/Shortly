@@ -1,0 +1,87 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Shortly.Domain.Entities;
+using Shortly.Domain.Users;
+
+namespace Shortly.Infrastructure.Configurations;
+
+public sealed class UserConfiguration : IEntityTypeConfiguration<User>
+{
+    public void Configure(EntityTypeBuilder<User> builder)
+    {
+        builder.ToTable("users");
+
+        builder.HasKey(u => u.Id);
+
+        builder.Property(u => u.Email).IsRequired().HasMaxLength(320).IsUnicode(false);
+        builder.Property(u => u.Username).IsRequired().HasMaxLength(50).IsUnicode(false);
+        builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(256).IsUnicode(false);
+        builder.Property(u => u.SubscriptionPlanId).HasConversion<byte>();
+        builder.Property(u => u.IsActive).HasDefaultValue(true);
+        builder.Property(u => u.IsEmailConfirmed).HasDefaultValue(false);
+        builder.Property(u => u.IsDeleted).HasDefaultValue(false);
+        builder.Property(u => u.IsOAuthUser).HasDefaultValue(false);
+        builder.Property(u => u.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        builder.Property(u => u.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        builder.Property(u => u.DeletedBy).HasColumnType("uuid");
+
+        builder.HasIndex(u => u.Email)
+            .IsUnique()
+            .HasDatabaseName("ux_users_email");
+
+        builder.HasIndex(u => u.Username)
+            .IsUnique()
+            .HasDatabaseName("ux_users_username");
+
+        builder.HasIndex(u => new { u.IsDeleted, u.IsActive })
+            .HasDatabaseName("ix_users_is_deleted_is_active");
+
+        builder.HasOne(u => u.SubscriptionPlan)
+            .WithMany()
+            .HasForeignKey(u => u.SubscriptionPlanId)
+            .HasConstraintName("fk_users_subscription_plans")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(u => u.DeletedBy)
+            .HasConstraintName("fk_users_users_deleted_by")
+            .OnDelete(DeleteBehavior.Restrict); 
+        
+        builder.HasOne(u => u.Profile)
+            .WithOne(p => p.User)
+            .HasForeignKey<UserProfile>(p => p.UserId)
+            .HasConstraintName("fk_user_profile_users")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(u => u.UserSecurity)
+            .WithOne(s => s.User)
+            .HasForeignKey<UserSecurity>(s => s.UserId)
+            .HasConstraintName("fk_user_security_users")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(u => u.UserUsage)
+            .WithOne(uu => uu.User)
+            .HasForeignKey<UserUsage>(uu => uu.UserId)
+            .HasConstraintName("fk_user_usage_users")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(u => u.AuditLogs)
+            .WithOne()
+            .HasForeignKey(a => a.UserId)
+            .HasConstraintName("fk_user_audit_logs_users")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(u => u.RefreshTokens)
+            .WithOne()
+            .HasForeignKey(r => r.UserId)
+            .HasConstraintName("fk_refresh_tokens_users")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(u => u.OrganizationMemberships)
+            .WithOne()
+            .HasForeignKey(om => om.UserId)
+            .HasConstraintName("fk_organization_members_users")
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}

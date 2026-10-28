@@ -1,3 +1,5 @@
+using Shortly.Domain.Users;
+
 namespace Shortly.Domain.Entities;
 
 public class UserAuditLog

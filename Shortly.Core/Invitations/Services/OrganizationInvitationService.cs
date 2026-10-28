@@ -1,14 +1,15 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Shortly.Core.Email.Contracts;
+using Shortly.Core.Abstractions.Email;
 using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Extensions;
 using Shortly.Core.Invitations.Contracts;
 using Shortly.Core.Invitations.DTOs;
 using Shortly.Core.Invitations.Mappers;
-using Shortly.Core.Users.Contracts;
+using Shortly.Core.Users_legacy.Contracts;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
+using Shortly.Domain.Members;
 using Shortly.Domain.RepositoryContract.Invitations;
 using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.RepositoryContract.Organizations;
@@ -25,7 +26,7 @@ public class OrganizationInvitationService(
     IOrganizationRepository organizationRepository,
     IOrganizationMemberRepository memberRepository,
     IUserService userService,
-    IEmailNotificationService notificationService,
+    IEmailNotifier notifier,
     IConfiguration configuration,
     ILogger<OrganizationInvitationService> logger) : IOrganizationInvitationService
 {
@@ -40,7 +41,7 @@ public class OrganizationInvitationService(
         {
             OrganizationId = organizationId,
             InvitedUserEmail = dto.Email,
-            InvitedUserRoleId = dto.RoleId,
+            InvitedUserRoleId = dto.Role,
             InvitedUserPermissions = dto.CustomPermissions,
             InvitedBy = dto.InvitedBy,
             ExpiresAt = DateTime.UtcNow.AddDays(expiryDays),
@@ -94,8 +95,7 @@ public class OrganizationInvitationService(
         {
             OrganizationId = invitation.OrganizationId,
             UserId = userId,
-            RoleId = invitation.InvitedUserRoleId,
-            CustomPermissions = invitation.InvitedUserPermissions,
+            Role = invitation.InvitedUserRoleId,
             InvitedBy = invitation.InvitedBy,
             JoinedAt = DateTime.UtcNow
         }, cancellationToken);
@@ -238,7 +238,7 @@ public class OrganizationInvitationService(
         var inviterUsername = await memberRepository.GetMemberUsernameAsync(invitation.OrganizationId, invitation.InvitedBy, cancellationToken) ?? "Unknown";
         var inviteeName = invitation.InvitedUserEmail.Split('@')[0];
 
-        notificationService.EnqueueSendUserInvitation(invitation.InvitedUserEmail, inviterUsername,
+        notifier.EnqueueSendUserInvitation(invitation.InvitedUserEmail, inviterUsername,
             inviteeName, invitationToken,organization.Name);
     }
 }

@@ -1,3 +1,5 @@
+using Shortly.Domain.Members;
+
 namespace Shortly.Domain.Entities;
 
 public class OrganizationTeam

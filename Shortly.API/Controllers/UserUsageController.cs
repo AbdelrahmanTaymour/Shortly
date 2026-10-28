@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
 using Shortly.Core.Exceptions.DTOs;
-using Shortly.Core.Users.Contracts;
-using Shortly.Core.Users.DTOs.Usage;
+using Shortly.Core.Users_legacy.Contracts;
+using Shortly.Core.Users_legacy.DTOs.Usage;
 
 namespace Shortly.API.Controllers;
 

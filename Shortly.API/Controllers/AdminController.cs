@@ -1,13 +1,13 @@
 using MethodTimer;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Admin.Contracts;
-using Shortly.Core.Common;
-using Shortly.Core.Common.Abstractions;
 using Shortly.Core.Exceptions.DTOs;
-using Shortly.Core.Users.Contracts;
-using Shortly.Core.Users.DTOs.Search;
-using Shortly.Core.Users.DTOs.User;
+using Shortly.Core.Users_legacy.Contracts;
+using Shortly.Core.Users_legacy.DTOs.Search;
+using Shortly.Core.Users_legacy.DTOs.User;
+using Shortly.Domain.Abstractions;
 
 namespace Shortly.API.Controllers;
 
@@ -186,7 +186,7 @@ public class AdminController(
     /// Body: ["12345678-1234-1234-1234-123456789012", "87654321-4321-4321-4321-210987654321"]
     /// </example>
     [HttpPut("users/bulk-activate", Name = "BulkActivateUsers")]
-    [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BulkOperationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -216,7 +216,7 @@ public class AdminController(
     ///     their data will be preserved. The response includes details about successful and failed operations.
     /// </remarks>
     [HttpPut("users/bulk-deactivate", Name = "BulkDeactivateUsers")]
-    [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BulkOperationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -252,7 +252,7 @@ public class AdminController(
     /// Body: ["12345678-1234-1234-1234-123456789012", "87654321-4321-4321-4321-210987654321"]
     /// </example>
     [HttpDelete("users/bulk-delete", Name = "BulkDeleteUsers")]
-    [ProducesResponseType(typeof(BulkOperationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BulkOperationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -262,7 +262,7 @@ public class AdminController(
         [FromBody] ICollection<Guid> userIds,
         CancellationToken cancellationToken = default)
     {
-        var result = await adminService.BulkDeleteUsersAsync(userIds, userContext.CurrentUserId, cancellationToken);
+        var result = await adminService.BulkDeleteUsersAsync(userIds, userContext.UserId, cancellationToken);
         return Ok(result);
     }
 }

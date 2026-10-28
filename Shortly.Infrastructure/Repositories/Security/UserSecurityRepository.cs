@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.Security;
-using Shortly.Infrastructure.DbContexts;
+using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Repositories.Security;
 
@@ -15,7 +15,7 @@ namespace Shortly.Infrastructure.Repositories.Security;
 ///     states.
 ///     All operations update the UpdatedAt timestamp for audit tracking.
 /// </remarks>
-public class UserSecurityRepository(SqlServerDbContext dbContext, ILogger<UserSecurityRepository> logger)
+public class UserSecurityRepository(ApplicationDbContext dbContext, ILogger<UserSecurityRepository> logger)
     : IUserSecurityRepository
 {
     /// <inheritdoc />
@@ -23,7 +23,7 @@ public class UserSecurityRepository(SqlServerDbContext dbContext, ILogger<UserSe
     {
         try
         {
-            return await dbContext.UserSecurity
+            return await dbContext.Set<UserSecurity>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(us => us.UserId == userId, cancellationToken);
         }
@@ -39,7 +39,7 @@ public class UserSecurityRepository(SqlServerDbContext dbContext, ILogger<UserSe
     {
         try
         {
-            dbContext.UserSecurity.Update(security);
+            dbContext.Set<UserSecurity>().Update(security);
             return await dbContext.SaveChangesAsync(cancellationToken) > 0;
         }
         catch (Exception ex)
@@ -55,7 +55,7 @@ public class UserSecurityRepository(SqlServerDbContext dbContext, ILogger<UserSe
     {
         try
         {
-            var rowAffected = await dbContext.UserSecurity
+            var rowAffected = await dbContext.Set<UserSecurity>()
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(us => us.FailedLoginAttempts, us => us.FailedLoginAttempts + 1)
@@ -75,7 +75,7 @@ public class UserSecurityRepository(SqlServerDbContext dbContext, ILogger<UserSe
     {
         try
         {
-            var rowAffected = await dbContext.UserSecurity
+            var rowAffected = await dbContext.Set<UserSecurity>()
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(us => us.FailedLoginAttempts, us => 0)
@@ -95,7 +95,7 @@ public class UserSecurityRepository(SqlServerDbContext dbContext, ILogger<UserSe
     {
         try
         {
-            return await dbContext.UserSecurity
+            return await dbContext.Set<UserSecurity>()
                 .AsNoTracking()
                 .AnyAsync(us => us.UserId == userId && us.LockedUntil.HasValue && us.LockedUntil > DateTime.UtcNow,
                     cancellationToken);
@@ -113,7 +113,7 @@ public class UserSecurityRepository(SqlServerDbContext dbContext, ILogger<UserSe
     {
         try
         {
-            var rowAffected = await dbContext.UserSecurity
+            var rowAffected = await dbContext.Set<UserSecurity>()
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.LockedUntil, lockedUntil)
@@ -134,7 +134,7 @@ public class UserSecurityRepository(SqlServerDbContext dbContext, ILogger<UserSe
     {
         try
         {
-            var rowAffected = await dbContext.UserSecurity
+            var rowAffected = await dbContext.Set<UserSecurity>()
                 .Where(u => u.UserId == userId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(u => u.LockedUntil, (DateTime?)null)
@@ -157,7 +157,7 @@ public class UserSecurityRepository(SqlServerDbContext dbContext, ILogger<UserSe
     {
         try
         {
-            return await dbContext.Users
+            return await dbContext.Set<User>()
                 .AsNoTracking()
                 .Include(u => u.UserSecurity)
                 .Where(u => u.UserSecurity.LockedUntil.HasValue && u.UserSecurity.LockedUntil > DateTime.UtcNow)

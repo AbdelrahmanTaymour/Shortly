@@ -4,21 +4,21 @@ using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 using Shortly.Domain.RepositoryContract.Tokens;
-using Shortly.Infrastructure.DbContexts;
+using Shortly.Domain.Tokens;
 
 namespace Shortly.Infrastructure.Repositories.Tokens;
 
 /// <inheritdoc />
 /// <param name="dbContext">The database context for accessing UserActionTokens.</param>
 /// <param name="logger">Logger instance for tracking operations and errors.</param>
-public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<UserActionTokenRepository> logger) : IUserActionTokenRepository
+public class UserActionTokenRepository(ApplicationDbContext dbContext, ILogger<UserActionTokenRepository> logger) : IUserActionTokenRepository
 {
     /// <inheritdoc />
     public async Task<UserActionToken?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
-            return await dbContext.UserActionTokens
+            return await dbContext.Set<UserActionToken>()
                 .Include(t => t.User)
                 .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
         }
@@ -34,7 +34,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            return await dbContext.UserActionTokens
+            return await dbContext.Set<UserActionToken>()
                 .Include(t => t.User)
                 .FirstOrDefaultAsync(t => t.TokenHash == tokenHash, cancellationToken);
         }
@@ -50,7 +50,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            return await dbContext.UserActionTokens
+            return await dbContext.Set<UserActionToken>()
                 .Include(t => t.User)
                 .FirstOrDefaultAsync(t => t.UserId == userId &&
                                           t.TokenType == tokenType && !t.Used &&
@@ -69,7 +69,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            return await dbContext.UserActionTokens
+            return await dbContext.Set<UserActionToken>()
                 .AsNoTracking()
                 .Where(t => t.UserId == userId && !t.Used && t.ExpiresAt > DateTime.UtcNow)
                 .ToListAsync(cancellationToken);
@@ -86,7 +86,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            return await dbContext.UserActionTokens
+            return await dbContext.Set<UserActionToken>()
                 .AsNoTracking()
                 .Where(t => t.Used || t.ExpiresAt <= DateTime.UtcNow)
                 .ToListAsync(cancellationToken);
@@ -103,7 +103,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            await dbContext.UserActionTokens.AddAsync(token, cancellationToken);
+            await dbContext.Set<UserActionToken>().AddAsync(token, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
             return token;
         }
@@ -119,7 +119,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            dbContext.UserActionTokens.Update(token);
+            dbContext.Set<UserActionToken>().Update(token);
             await dbContext.SaveChangesAsync(cancellationToken);
             return token;
         }
@@ -136,7 +136,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            return await dbContext.UserActionTokens
+            return await dbContext.Set<UserActionToken>()
                 .Where(t => t.TokenHash == tokenHash && t.TokenType == tokenType && !t.Used)
                 .ExecuteUpdateAsync(setters =>
                         setters.SetProperty(t => t.Used, true)
@@ -154,7 +154,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            return await dbContext.UserActionTokens
+            return await dbContext.Set<UserActionToken>()
                 .Where(t => t.Id == id)
                 .ExecuteUpdateAsync(setters =>
                         setters.SetProperty(t => t.Used, true)
@@ -172,7 +172,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            return await dbContext.UserActionTokens
+            return await dbContext.Set<UserActionToken>()
                 .Where(t => t.Used || t.ExpiresAt <= DateTime.UtcNow)
                 .ExecuteDeleteAsync(cancellationToken);
         }
@@ -189,7 +189,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            return await dbContext.UserActionTokens
+            return await dbContext.Set<UserActionToken>()
                 .Where(t=> t.UserId == userId && t.TokenType == tokenType && !t.Used)
                 .ExecuteUpdateAsync(setters =>
                         setters.SetProperty(t => t.Used, true)
@@ -207,7 +207,7 @@ public class UserActionTokenRepository(SqlServerDbContext dbContext, ILogger<Use
     {
         try
         {
-            return await dbContext.UserActionTokens
+            return await dbContext.Set<UserActionToken>()
                 .AsNoTracking()
                 .Where(t => t.UserId == userId && t.TokenType == tokenType && !t.Used && t.ExpiresAt > DateTime.UtcNow)
                 .AnyAsync(cancellationToken);

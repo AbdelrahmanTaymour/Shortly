@@ -1,4 +1,5 @@
 using Shortly.Domain.Entities;
+using Shortly.Domain.Users;
 
 namespace Shortly.Domain.RepositoryContract.Security;
 

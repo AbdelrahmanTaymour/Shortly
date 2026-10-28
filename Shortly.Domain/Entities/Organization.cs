@@ -1,10 +1,13 @@
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Enums;
+using Shortly.Domain.Members;
+using Shortly.Domain.ShortUrls;
+using Shortly.Domain.Users;
 
 namespace Shortly.Domain.Entities;
 
-public class Organization
+public class Organization : Entity<Guid>
 {
-    public Guid Id { get; set; }
     public required string Name { get; set; }
     public string? Description { get; set; }
     public string? Website { get; set; }

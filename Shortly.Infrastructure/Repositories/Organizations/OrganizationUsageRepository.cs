@@ -1,11 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
-using Shortly.Core.Organizations.Contracts;
-using Shortly.Core.Organizations.DTOs;
+using Shortly.Core.Organizations_legacy.Contracts;
+using Shortly.Core.Organizations_legacy.DTOs;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.Organizations;
-using Shortly.Infrastructure.DbContexts;
 
 namespace Shortly.Infrastructure.Repositories.Organizations;
 
@@ -13,7 +12,7 @@ namespace Shortly.Infrastructure.Repositories.Organizations;
 /// SQL Server repository for managing organization usage statistics.
 /// Implements reliable concurrency-safe increments for usage tracking.
 /// </summary>
-public class OrganizationUsageRepository(SqlServerDbContext dbContext, ILogger<OrganizationUsageRepository> logger)
+public class OrganizationUsageRepository(ApplicationDbContext dbContext, ILogger<OrganizationUsageRepository> logger)
     : IOrganizationUsageRepository, IOrganizationUsageQeries
 {
     /// <inheritdoc/>
@@ -21,7 +20,7 @@ public class OrganizationUsageRepository(SqlServerDbContext dbContext, ILogger<O
     {
         try
         {
-            return await dbContext.OrganizationUsage
+            return await dbContext.Set<OrganizationUsage>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.OrganizationId == organizationId, cancellationToken);
         }
@@ -37,7 +36,7 @@ public class OrganizationUsageRepository(SqlServerDbContext dbContext, ILogger<O
     {
         try
         {
-            await dbContext.OrganizationUsage.AddAsync(entity, cancellationToken);
+            await dbContext.Set<OrganizationUsage>().AddAsync(entity, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
             return entity;
         }
@@ -53,7 +52,7 @@ public class OrganizationUsageRepository(SqlServerDbContext dbContext, ILogger<O
     {
         try
         {
-            return await dbContext.OrganizationUsage
+            return await dbContext.Set<OrganizationUsage>()
                 .Where(ou => ou.OrganizationId == organizationId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(ou => ou.MonthlyLinksCreated, ou => ou.MonthlyLinksCreated + 1)
@@ -72,7 +71,7 @@ public class OrganizationUsageRepository(SqlServerDbContext dbContext, ILogger<O
     {
         try
         {
-            return await dbContext.OrganizationUsage
+            return await dbContext.Set<OrganizationUsage>()
                 .Where(ou => ou.OrganizationId == organizationId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(ou => ou.MonthlyQrCodesCreated, ou => ou.MonthlyQrCodesCreated + 1)
@@ -91,7 +90,7 @@ public class OrganizationUsageRepository(SqlServerDbContext dbContext, ILogger<O
     {
         try
         {
-            return await dbContext.Organizations
+            return await dbContext.Set<Organization>()
                 .AsNoTracking()
                 .Where(o => o.Id == organizationId)
                 .Select(o => new OrganizationLimits
@@ -115,7 +114,7 @@ public class OrganizationUsageRepository(SqlServerDbContext dbContext, ILogger<O
     {
         try
         {
-            return await dbContext.OrganizationUsage
+            return await dbContext.Set<OrganizationUsage>()
                 .AnyAsync(o => o.OrganizationId == organizationId && o.MonthlyLinksCreated < maxLinksPerMonth, cancellationToken);
         }
         catch (Exception ex)
@@ -131,7 +130,7 @@ public class OrganizationUsageRepository(SqlServerDbContext dbContext, ILogger<O
     {
         try
         {
-            return await dbContext.OrganizationUsage
+            return await dbContext.Set<OrganizationUsage>()
                 .AnyAsync(o => o.OrganizationId == organizationId && o.MonthlyQrCodesCreated < maxQrCodesPerMonth, cancellationToken);
         }
         catch (Exception ex)
@@ -146,7 +145,7 @@ public class OrganizationUsageRepository(SqlServerDbContext dbContext, ILogger<O
     {
         try
         {
-            return await dbContext.OrganizationUsage
+            return await dbContext.Set<OrganizationUsage>()
                 .Where(ou => ou.OrganizationId == organizationId)
                 .ExecuteUpdateAsync(setters => setters
                         .SetProperty(ou => ou.MonthlyLinksCreated, 0)
@@ -166,7 +165,7 @@ public class OrganizationUsageRepository(SqlServerDbContext dbContext, ILogger<O
     {
         try
         {
-            return await dbContext.OrganizationUsage
+            return await dbContext.Set<OrganizationUsage>()
                 .AsNoTracking()
                 .Where(ou => ou.MonthlyResetDate < DateTime.UtcNow)
                 .ExecuteUpdateAsync(setters => setters

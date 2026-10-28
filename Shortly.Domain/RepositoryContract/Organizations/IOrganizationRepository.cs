@@ -9,6 +9,9 @@ namespace Shortly.Domain.RepositoryContract.Organizations;
 /// </summary>
 public interface IOrganizationRepository
 {
+    void Add(Organization organization);
+    
+    
     /// <summary>
     /// Retrieves all non-deleted organizations from the database.
     /// </summary>

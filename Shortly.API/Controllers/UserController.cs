@@ -3,10 +3,10 @@ using MethodTimer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions.DTOs;
-using Shortly.Core.Users.Contracts;
-using Shortly.Core.Users.DTOs.User;
+using Shortly.Core.Users_legacy.Contracts;
+using Shortly.Core.Users_legacy.DTOs.User;
 
 namespace Shortly.API.Controllers;
 
@@ -47,7 +47,7 @@ public class UserController(IUserService userService, IUserContext userContext) 
     //[RequirePermission(enPermissions.ManageOwnAccount)]
     public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken = default)
     {
-        var user = await userService.GetByIdAsync(userContext.CurrentUserId, cancellationToken);
+        var user = await userService.GetByIdAsync(userContext.UserId, cancellationToken);
         return Ok(user);
     }
     
@@ -235,7 +235,7 @@ public class UserController(IUserService userService, IUserContext userContext) 
     //[RequirePermission(enPermissions.DeleteUser)]   
     public async Task<IActionResult> DeleteUser(Guid userId, CancellationToken cancellationToken = default)
     {
-        await userService.SoftDeleteAsync(userId, userContext.CurrentUserId, cancellationToken);
+        await userService.SoftDeleteAsync(userId, userContext.UserId, cancellationToken);
         return NoContent();
     }
 

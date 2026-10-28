@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Controllers.Base;
-using Shortly.Core.Common.Abstractions;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions.DTOs;
 using Shortly.Core.Members.Contracts;
 using Shortly.Core.Members.DTOs;
@@ -197,7 +197,7 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     //[RequirePermission(enPermissions.RemoveMembers)]
     public async Task<IActionResult> RemoveMember(Guid organizationId, Guid userId, CancellationToken cancellationToken = default)
     {
-        await memberService.RemoveMemberAsync(organizationId, userId, userContext.CurrentUserId, cancellationToken);
+        await memberService.RemoveMemberAsync(organizationId, userId, userContext.UserId, cancellationToken);
         return NoContent();
     }
     
@@ -232,7 +232,7 @@ public class OrganizationMemberController(IOrganizationMemberService memberServi
     //[RequirePermission(enPermissions.ManageOrgMembers)]
     public async Task<IActionResult> UpdateMemberRole(Guid organizationId, Guid userId, [FromBody] UpdateMemberRoleRequest updateRoleDto, CancellationToken cancellationToken = default)
     {
-        var result = await memberService.UpdateMemberRoleAsync(organizationId, userId, updateRoleDto.RoleId, cancellationToken);
+        var result = await memberService.UpdateMemberRoleAsync(organizationId, userId, updateRoleDto.Role, cancellationToken);
         return Ok(result);
     }
      
