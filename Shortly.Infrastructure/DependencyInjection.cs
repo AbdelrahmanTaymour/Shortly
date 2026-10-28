@@ -11,15 +11,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Quartz;
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.ClickTracking;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Email;
-using Shortly.Core.ClickTracking.Contracts;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Organizations_legacy.Contracts;
 using Shortly.Core.Users_legacy.Contracts;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.RepositoryContract.ClickTracking;
+using Shortly.Domain.ClickEvents;
 using Shortly.Domain.RepositoryContract.Invitations;
 using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.RepositoryContract.Organizations;
@@ -32,13 +32,12 @@ using Shortly.Domain.RepositoryContract.Users;
 using Shortly.Domain.ShortUrls;
 using Shortly.Infrastructure.Authentication;
 using Shortly.Infrastructure.Authorization;
-using Shortly.Infrastructure.BackgroundServices;
+using Shortly.Infrastructure.ClickTracking;
 using Shortly.Infrastructure.Clock;
 using Shortly.Infrastructure.Data;
 using Shortly.Infrastructure.Email;
 using Shortly.Infrastructure.Repositories;
 using Shortly.Infrastructure.Repositories.Tokens;
-using Shortly.Infrastructure.Repositories.ClickTracking;
 using Shortly.Infrastructure.Repositories.Invetations;
 using Shortly.Infrastructure.Repositories.Members;
 using Shortly.Infrastructure.Repositories.Organizations;
@@ -48,7 +47,6 @@ using Shortly.Infrastructure.Repositories.Teams;
 using Shortly.Infrastructure.Repositories.UserAuditLog;
 using Shortly.Infrastructure.Repositories.Users;
 using Shortly.Infrastructure.ScheduledJobs;
-using Shortly.Infrastructure.Services.GeoLocation;
 using AuthenticationService = Shortly.Infrastructure.Authentication.AuthenticationService;
 using IAuthenticationService = Shortly.Core.Abstractions.Authentication.IAuthenticationService;
 
@@ -68,7 +66,7 @@ public static class DependencyInjection
         AddAuthorization(services);
         AddEmail(services, configuration);
         AddBackgroundJobs(services);
-        AddGeoLocation(services);
+        AddClickTracking(services, configuration);
 
         return services;
     }
@@ -200,7 +198,6 @@ public static class DependencyInjection
     {
         services.AddQuartz(q =>
         {
-            q.UseMicrosoftDependencyInjectionJobFactory();
             q.ScheduleJob<MonthlyUsageResetJob>(trigger => trigger
                 .WithIdentity("MonthlyUsageResetTrigger")
                 .StartNow()
@@ -208,16 +205,19 @@ public static class DependencyInjection
         });
         services.AddQuartzHostedService(options => { options.WaitForJobsToComplete = true; });
         services.AddScoped<MonthlyUsageResetJob>();
-
-        services.AddHostedService<ClickTrackingBackgroundWorker>();
     }
 
-    private static void AddGeoLocation(IServiceCollection services)
+    private static void AddClickTracking(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddHttpClient<IGeoLocationService, GeoLocationService>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(10);
-            client.DefaultRequestHeaders.Add("User-Agent", "Short.ly/1.0");
-        });
+        services.AddSingleton<IClickEventQueue, ClickEventQueue>();
+        services.AddHostedService<ClickTrackingBackgroundService>();
+        services.AddSingleton<IUserAgentParser, UserAgentParser>();
+        services.AddScoped<IClickEventRepository, ClickEventRepository>();
+        
+        services.Configure<GeoLite2Options>(configuration.GetSection(GeoLite2Options.SectionName));
+        services.AddHttpClient("MaxMind");
+        services.AddSingleton<MaxMindGeoLocationService>();
+        services.AddSingleton<IGeoLocationService>(sp => sp.GetRequiredService<MaxMindGeoLocationService>());
+        services.AddHostedService<GeoDatabaseUpdaterService>();
     }
 }

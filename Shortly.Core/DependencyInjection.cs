@@ -4,8 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.Abstractions.Behaviors;
 using Shortly.Core.Admin.Contracts;
 using Shortly.Core.Admin.Services;
-using Shortly.Core.ClickTracking.Contracts;
-using Shortly.Core.ClickTracking.Services;
 using Shortly.Core.Common;
 using Shortly.Core.Invitations.Contracts;
 using Shortly.Core.Invitations.Services;
@@ -52,12 +50,6 @@ public static class DependencyInjection
         services.AddScoped<IUserQueryService, UserQueryService>();
         services.AddScoped<IUserUsageService, UserUsageService>();
         services.AddScoped<IUserAuditLogService, UserAuditLogService>();
-
-        // Click Event
-        services.AddSingleton<ClickTrackingQueueService>();
-        services.AddScoped<IClickTrackingService, ClickTrackingService>();
-        services.AddScoped<ITrafficSourceAnalyzer, TrafficSourceAnalyzer>();
-        services.AddScoped<IUserAgentParsingService, UserAgentParsingService>();
 
         // Organization Management (legacy, not yet migrated to CQRS)
         services.AddScoped<IOrganizationService, OrganizationService>();

@@ -5,26 +5,12 @@ namespace Shortly.Domain.ClickEvents;
 public sealed class ClickEvent : Entity<Guid>
 {
     private ClickEvent(
-        Guid id, 
-        long shortUrlId,
-        DateTime clickedAtUtc, 
-        string ipAddress, 
-        string sessionId, 
-        string userAgent,
-        string? referrer, 
-        string? utmSource, 
-        string? utmMedium, 
-        string? utmCampaign, 
-        string? utmTerm,
-        string? utmContent,
-        string country, 
-        string city, 
-        string browser,
-        string operatingSystem, 
-        string device, 
-        string? deviceType,
-        string? referrerDomain, 
-        string? trafficSource) : base(id)
+        Guid id, long shortUrlId, DateTime clickedAtUtc,
+        string ipAddress, string sessionId, string userAgent,
+        string? referrer, string? referrerDomain, string? trafficSource,
+        string? utmSource, string? utmMedium, string? utmCampaign, string? utmTerm, string? utmContent,
+        string country, string city, string browser, string operatingSystem, string device, string? deviceType)
+        : base(id)
     {
         ShortUrlId = shortUrlId;
         ClickedAtUtc = clickedAtUtc;
@@ -32,6 +18,8 @@ public sealed class ClickEvent : Entity<Guid>
         SessionId = sessionId;
         UserAgent = userAgent;
         Referrer = referrer;
+        ReferrerDomain = referrerDomain;
+        TrafficSource = trafficSource;
         UtmSource = utmSource;
         UtmMedium = utmMedium;
         UtmCampaign = utmCampaign;
@@ -43,8 +31,6 @@ public sealed class ClickEvent : Entity<Guid>
         OperatingSystem = operatingSystem;
         Device = device;
         DeviceType = deviceType;
-        ReferrerDomain = referrerDomain;
-        TrafficSource = trafficSource;
     }
 
     private ClickEvent()
@@ -53,70 +39,32 @@ public sealed class ClickEvent : Entity<Guid>
 
     public long ShortUrlId { get; private set; }
     public DateTime ClickedAtUtc { get; private set; }
-
-    public string IpAddress { get; private set; } = string.Empty;
-    public string SessionId { get; private set; } = string.Empty;
-    public string UserAgent { get; private set; } = string.Empty;
+    public string IpAddress { get; private set; } = null!;
+    public string SessionId { get; private set; } = null!;
+    public string UserAgent { get; private set; } = null!;
     public string? Referrer { get; private set; }
+    public string? ReferrerDomain { get; private set; }
+    public string? TrafficSource { get; private set; }
     public string? UtmSource { get; private set; }
     public string? UtmMedium { get; private set; }
     public string? UtmCampaign { get; private set; }
     public string? UtmTerm { get; private set; }
     public string? UtmContent { get; private set; }
-
-    public string Country { get; private set; } = string.Empty;
-    public string City { get; private set; } = string.Empty;
-
-    public string Browser { get; private set; } = string.Empty;
-    public string OperatingSystem { get; private set; } = string.Empty;
-    public string Device { get; private set; } = string.Empty;
+    public string Country { get; private set; } = null!;
+    public string City { get; private set; } = null!;
+    public string Browser { get; private set; } = null!;
+    public string OperatingSystem { get; private set; } = null!;
+    public string Device { get; private set; } = null!;
     public string? DeviceType { get; private set; }
 
-    public string? ReferrerDomain { get; private set; }
-    public string? TrafficSource { get; private set; }
-
     public static ClickEvent Record(
-        long shortUrlId, 
-        DateTime clickedAtUtc, 
-        string ipAddress, 
-        string sessionId, 
-        string userAgent,
-        string? referrer, 
-        string? utmSource, 
-        string? utmMedium, 
-        string? utmCampaign, 
-        string? utmTerm,
-        string? utmContent,
-        string country,
-        string city, 
-        string browser, 
-        string operatingSystem, 
-        string device, 
-        string? deviceType,
-        string? referrerDomain, 
-        string? trafficSource)
+        long shortUrlId, DateTime clickedAtUtc, string ipAddress, string sessionId, string userAgent,
+        string? referrer, string? referrerDomain, string? trafficSource,
+        string? utmSource, string? utmMedium, string? utmCampaign, string? utmTerm, string? utmContent,
+        string country, string city, string browser, string operatingSystem, string device, string? deviceType)
     {
-        return new ClickEvent(
-            Guid.NewGuid(), 
-            shortUrlId, 
-            clickedAtUtc,
-            ipAddress,
-            sessionId, 
-            userAgent,
-            referrer,
-            utmSource, 
-            utmMedium, 
-            utmCampaign,
-            utmTerm, 
-            utmContent,
-            country, 
-            city, 
-            browser, 
-            operatingSystem,
-            device, 
-            deviceType, 
-            referrerDomain, 
-            trafficSource);
-
+        return new ClickEvent(Guid.NewGuid(), shortUrlId, clickedAtUtc, ipAddress, sessionId, userAgent,
+            referrer, referrerDomain, trafficSource, utmSource, utmMedium, utmCampaign, utmTerm, utmContent,
+            country, city, browser, operatingSystem, device, deviceType);
     }
 }
