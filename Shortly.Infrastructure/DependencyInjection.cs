@@ -17,19 +17,15 @@ using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Email;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Organizations_legacy.Contracts;
-using Shortly.Core.Users_legacy.Contracts;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.ClickEvents;
 using Shortly.Domain.RepositoryContract.Invitations;
 using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.RepositoryContract.Organizations;
-using Shortly.Domain.RepositoryContract.Profile;
-using Shortly.Domain.RepositoryContract.Security;
 using Shortly.Domain.RepositoryContract.Teams;
 using Shortly.Domain.RepositoryContract.Tokens;
-using Shortly.Domain.RepositoryContract.UserAuditLog;
-using Shortly.Domain.RepositoryContract.Users;
 using Shortly.Domain.ShortUrls;
+using Shortly.Domain.Users;
 using Shortly.Infrastructure.Authentication;
 using Shortly.Infrastructure.Authorization;
 using Shortly.Infrastructure.ClickTracking;
@@ -41,14 +37,9 @@ using Shortly.Infrastructure.Repositories.Tokens;
 using Shortly.Infrastructure.Repositories.Invetations;
 using Shortly.Infrastructure.Repositories.Members;
 using Shortly.Infrastructure.Repositories.Organizations;
-using Shortly.Infrastructure.Repositories.Profile;
-using Shortly.Infrastructure.Repositories.Security;
 using Shortly.Infrastructure.Repositories.Teams;
-using Shortly.Infrastructure.Repositories.UserAuditLog;
 using Shortly.Infrastructure.Repositories.Users;
 using Shortly.Infrastructure.ScheduledJobs;
-using AuthenticationService = Shortly.Infrastructure.Authentication.AuthenticationService;
-using IAuthenticationService = Shortly.Core.Abstractions.Authentication.IAuthenticationService;
 
 namespace Shortly.Infrastructure;
 
@@ -91,11 +82,7 @@ public static class DependencyInjection
     {
         // User Management
         services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IUserProfileRepository, UserProfileRepository>();
-        services.AddScoped<IUserSecurityRepository, UserSecurityRepository>();
         services.AddScoped<IUserUsageRepository, UserUsageRepository>();
-        services.AddScoped<IUserAuditLogRepository, UserAuditLogRepository>();
-        services.AddScoped<IUserQueries, UserQueries>();
  
         // Tokens
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
@@ -121,7 +108,6 @@ public static class DependencyInjection
     {
         services.AddHttpContextAccessor();
         
-        services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IUserContext, UserContext>();
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<ICookieService, CookieService>();
@@ -213,9 +199,18 @@ public static class DependencyInjection
         services.AddHostedService<ClickTrackingBackgroundService>();
         services.AddSingleton<IUserAgentParser, UserAgentParser>();
         services.AddScoped<IClickEventRepository, ClickEventRepository>();
-        
-        services.Configure<GeoLite2Options>(configuration.GetSection(GeoLite2Options.SectionName));
-        services.AddHttpClient("MaxMind");
+
+        services.AddOptions<GeoLite2Options>()
+            .Bind(configuration.GetSection(GeoLite2Options.SectionName))
+            .Validate(o => !string.IsNullOrWhiteSpace(o.DatabasePath), "GeoLite2:DatabasePath is required.")
+            .Validate(o => o.UpdateIntervalDays > 0, "GeoLite2:UpdateIntervalDays must be positive.")
+            .ValidateOnStart();
+
+        services.AddHttpClient("MaxMind", client =>
+        {
+            client.Timeout = TimeSpan.FromMinutes(5);
+        });
+
         services.AddSingleton<MaxMindGeoLocationService>();
         services.AddSingleton<IGeoLocationService>(sp => sp.GetRequiredService<MaxMindGeoLocationService>());
         services.AddHostedService<GeoDatabaseUpdaterService>();

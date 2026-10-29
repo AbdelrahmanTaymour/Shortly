@@ -11,34 +11,50 @@ namespace Shortly.Infrastructure.Repositories;
 internal sealed class ShortUrlRepository(ApplicationDbContext dbContext)
     : Repository<ShortUrl, long>(dbContext), IShortUrlRepository
 {
-    public async Task<ShortUrl?> GetByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)
+    public async Task<ShortUrl?> GetByShortCodeAsync(ShortCode shortCode, CancellationToken cancellationToken = default)
     {
         return await DbContext.Set<ShortUrl>()
-            .FirstOrDefaultAsync(s => s.ShortCode.Value == shortCode, cancellationToken);
+            .FirstOrDefaultAsync(s => s.ShortCode == shortCode, cancellationToken);
     }
 
     public async Task<IReadOnlyList<ShortUrl>> GetByIdsAsync(
         IReadOnlyCollection<long> ids,
         CancellationToken cancellationToken = default)
     {
+        if (ids.Count == 0) return [];
+
         return await DbContext.Set<ShortUrl>()
             .Where(s => ids.Contains(s.Id))
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<bool> ExistsByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsByShortCodeAsync(ShortCode shortCode, CancellationToken cancellationToken = default)
     {
         return await DbContext.Set<ShortUrl>()
-            .AnyAsync(s => s.ShortCode.Value == shortCode, cancellationToken);
+            .AnyAsync(s => s.ShortCode == shortCode, cancellationToken);
     }
-
+    
     public async Task<HashSet<string>> GetExistingShortCodesAsync(
-        IReadOnlyCollection<string> shortCodes,
+        IReadOnlyCollection<ShortCode> shortCodes,
         CancellationToken cancellationToken = default)
     {
-        return await DbContext.Set<ShortUrl>()
-            .Where(s => shortCodes.Contains(s.ShortCode.Value))
-            .Select(s => s.ShortCode.Value)
-            .ToHashSetAsync(cancellationToken);
+        if (shortCodes.Count == 0) return [];
+
+        var existing = await DbContext.Set<ShortUrl>()
+            .Where(s => shortCodes.Contains(s.ShortCode))
+            .Select(s => s.ShortCode)
+            .ToListAsync(cancellationToken);
+
+        return [.. existing.Select(c => c.Value)];
     }
+
+    public async Task<bool> ExistsAnyForUserAsync(Guid userId, CancellationToken cancellationToken = default)
+        => await DbContext.Set<ShortUrl>().AnyAsync(s => s.UserId == userId, cancellationToken);
+
+    public async Task<int> DeleteAllForUserAsync(Guid userId, CancellationToken cancellationToken = default)
+        => await DbContext.Set<ShortUrl>().Where(s => s.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+
+    public async Task<int> DetachAllFromUserAsync(Guid userId, CancellationToken cancellationToken = default)
+        => await DbContext.Set<ShortUrl>().Where(s => s.UserId == userId).ExecuteUpdateAsync(
+            s => s.SetProperty(x => x.UserId, (Guid?)null), cancellationToken);
 }
