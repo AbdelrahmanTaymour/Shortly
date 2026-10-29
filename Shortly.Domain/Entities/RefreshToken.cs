@@ -1,10 +1,10 @@
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Users;
 
 namespace Shortly.Domain.Entities;
 
-public class RefreshToken
+public class RefreshToken : Entity
 {
-    public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public required string TokenHash { get; set; }
     public DateTime ExpiresAt { get; set; }

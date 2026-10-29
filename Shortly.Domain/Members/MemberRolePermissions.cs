@@ -1,4 +1,4 @@
-using Shortly.Domain.Enums;
+using Shortly.Domain.Users;
 
 namespace Shortly.Domain.Members;
 
@@ -19,5 +19,5 @@ public static class MemberRolePermissions
     };
 
     public static enPermissions For(MemberRole role) =>
-        Map.TryGetValue(role, out var permissions) ? permissions : enPermissions.None;
+        Map.GetValueOrDefault(role, enPermissions.None);
 }
