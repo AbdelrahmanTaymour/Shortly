@@ -5,7 +5,6 @@ using Shortly.Domain.Entities;
 using Shortly.Domain.Members;
 using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.RepositoryContract.Organizations;
-using Shortly.Domain.RepositoryContract.Users;
 using Shortly.Domain.Users;
 
 namespace Shortly.Core.Organizations.CreateOrganization;

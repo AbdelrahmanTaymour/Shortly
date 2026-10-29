@@ -1,7 +1,6 @@
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.RepositoryContract.Users;
 using Shortly.Domain.Users;
 
 namespace Shortly.Core.Organizations.ExitOrganization;

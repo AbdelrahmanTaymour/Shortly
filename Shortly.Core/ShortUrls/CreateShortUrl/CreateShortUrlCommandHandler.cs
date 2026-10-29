@@ -12,15 +12,15 @@ internal sealed class CreateShortUrlCommandHandler(
     IUserContext userContext,
     ShortCodeGenerator shortCodeGenerator,
     IUnitOfWork unitOfWork,
-    IDateTimeProvider dateTimeProvider) : ICommandHandler<CreateShortUrlCommand, long>
+    IDateTimeProvider dateTimeProvider) : ICommandHandler<CreateShortUrlCommand, string>
 {
-    public async Task<Result<long>> Handle(CreateShortUrlCommand request, CancellationToken cancellationToken)
+    public async Task<Result<string>> Handle(CreateShortUrlCommand request, CancellationToken cancellationToken)
     {
         var urlResult = OriginalUrl.Create(request.OriginalUrl);
-        if (urlResult.IsFailure) return Result.Failure<long>(urlResult.Error);
+        if (urlResult.IsFailure) return Result.Failure<string>(urlResult.Error);
 
         var shortCodeResult = await ResolveShortCodeAsync(request.CustomShortCode, cancellationToken);
-        if (shortCodeResult.IsFailure) return Result.Failure<long>(shortCodeResult.Error);
+        if (shortCodeResult.IsFailure) return Result.Failure<string>(shortCodeResult.Error);
 
         var utcNow = dateTimeProvider.UtcNow;
 
@@ -28,27 +28,29 @@ internal sealed class CreateShortUrlCommandHandler(
         {
             enShortUrlOwnerType.User => ShortUrl.CreateForUser(
                 userContext.UserId, urlResult.Value, shortCodeResult.Value, utcNow,
-                request.ClickLimit, request.TrackingEnabled, request.IsPrivate, request.ExpiresAt,
+                request.ClickLimit ?? -1, request.TrackingEnabled ?? true, request.IsPrivate ?? false,
+                request.ExpiresAt,
                 request.Title, request.Description),
 
             enShortUrlOwnerType.Organization => ShortUrl.CreateForOrganization(
-                userContext.OrganizationId!.Value, userContext.MemberId!.Value, urlResult.Value, shortCodeResult.Value, utcNow,
-                request.ClickLimit, request.TrackingEnabled, request.IsPrivate, request.ExpiresAt,
+                userContext.OrganizationId!.Value, userContext.MemberId!.Value, urlResult.Value, shortCodeResult.Value,
+                utcNow,
+                request.ClickLimit ?? -1, request.TrackingEnabled ?? true, request.IsPrivate ?? false,
+                request.ExpiresAt,
                 request.Title, request.Description),
 
             enShortUrlOwnerType.Anonymous => ShortUrl.CreateForAnonymous(
-                userContext.AnonymousSessionId!, userContext.IpAddress, urlResult.Value, shortCodeResult.Value, utcNow,
-                request.ClickLimit, request.ExpiresAt),
+                userContext.AnonymousSessionId!, userContext.IpAddress, urlResult.Value, shortCodeResult.Value, utcNow),
 
             _ => Result.Failure<ShortUrl>(ShortUrlErrors.OriginalUrlInvalid)
         };
 
-        if (shortUrlResult.IsFailure) return Result.Failure<long>(shortUrlResult.Error);
+        if (shortUrlResult.IsFailure) return Result.Failure<string>(shortUrlResult.Error);
 
         shortUrlRepository.Add(shortUrlResult.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return shortUrlResult.Value.Id;
+        return shortUrlResult.Value.ShortCode.Value;
     }
 
     private async Task<Result<ShortCode>> ResolveShortCodeAsync(string? customCode, CancellationToken cancellationToken)
@@ -58,15 +60,14 @@ internal sealed class CreateShortUrlCommandHandler(
             var customResult = ShortCode.Create(customCode);
             if (customResult.IsFailure) return customResult;
 
-            return await shortUrlRepository.ExistsByShortCodeAsync(customCode, cancellationToken)
-                ? Result.Failure<ShortCode>(ShortUrlErrors.ShortCodeInvalidCharacters)
-                : customResult;
+            var exists = await shortUrlRepository.ExistsByShortCodeAsync(customResult.Value, cancellationToken);
+            return exists ? Result.Failure<ShortCode>(ShortUrlErrors.ShortCodeAlreadyExists) : customResult;
         }
 
         for (var attempt = 0; attempt < 5; attempt++)
         {
             var candidate = shortCodeGenerator.Generate();
-            if (!await shortUrlRepository.ExistsByShortCodeAsync(candidate.Value, cancellationToken))
+            if (!await shortUrlRepository.ExistsByShortCodeAsync(candidate, cancellationToken))
                 return candidate;
         }
 

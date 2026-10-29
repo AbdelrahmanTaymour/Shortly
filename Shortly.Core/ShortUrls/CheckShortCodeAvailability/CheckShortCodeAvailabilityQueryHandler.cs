@@ -13,7 +13,7 @@ internal sealed class CheckShortCodeAvailabilityQueryHandler(IShortUrlRepository
         if (codeResult.IsFailure)
             return Result.Failure<bool>(codeResult.Error);
 
-        var exists = await shortUrlRepository.ExistsByShortCodeAsync(codeResult.Value.Value, cancellationToken);
+        var exists = await shortUrlRepository.ExistsByShortCodeAsync(codeResult.Value, cancellationToken);
         return !exists; // true = available
     }
 }

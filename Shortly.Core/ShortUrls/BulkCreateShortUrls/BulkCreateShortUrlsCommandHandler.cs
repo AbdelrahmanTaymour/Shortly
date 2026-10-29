@@ -21,7 +21,7 @@ internal sealed class BulkCreateShortUrlsCommandHandler(
             .ToList();
 
         var existing = await shortUrlRepository.GetExistingShortCodesAsync(
-            candidates.Select(c => c.code.Value).ToList(), cancellationToken);
+            [.. candidates.Select(c => c.code)], cancellationToken);
 
         // Track both database existing codes and codes generated within this current batch
         var usedInBatch = new HashSet<string>(existing, StringComparer.Ordinal);
