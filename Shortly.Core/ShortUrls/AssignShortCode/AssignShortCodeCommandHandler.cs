@@ -24,7 +24,7 @@ internal sealed class AssignShortCodeCommandHandler(
         var codeResult = ShortCode.Create(request.NewShortCode);
         if (codeResult.IsFailure) return Result.Failure(codeResult.Error);
 
-        if (await shortUrlRepository.ExistsByShortCodeAsync(codeResult.Value.Value, cancellationToken))
+        if (await shortUrlRepository.ExistsByShortCodeAsync(codeResult.Value, cancellationToken))
             return Result.Failure(ShortUrlErrors.ShortCodeAlreadyExists);
 
         var assignResult = shortUrl.AssignShortCode(codeResult.Value, dateTimeProvider.UtcNow);

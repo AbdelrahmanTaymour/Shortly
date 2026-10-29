@@ -28,7 +28,7 @@ internal sealed class UpdateShortUrlCommandHandler(
         if (codeResult.IsFailure) return Result.Failure(codeResult.Error);
 
         var codeChanged = !string.Equals(shortUrl.ShortCode.Value, codeResult.Value.Value, StringComparison.Ordinal);
-        if (codeChanged && await shortUrlRepository.ExistsByShortCodeAsync(codeResult.Value.Value, cancellationToken))
+        if (codeChanged && await shortUrlRepository.ExistsByShortCodeAsync(codeResult.Value, cancellationToken))
             return Result.Failure(ShortUrlErrors.ShortCodeAlreadyExists);
 
         var utcNow = dateTimeProvider.UtcNow;
