@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
+using Shortly.Domain.RepositoryContract.Invitations;
 
 namespace Shortly.Infrastructure.Configurations;
 

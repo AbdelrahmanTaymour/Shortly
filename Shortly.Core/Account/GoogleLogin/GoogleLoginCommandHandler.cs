@@ -1,7 +1,7 @@
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.RepositoryContract.Users;
 using Shortly.Domain.Users;
 
 namespace Shortly.Core.Account.GoogleLogin;
@@ -9,37 +9,26 @@ namespace Shortly.Core.Account.GoogleLogin;
 internal sealed class GoogleLoginCommandHandler(
     IUserRepository userRepository,
     IJwtService jwtService,
-    ICookieService cookieService) : ICommandHandler<GoogleLoginCommand, AccessTokenResponse>
+    ICookieService cookieService,
+    IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider) : ICommandHandler<GoogleLoginCommand, AccessTokenResponse>
 {
     public async Task<Result<AccessTokenResponse>> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
     {
-        var user = await userRepository.GetUserByGoogleIdAsync(request.GoogleId, cancellationToken)
+        var user = await userRepository.GetByGoogleIdAsync(request.GoogleId, cancellationToken)
                    ?? await userRepository.GetByEmailAsync(request.Email, cancellationToken);
 
         if (user is null)
         {
-            user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = request.Email,
-                Username = request.Email,
-                PasswordHash = string.Empty,
-                GoogleId = request.GoogleId,
-                GoogleProfilePicture = request.Picture,
-                IsOAuthUser = true,
-                IsEmailConfirmed = true,
-                Role = UserRole.RegisteredUser,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await userRepository.CreateAsync(user);
+            user = User.RegisterOAuth(request.Email, request.GoogleId, request.Picture, dateTimeProvider.UtcNow);
+            userRepository.Add(user);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         var tokensResult = await jwtService.IssueTokensAsync(user, cancellationToken);
         if (tokensResult.IsFailure) return tokensResult;
 
-        cookieService.SetRefreshToken(tokensResult.Value.RefreshToken, DateTime.UtcNow.AddDays(15));
-
+        cookieService.SetRefreshToken(tokensResult.Value.RefreshToken, dateTimeProvider.UtcNow.AddDays(15));
         return tokensResult;
     }
 }

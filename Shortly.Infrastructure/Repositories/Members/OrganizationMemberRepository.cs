@@ -4,6 +4,7 @@ using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
 using Shortly.Domain.RepositoryContract.Members;
+using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Repositories.Members;
 
