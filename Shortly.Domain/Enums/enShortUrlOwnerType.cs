@@ -1,4 +1,4 @@
-namespace Shortly.Domain.ShortUrls;
+namespace Shortly.Domain.Enums;
 
 public enum enShortUrlOwnerType
 {

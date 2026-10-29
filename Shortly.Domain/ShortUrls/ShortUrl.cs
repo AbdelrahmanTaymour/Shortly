@@ -127,13 +127,21 @@ public sealed class ShortUrl : Entity<long>
         string ipAddress,
         OriginalUrl originalUrl,
         ShortCode shortCode,
-        DateTime utcNow)
+        DateTime utcNow,
+        int clickLimit = -1,
+        DateTime? expiresAt = null)
     {
+        var expirationCheck = ValidateExpiration(expiresAt, utcNow);
+        if (expirationCheck.IsFailure) return Result.Failure<ShortUrl>(expirationCheck.Error);
+
+        var clickLimitCheck = ValidateClickLimit(clickLimit);
+        if (clickLimitCheck.IsFailure) return Result.Failure<ShortUrl>(clickLimitCheck.Error);
+
         return new ShortUrl(
             originalUrl, shortCode, enShortUrlOwnerType.Anonymous,
             userId: null, organizationId: null, createdByMemberId: null,
             anonymousSessionId: anonymousSessionId, ipAddress: ipAddress,
-            clickLimit: -1, trackingEnabled: false, isPrivate: false, expiresAt: null,
+            clickLimit, trackingEnabled: true, isPrivate: false, expiresAt,
             title: null, description: null, utcNow);
     }
 

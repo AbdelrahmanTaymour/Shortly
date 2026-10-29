@@ -66,7 +66,7 @@ public sealed class ShortUrlConfiguration : IEntityTypeConfiguration<ShortUrl>
             .WithMany()
             .HasForeignKey(s => s.UserId)
             .HasConstraintName("fk_short_urls_users")
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne<Organization>()
             .WithMany()

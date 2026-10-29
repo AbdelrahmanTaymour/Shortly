@@ -1,7 +1,6 @@
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
-using Shortly.Domain.Users;
 
 namespace Shortly.Domain.RepositoryContract.Members;
 

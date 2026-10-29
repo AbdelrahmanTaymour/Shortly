@@ -1,4 +1,4 @@
-namespace Shortly.Domain.Users;
+namespace Shortly.Domain.Enums;
 
 [Flags]
 public enum enPermissions : long

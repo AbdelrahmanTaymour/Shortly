@@ -10,7 +10,7 @@ public static class UserRolePermissions
 {
     private static readonly Dictionary<UserRole, enPermissions> Map = new()
     {
-        [UserRole.User] = enPermissions.BasicUser,
+        [UserRole.RegisteredUser] = enPermissions.BasicUser,
         [UserRole.SuperAdmin] = enPermissions.SuperAdmin,
         [UserRole.SystemAdmin] = enPermissions.SystemAdmin
     };

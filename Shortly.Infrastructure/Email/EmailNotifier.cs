@@ -38,7 +38,7 @@ internal sealed class EmailNotifier(
     }
 
     /// <inheritdoc />
-    public void EnqueuePasswordResetAsync(string email, string userName, string resetToken)
+    public void EnqueueSendPasswordResetAsync(string email, string userName, string resetToken)
     {
         var baseUiUrl = configuration["AppSettings:BaseUIUrl"];
         var resetLink = $"{baseUiUrl}/account/reset-password?token={resetToken}&email={Uri.EscapeDataString(email)}";

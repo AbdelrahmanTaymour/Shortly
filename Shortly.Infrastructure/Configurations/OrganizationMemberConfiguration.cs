@@ -37,7 +37,7 @@ public sealed class OrganizationMemberConfiguration : IEntityTypeConfiguration<O
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(om => om.User)
-            .WithMany()
+            .WithMany(u => u.OrganizationMemberships)
             .HasForeignKey(om => om.UserId)
             .HasConstraintName("fk_organization_members_users")
             .OnDelete(DeleteBehavior.Cascade);

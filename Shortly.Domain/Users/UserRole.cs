@@ -6,7 +6,7 @@ namespace Shortly.Domain.Users;
 /// </summary>
 public enum UserRole : byte
 {
-    User = 1,
+    RegisteredUser = 1,
     SuperAdmin = 2,
     SystemAdmin = 3
 }
