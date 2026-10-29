@@ -4,7 +4,6 @@ using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Extensions;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.RepositoryContract.Tokens;
-using Shortly.Domain.RepositoryContract.Users;
 using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
 
@@ -27,7 +26,7 @@ internal sealed class InitiateEmailChangeCommandHandler(
             return Result.Failure(UserErrors.InvalidCredentials);
 
         if (await userRepository.EmailExistsAsync(request.NewEmail, cancellationToken))
-            return Result.Failure(UserErrors.EmailNotUnique);
+            return Result.Failure(UserErrors.EmailOrUsernameNotUnique);
 
         await tokenRepository.InvalidateUserTokensAsync(user.Id, enUserActionTokenType.EmailChange, cancellationToken);
 

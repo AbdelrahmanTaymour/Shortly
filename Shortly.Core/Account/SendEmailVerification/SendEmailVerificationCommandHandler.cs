@@ -4,7 +4,6 @@ using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Extensions;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.RepositoryContract.Tokens;
-using Shortly.Domain.RepositoryContract.Users;
 using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
 
