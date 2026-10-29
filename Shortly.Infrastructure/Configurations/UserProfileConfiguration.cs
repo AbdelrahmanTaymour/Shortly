@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shortly.Domain.Entities;
-using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Configurations;
 
@@ -22,6 +21,6 @@ public sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserProf
         builder.Property(up => up.Location).HasMaxLength(100);
         builder.Property(up => up.Country).HasMaxLength(50);
         builder.Property(up => up.TimeZone).HasMaxLength(50);
-        builder.Property(up => up.UpdatedAtUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        builder.Property(up => up.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
     }
 }

@@ -15,18 +15,18 @@ public sealed class UserAuditLogConfiguration : IEntityTypeConfiguration<UserAud
 
         builder.Property(ual => ual.Action).HasMaxLength(100).IsUnicode(false);
         builder.Property(ual => ual.Details).HasMaxLength(1000);
-        builder.Property(ual => ual.TimeStampUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        builder.Property(ual => ual.TimeStamp).HasDefaultValueSql("CURRENT_TIMESTAMP");
         builder.Property(ual => ual.IpAddress).HasMaxLength(45).IsUnicode(false);
         builder.Property(ual => ual.UserAgent).HasMaxLength(500);
 
-        builder.HasIndex(ual => ual.TimeStampUtc)
+        builder.HasIndex(ual => ual.TimeStamp)
             .HasDatabaseName("ix_user_audit_logs_timestamp");
 
-        builder.HasIndex(ual => new { ual.UserId, ual.TimeStampUtc })
+        builder.HasIndex(ual => new { ual.UserId, ual.TimeStamp })
             .HasDatabaseName("ix_user_audit_logs_user_id_timestamp");
 
         builder.HasOne<User>()
-            .WithMany()
+            .WithMany(u => u.AuditLogs)
             .HasForeignKey(ual => ual.UserId)
             .HasConstraintName("fk_user_audit_logs_users")
             .OnDelete(DeleteBehavior.Cascade);

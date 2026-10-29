@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
-using Shortly.Domain.ShortUrls;
 using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Authentication;

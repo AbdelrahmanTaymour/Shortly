@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Shortly.Domain.Enums;
-using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Authorization;
 

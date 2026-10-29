@@ -31,7 +31,7 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         builder.Ignore(rt => rt.IsActive);
 
         builder.HasOne(rt => rt.User)
-            .WithMany()
+            .WithMany(u => u.RefreshTokens)
             .HasForeignKey(rt => rt.UserId)
             .HasConstraintName("fk_refresh_tokens_users")
             .OnDelete(DeleteBehavior.Cascade);
