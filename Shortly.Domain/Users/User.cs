@@ -1,8 +1,5 @@
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
-using Shortly.Domain.Members;
-using Shortly.Domain.ShortUrls;
 
 namespace Shortly.Domain.Users;
 

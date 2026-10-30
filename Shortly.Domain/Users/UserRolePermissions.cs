@@ -1,4 +1,3 @@
-using Shortly.Domain.Enums;
 
 namespace Shortly.Domain.Users;
 
