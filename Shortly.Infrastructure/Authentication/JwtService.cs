@@ -5,54 +5,52 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Members;
+using Shortly.Domain.RefreshToken;
 using Shortly.Domain.RepositoryContract.Members;
-using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Authentication;
 
-internal sealed class JwtService(IConfiguration configuration, 
-    IRefreshTokenRepository refreshTokenRepository, 
-    IOrganizationMemberRepository memberRepository)
-    : IJwtService
+internal sealed class JwtService(
+    IConfiguration configuration,
+    IRefreshTokenRepository refreshTokenRepository,
+    IOrganizationMemberRepository memberRepository,
+    IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider) : IJwtService
 {
     private readonly IConfigurationSection _jwt = configuration.GetSection("Jwt");
 
     public Task<Result<AccessTokenResponse>> IssueTokensAsync(User user, CancellationToken cancellationToken = default) =>
-        IssueTokensAsync(user, organizationId: null, memberRole: null);
+        IssueTokensAsync(user, organizationId: null, memberRole: null, cancellationToken);
 
     public Task<Result<AccessTokenResponse>> IssueTokensAsync(User user, OrganizationMember membership, CancellationToken cancellationToken = default) =>
-        IssueTokensAsync(user, membership.OrganizationId, membership.Role);
+        IssueTokensAsync(user, membership.OrganizationId, membership.Role, cancellationToken);
 
-    private async Task<Result<AccessTokenResponse>> IssueTokensAsync(
-        User user, Guid? organizationId, MemberRole? memberRole)
+    private async Task<Result<AccessTokenResponse>> IssueTokensAsync(User user, Guid? organizationId, MemberRole? memberRole, CancellationToken cancellationToken)
     {
         var accessToken = GenerateAccessToken(user, organizationId, memberRole);
         var expiresInSeconds = int.Parse(_jwt["AccessTokenExpirationMinutes"] ?? "15") * 60;
+        var refreshLifetime = TimeSpan.FromDays(double.Parse(_jwt["RefreshTokenExpirationDays"] ?? "15"));
 
         var refreshTokenString = GenerateRefreshTokenString();
-        var refreshToken = new RefreshToken
-        {
-            Id = Guid.NewGuid(),
-            UserId = user.Id,
-            TokenHash = Sha256(refreshTokenString),
-            ExpiresAt = DateTime.UtcNow.AddDays(double.Parse(_jwt["RefreshTokenExpirationDays"] ?? "15")),
-            OrganizationId = organizationId,
-            CreatedAt = DateTime.UtcNow
-        };
+        var utcNow = dateTimeProvider.UtcNow;
+        var refreshToken = RefreshToken.Issue(user.Id, Sha256(refreshTokenString), refreshLifetime, organizationId, utcNow);
 
-        await refreshTokenRepository.AddRefreshTokenAsync(refreshToken);
+        refreshTokenRepository.Add(refreshToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken); // only commit here, now that the repository no longer self-commits
 
         return new AccessTokenResponse(accessToken, refreshTokenString, expiresInSeconds);
     }
 
     public async Task<Result<AccessTokenResponse>> RefreshAccessTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        var stored = await refreshTokenRepository.GetRefreshTokenAsync(Sha256(refreshToken));
-        if (stored is null || !stored.IsActive)
+        var utcNow = dateTimeProvider.UtcNow;
+        var stored = await refreshTokenRepository.GetByTokenHashAsync(Sha256(refreshToken), cancellationToken);
+        if (stored is null || !stored.IsActive(utcNow))
             return Result.Failure<AccessTokenResponse>(AuthenticationErrors.InvalidRefreshToken);
 
         MemberRole? memberRole = null;
@@ -61,15 +59,13 @@ internal sealed class JwtService(IConfiguration configuration,
         if (organizationId is { } orgId)
         {
             var membership = await memberRepository.GetByOrganizationAndUserAsync(orgId, stored.UserId, cancellationToken);
-            if (membership is null || !membership.IsActive)
-                organizationId = null; // membership revoked since this token's org context was set — fall back to personal scope
-            else
-                memberRole = membership.Role;
+            if (membership is null || !membership.IsActive) organizationId = null;
+            else memberRole = membership.Role;
         }
 
         var newRefreshTokenString = GenerateRefreshTokenString();
-        var expiresAt = DateTime.UtcNow.AddDays(double.Parse(_jwt["RefreshTokenExpirationDays"] ?? "15"));
-        await refreshTokenRepository.ResetRefreshTokenAsync(stored.Id, Sha256(newRefreshTokenString), expiresAt);
+        var refreshLifetime = TimeSpan.FromDays(double.Parse(_jwt["RefreshTokenExpirationDays"] ?? "15"));
+        await refreshTokenRepository.RotateAsync(stored.Id, Sha256(newRefreshTokenString), refreshLifetime, utcNow, cancellationToken);
 
         var accessToken = GenerateAccessToken(stored.User, organizationId, memberRole);
         var expiresInSeconds = int.Parse(_jwt["AccessTokenExpirationMinutes"] ?? "15") * 60;
@@ -77,18 +73,19 @@ internal sealed class JwtService(IConfiguration configuration,
         return new AccessTokenResponse(accessToken, newRefreshTokenString, expiresInSeconds);
     }
 
+
     public async Task<Result> RevokeAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        var revoked = await refreshTokenRepository.RevokeRefreshTokenAsync(Sha256(refreshToken), cancellationToken);
+        var revoked = await refreshTokenRepository.RevokeAsync(Sha256(refreshToken), dateTimeProvider.UtcNow, cancellationToken);
         return revoked ? Result.Success() : Result.Failure(AuthenticationErrors.InvalidRefreshToken);
     }
 
     public async Task<Result> RevokeAllForUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        await refreshTokenRepository.RevokeAllRefreshTokensAsync(userId, cancellationToken);
+        await refreshTokenRepository.RevokeAllAsync(userId, dateTimeProvider.UtcNow, cancellationToken);
         return Result.Success();
     }
-
+    
     public string GenerateRedirectToken(string shortCode, TimeSpan lifetime)
     {
         var token = new JwtSecurityToken(

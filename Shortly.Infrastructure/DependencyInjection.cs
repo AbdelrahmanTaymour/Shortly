@@ -19,12 +19,13 @@ using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Core.Organizations_legacy.Contracts;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.ClickEvents;
+using Shortly.Domain.RefreshToken;
 using Shortly.Domain.RepositoryContract.Invitations;
 using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.RepositoryContract.Organizations;
 using Shortly.Domain.RepositoryContract.Teams;
-using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Domain.ShortUrls;
+using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
 using Shortly.Infrastructure.Authentication;
 using Shortly.Infrastructure.Authorization;
@@ -33,7 +34,6 @@ using Shortly.Infrastructure.Clock;
 using Shortly.Infrastructure.Data;
 using Shortly.Infrastructure.Email;
 using Shortly.Infrastructure.Repositories;
-using Shortly.Infrastructure.Repositories.Tokens;
 using Shortly.Infrastructure.Repositories.Invetations;
 using Shortly.Infrastructure.Repositories.Members;
 using Shortly.Infrastructure.Repositories.Organizations;
@@ -184,13 +184,30 @@ public static class DependencyInjection
     {
         services.AddQuartz(q =>
         {
-            q.ScheduleJob<MonthlyUsageResetJob>(trigger => trigger
-                .WithIdentity("MonthlyUsageResetTrigger")
-                .StartNow()
-                .WithCronSchedule("0 0 1 * * ?"));
+            // var usageResetKey = new JobKey("MonthlyUsageResetJob", "UsageResetGroup");
+            // q.AddJob<MonthlyUsageResetJob>(opts => opts.WithIdentity(usageResetKey).StoreDurably());
+            // q.AddTrigger(opts => opts
+            //     .ForJob(usageResetKey)
+            //     .WithIdentity("MonthlyUsageResetTrigger", "UsageResetGroup")
+            //     .WithCronSchedule(
+            //         "0 0 0 1 * ?",
+            //         x => x
+            //             .InTimeZone(TimeZoneInfo.Utc)
+            //             .WithMisfireHandlingInstructionFireAndProceed()));
+
+            var tokenCleanupKey = new JobKey("ExpiredTokenCleanupJob", "CleanupGroup");
+            q.AddJob<ExpiredTokenCleanupJob>(opts => opts.WithIdentity(tokenCleanupKey).StoreDurably());
+            q.AddTrigger(opts => opts
+                .ForJob(tokenCleanupKey)
+                .WithIdentity("ExpiredTokenCleanupTrigger", "CleanupGroup")
+                .WithCronSchedule(
+                    "0 0 3 * * ?",
+                    x => x
+                        .InTimeZone(TimeZoneInfo.Utc)
+                        .WithMisfireHandlingInstructionFireAndProceed()));
         });
+
         services.AddQuartzHostedService(options => { options.WaitForJobsToComplete = true; });
-        services.AddScoped<MonthlyUsageResetJob>();
     }
 
     private static void AddClickTracking(IServiceCollection services, IConfiguration configuration)
