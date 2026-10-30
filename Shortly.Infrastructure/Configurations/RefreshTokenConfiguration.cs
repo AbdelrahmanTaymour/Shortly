@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shortly.Domain.Entities;
+using Shortly.Domain.Organizations;
 using Shortly.Domain.RefreshToken;
 
 namespace Shortly.Infrastructure.Configurations;

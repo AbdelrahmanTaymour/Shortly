@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Shortly.Domain.Entities;
+using Shortly.Domain.Organizations;
 
 namespace Shortly.Infrastructure.Configurations;
 
@@ -17,5 +17,7 @@ public sealed class OrganizationUsageConfiguration : IEntityTypeConfiguration<Or
         builder.Property(ou => ou.TotalLinksCreated).HasDefaultValue(0);
         builder.Property(ou => ou.TotalQrCodesCreated).HasDefaultValue(0);
         builder.Property(ou => ou.MonthlyResetDate).HasDefaultValueSql("CURRENT_TIMESTAMP + INTERVAL '1 month'");
+        
+        builder.Property<uint>("Version").IsRowVersion();
     }
 }

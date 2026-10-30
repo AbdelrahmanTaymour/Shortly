@@ -14,7 +14,7 @@ public sealed class User : Entity<Guid>
         Username = username;
         PasswordHash = passwordHash;
         Role = role;
-        EnSubscriptionPlanId = enSubscriptionPlan.Free;
+        SubscriptionPlanId = enSubscriptionPlan.Free;
         IsActive = true;
         IsEmailConfirmed = isEmailConfirmed;
         IsOAuthUser = isOAuthUser;
@@ -34,7 +34,7 @@ public sealed class User : Entity<Guid>
     public string Username { get; private set; } = null!;
     public string PasswordHash { get; private set; } = null!;
     public UserRole Role { get; private set; }
-    public enSubscriptionPlan EnSubscriptionPlanId { get; private set; }
+    public enSubscriptionPlan SubscriptionPlanId { get; private set; }
     public bool IsActive { get; private set; }
     public bool IsEmailConfirmed { get; private set; }
     public DateTime? LastLoginAtUtc { get; private set; }
@@ -147,7 +147,7 @@ public sealed class User : Entity<Guid>
 
     public Result ChangeSubscriptionPlan(enSubscriptionPlan planId, DateTime utcNow)
     {
-        EnSubscriptionPlanId = planId;
+        SubscriptionPlanId = planId;
         UpdatedAtUtc = utcNow;
         return Result.Success();
     }

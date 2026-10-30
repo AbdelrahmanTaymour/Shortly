@@ -1,6 +1,7 @@
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
+using Shortly.Core.Exceptions;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Users;
 
@@ -28,7 +29,13 @@ internal sealed class LoginCommandHandler(
         if (!passwordHasher.Verify(request.Password, user.PasswordHash))
         {
             user.RecordFailedLogin(utcNow, MaxFailedAttempts, LockoutDuration);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (ConcurrencyException)
+            {
+            }
 
             return Result.Failure<AccessTokenResponse>(UserErrors.InvalidCredentials);
         }

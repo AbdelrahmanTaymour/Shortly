@@ -11,24 +11,25 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Quartz;
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.Cache;
 using Shortly.Core.Abstractions.ClickTracking;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Email;
 using Shortly.Core.Exceptions.ServerErrors;
-using Shortly.Core.Organizations_legacy.Contracts;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.ClickEvents;
+using Shortly.Domain.Organizations;
 using Shortly.Domain.RefreshToken;
 using Shortly.Domain.RepositoryContract.Invitations;
 using Shortly.Domain.RepositoryContract.Members;
-using Shortly.Domain.RepositoryContract.Organizations;
 using Shortly.Domain.RepositoryContract.Teams;
 using Shortly.Domain.ShortUrls;
 using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
 using Shortly.Infrastructure.Authentication;
 using Shortly.Infrastructure.Authorization;
+using Shortly.Infrastructure.Cache;
 using Shortly.Infrastructure.ClickTracking;
 using Shortly.Infrastructure.Clock;
 using Shortly.Infrastructure.Data;
@@ -36,7 +37,6 @@ using Shortly.Infrastructure.Email;
 using Shortly.Infrastructure.Repositories;
 using Shortly.Infrastructure.Repositories.Invetations;
 using Shortly.Infrastructure.Repositories.Members;
-using Shortly.Infrastructure.Repositories.Organizations;
 using Shortly.Infrastructure.Repositories.Teams;
 using Shortly.Infrastructure.ScheduledJobs;
 
@@ -49,6 +49,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+        services.AddSingleton<ISubscriptionPlanLimitsProvider, SubscriptionPlanLimitsProvider>();
         
         AddPersistence(services, configuration);
         AddRepositories(services);
@@ -96,7 +97,6 @@ public static class DependencyInjection
         // Organization Management
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IOrganizationUsageRepository, OrganizationUsageRepository>();
-        services.AddScoped<IOrganizationUsageQeries, OrganizationUsageRepository>();
         services.AddScoped<IOrganizationMemberRepository, OrganizationMemberRepository>();
         services.AddScoped<IOrganizationTeamRepository, OrganizationTeamRepository>();
         services.AddScoped<IOrganizationTeamMemberRepository, OrganizationTeamMemberRepository>();
@@ -183,16 +183,16 @@ public static class DependencyInjection
     {
         services.AddQuartz(q =>
         {
-            // var usageResetKey = new JobKey("MonthlyUsageResetJob", "UsageResetGroup");
-            // q.AddJob<MonthlyUsageResetJob>(opts => opts.WithIdentity(usageResetKey).StoreDurably());
-            // q.AddTrigger(opts => opts
-            //     .ForJob(usageResetKey)
-            //     .WithIdentity("MonthlyUsageResetTrigger", "UsageResetGroup")
-            //     .WithCronSchedule(
-            //         "0 0 0 1 * ?",
-            //         x => x
-            //             .InTimeZone(TimeZoneInfo.Utc)
-            //             .WithMisfireHandlingInstructionFireAndProceed()));
+            var usageResetKey = new JobKey("MonthlyUsageResetJob", "UsageResetGroup");
+            q.AddJob<MonthlyUsageResetJob>(opts => opts.WithIdentity(usageResetKey).StoreDurably());
+            q.AddTrigger(opts => opts
+                .ForJob(usageResetKey)
+                .WithIdentity("MonthlyUsageResetTrigger", "UsageResetGroup")
+                .WithCronSchedule(
+                    "0 0 0 1 * ?",
+                    x => x
+                        .InTimeZone(TimeZoneInfo.Utc)
+                        .WithMisfireHandlingInstructionFireAndProceed()));
 
             var tokenCleanupKey = new JobKey("ExpiredTokenCleanupJob", "CleanupGroup");
             q.AddJob<ExpiredTokenCleanupJob>(opts => opts.WithIdentity(tokenCleanupKey).StoreDurably());

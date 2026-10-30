@@ -1,4 +1,5 @@
 using Shortly.Domain.Members;
+using Shortly.Domain.Organizations;
 
 namespace Shortly.Domain.Entities;
 

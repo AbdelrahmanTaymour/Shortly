@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Members;
+using Shortly.Domain.Organizations;
 using Shortly.Domain.ShortUrls;
 using Shortly.Domain.Users;
 

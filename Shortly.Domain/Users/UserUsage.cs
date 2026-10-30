@@ -47,4 +47,11 @@ public sealed class UserUsage
         MonthlyQrCodesCreated = 0;
         MonthlyResetDate = utcNow.AddMonths(1);
     }
+    
+    public bool HasReachedMonthlyLinkLimit(int maxLinksPerMonth, DateTime utcNow)
+    {
+        if (maxLinksPerMonth < 0) return false; // unlimited plan
+        var effectiveCount = utcNow >= MonthlyResetDate ? 0 : MonthlyLinksCreated;
+        return effectiveCount >= maxLinksPerMonth;
+    }
 }
