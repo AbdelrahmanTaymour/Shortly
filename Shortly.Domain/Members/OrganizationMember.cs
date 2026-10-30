@@ -1,6 +1,7 @@
 
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
+using Shortly.Domain.Organizations;
 using Shortly.Domain.ShortUrls;
 using Shortly.Domain.Users;
 

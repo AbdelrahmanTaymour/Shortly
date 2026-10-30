@@ -16,7 +16,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Email).IsRequired().HasMaxLength(320).IsUnicode(false);
         builder.Property(u => u.Username).IsRequired().HasMaxLength(50).IsUnicode(false);
         builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(256).IsUnicode(false);
-        builder.Property(u => u.EnSubscriptionPlanId).HasConversion<byte>();
+        builder.Property(u => u.SubscriptionPlanId).HasConversion<byte>();
         builder.Property(u => u.IsActive).HasDefaultValue(true);
         builder.Property(u => u.IsEmailConfirmed).HasDefaultValue(false);
         builder.Property(u => u.IsDeleted).HasDefaultValue(false);
@@ -31,7 +31,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasOne<SubscriptionPlan>()
             .WithMany()
-            .HasForeignKey(u => u.EnSubscriptionPlanId)
+            .HasForeignKey(u => u.SubscriptionPlanId)
             .HasConstraintName("fk_users_subscription_plans")
             .OnDelete(DeleteBehavior.Restrict);
 

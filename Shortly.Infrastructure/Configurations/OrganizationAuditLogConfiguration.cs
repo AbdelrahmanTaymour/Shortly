@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Members;
+using Shortly.Domain.Organizations;
 
 namespace Shortly.Infrastructure.Configurations;
 
@@ -26,15 +27,15 @@ public sealed class OrganizationAuditLogConfiguration : IEntityTypeConfiguration
             .HasDatabaseName("ix_organization_audit_logs_organization_id_timestamp");
 
         builder.HasOne<Organization>()
-            .WithMany(o => o.AuditLogs)
+            .WithMany()
             .HasForeignKey(oal => oal.OrganizationId)
             .HasConstraintName("fk_organization_audit_logs_organizations")
-            .OnDelete(DeleteBehavior.Restrict); // preserve the audit trail even if the org row is later removed
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<OrganizationMember>()
             .WithMany()
             .HasForeignKey(oal => oal.ActorId)
             .HasConstraintName("fk_organization_audit_logs_organization_members")
-            .OnDelete(DeleteBehavior.Restrict); // to not don't let an actor leaving erase what they did
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

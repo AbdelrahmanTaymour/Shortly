@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Members;
+using Shortly.Domain.Organizations;
 
 namespace Shortly.Infrastructure.Configurations;
 
@@ -30,8 +31,8 @@ public sealed class OrganizationMemberConfiguration : IEntityTypeConfiguration<O
         builder.HasIndex(om => new { om.OrganizationId, om.IsActive })
             .HasDatabaseName("ix_organization_members_organization_id_is_active");
 
-        builder.HasOne<Organization>()
-            .WithMany()
+        builder.HasOne(om => om.Organization)
+            .WithMany(o => o.Members)
             .HasForeignKey(om => om.OrganizationId)
             .HasConstraintName("fk_organization_members_organizations")
             .OnDelete(DeleteBehavior.Cascade);

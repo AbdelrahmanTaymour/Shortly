@@ -8,6 +8,7 @@ public static class ShortUrlErrors
     public static readonly Error ShortCodeInvalidLength = Error.Validation("ShortUrl.ShortCodeInvalidLength", $"Short code must be between {ShortCode.MinLength} and {ShortCode.MaxLength} characters.");
     public static readonly Error ShortCodeInvalidCharacters = Error.Validation("ShortUrl.ShortCodeInvalidCharacters", "Short code may only contain letters, digits, hyphens and underscores.");
     public static readonly Error ShortCodeAlreadyExists = Error.Conflict("ShortUrl.ShortCodeAlreadyExists", "This short code is already in use.");
+    public static readonly Error MonthlyLinkLimitReached = Error.Forbidden("ShortUrl.MonthlyLinkLimitReached", "You've reached your plan's monthly link creation limit.");
     
     public static readonly Error OriginalUrlEmpty = Error.Validation("ShortUrl.OriginalUrlEmpty", "URL cannot be empty.");
     public static readonly Error OriginalUrlTooLong = Error.Validation("ShortUrl.OriginalUrlTooLong", "URL is too long.");
@@ -24,4 +25,6 @@ public static class ShortUrlErrors
     public static readonly Error Expired = Error.Forbidden("ShortUrl.Expired", "Short URL has expired.");
     public static readonly Error ClickLimitReached = Error.Forbidden("ShortUrl.ClickLimitReached", "Short URL has reached its click limit.");
     public static readonly Error Inactive = Error.Forbidden("ShortUrl.Inactive", "Short URL is inactive.");
-    public static readonly Error InvalidOwnerType = Error.Failure("ShortUrl.InvalidOwnerType", "The current context does not have a valid owner type for creating a short URL.");}
+    public static readonly Error InvalidOwnerType = Error.Failure("ShortUrl.InvalidOwnerType", "The current context does not have a valid owner type for creating a short URL.");
+    public static readonly Error ConcurrentUpdate = Error.Conflict("ShortUrl.ConcurrentUpdate", "This request conflicted with another in-flight request. Please try again.");
+}

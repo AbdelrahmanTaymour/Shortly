@@ -14,10 +14,13 @@ public sealed class ApplicationDbContext(DbContextOptions options) : DbContext(o
         {
             return await base.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is PostgresException
-                                               { SqlState: PostgresErrorCodes.UniqueViolation } pgEx)
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pgEx)
         {
             throw new UniqueConstraintViolationException(pgEx.ConstraintName ?? string.Empty);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyException("The record was modified by another request. Please retry.", ex);
         }
     }
 

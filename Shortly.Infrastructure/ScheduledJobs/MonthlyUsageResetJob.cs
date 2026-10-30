@@ -1,10 +1,9 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Quartz;
+using Shortly.Core.Admin.ResetAllOrganizationsUsage;
 using Shortly.Core.Admin.ResetAllUsersUsage;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.RepositoryContract.Organizations;
-using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.ScheduledJobs;
 
@@ -15,7 +14,7 @@ public sealed class MonthlyUsageResetJob(
 {
     public async Task Execute(IJobExecutionContext context)
     {
-        /*var cancellationToken = context.CancellationToken;
+        var cancellationToken = context.CancellationToken;
         var startedAt = DateTime.UtcNow;
         logger.LogInformation("Monthly usage reset job starting at {StartedAtUtc}.", startedAt);
 
@@ -36,8 +35,7 @@ public sealed class MonthlyUsageResetJob(
         var failures = new[] { userResult, orgResult }.Where(r => !r.Succeeded).Select(r => r.Label);
         var message = $"Monthly usage reset partially failed: {string.Join(", ", failures)} did not complete.";
         logger.LogError(message);
-        throw new JobExecutionException(message) { RefireImmediately = false };*/
-        throw new NotImplementedException();
+        throw new JobExecutionException(message) { RefireImmediately = false };
     }
 
     private async Task<ResetOutcome> TryResetAsync(string label, Func<Task<Result<int>>> operation, CancellationToken cancellationToken)
