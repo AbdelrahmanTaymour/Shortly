@@ -30,4 +30,8 @@
         <PackageReference Include="MaxMind.GeoIP2" Version="6.1.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Repositories\Users\" />
+    </ItemGroup>
+
 </Project>

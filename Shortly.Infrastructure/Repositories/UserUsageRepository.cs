@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortly.Domain.Users;
 
-namespace Shortly.Infrastructure.Repositories.Users;
+namespace Shortly.Infrastructure.Repositories;
 
 /// <summary>
 /// SQL Server implementation of the user usage repository.

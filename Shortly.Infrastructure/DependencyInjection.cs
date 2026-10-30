@@ -38,7 +38,6 @@ using Shortly.Infrastructure.Repositories.Invetations;
 using Shortly.Infrastructure.Repositories.Members;
 using Shortly.Infrastructure.Repositories.Organizations;
 using Shortly.Infrastructure.Repositories.Teams;
-using Shortly.Infrastructure.Repositories.Users;
 using Shortly.Infrastructure.ScheduledJobs;
 
 namespace Shortly.Infrastructure;
