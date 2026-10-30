@@ -3,7 +3,6 @@ using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Extensions;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
 
@@ -20,26 +19,19 @@ internal sealed class VerifyEmailCommandHandler(
     {
         var tokenHash = Sha256Extensions.ComputeHash(request.Token);
         var token = await tokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
+        if (token is null) return Result.Failure<AccessTokenResponse>(UserActionTokenErrors.NotFound);
 
-        if (token is null || token.TokenType != enUserActionTokenType.EmailVerification)
-            return Result.Failure<AccessTokenResponse>(UserActionTokenErrors.NotFound);
-
-        if (token.Used)
-            return Result.Failure<AccessTokenResponse>(UserActionTokenErrors.Used);
-
-        if (token.ExpiresAt < DateTime.UtcNow)
-            return Result.Failure<AccessTokenResponse>(UserActionTokenErrors.Expired);
-
-        await tokenRepository.ConsumeTokenAsync(tokenHash, enUserActionTokenType.EmailVerification, cancellationToken);
+        var utcNow = dateTimeProvider.UtcNow;
+        var validation = token.EnsureValidFor(enUserActionTokenType.EmailVerification, utcNow);
+        if (validation.IsFailure) return Result.Failure<AccessTokenResponse>(validation.Error);
 
         var user = await userRepository.GetByIdAsync(token.UserId, cancellationToken);
-        if (user is null)
-            return Result.Failure<AccessTokenResponse>(UserErrors.NotFound);
+        if (user is null) return Result.Failure<AccessTokenResponse>(UserErrors.NotFound);
 
-        var confirmResult = user.ConfirmEmail(dateTimeProvider.UtcNow);
-        if (confirmResult.IsFailure) 
-            return Result.Failure<AccessTokenResponse>(confirmResult.Error);
+        var confirmResult = user.ConfirmEmail(utcNow);
+        if (confirmResult.IsFailure) return Result.Failure<AccessTokenResponse>(confirmResult.Error);
 
+        token.MarkUsed(utcNow);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await jwtService.IssueTokensAsync(user, cancellationToken);

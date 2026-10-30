@@ -1,7 +1,6 @@
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Extensions;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Domain.Tokens;
 
 namespace Shortly.Core.Account.ValidateResetToken;

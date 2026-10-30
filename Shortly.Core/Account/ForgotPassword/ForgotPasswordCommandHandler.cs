@@ -4,7 +4,6 @@ using Shortly.Core.Abstractions.Email;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Extensions;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
 
@@ -13,32 +12,25 @@ namespace Shortly.Core.Account.ForgotPassword;
 internal sealed class ForgotPasswordCommandHandler(
     IUserRepository userRepository,
     IUserActionTokenRepository tokenRepository,
+    IUnitOfWork unitOfWork,
     IEmailNotifier emailNotifier,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<ForgotPasswordCommand>
 {
     public async Task<Result> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
         var user = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
-        if (user is null) 
-            return Result.Success();
+        if (user is null) return Result.Success(); // never reveal whether the email exists
 
-        await tokenRepository.InvalidateUserTokensAsync(user.Id, enUserActionTokenType.PasswordReset, cancellationToken);
+        var utcNow = dateTimeProvider.UtcNow;
+        await tokenRepository.InvalidateActiveTokensAsync(user.Id, enUserActionTokenType.PasswordReset, utcNow, cancellationToken);
 
         var plainToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-        var utcNow = dateTimeProvider.UtcNow;
+        var token = UserActionToken.IssuePasswordReset(user.Id, Sha256Extensions.ComputeHash(plainToken), utcNow);
 
-        await tokenRepository.CreateAsync(new UserActionToken
-        {
-            Id = Guid.NewGuid(),
-            UserId = user.Id,
-            TokenType = enUserActionTokenType.PasswordReset,
-            TokenHash = Sha256Extensions.ComputeHash(plainToken),
-            ExpiresAt = utcNow.AddHours(1),
-            CreatedAt = utcNow
-        }, cancellationToken);
+        tokenRepository.Add(token);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         emailNotifier.EnqueuePasswordResetAsync(user.Email, user.Username, plainToken);
-
         return Result.Success();
     }
 }

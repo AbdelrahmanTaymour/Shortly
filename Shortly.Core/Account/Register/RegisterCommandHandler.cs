@@ -11,7 +11,6 @@ internal sealed class RegisterCommandHandler(
     IPasswordHasher passwordHasher,
     IJwtService jwtService,
     ICookieService cookieService,
-    IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<RegisterCommand, AccessTokenResponse>
 {
     public async Task<Result<AccessTokenResponse>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -24,13 +23,14 @@ internal sealed class RegisterCommandHandler(
             return Result.Failure<AccessTokenResponse>(userResult.Error);
 
         userRepository.Add(userResult.Value);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var tokensResult = await jwtService.IssueTokensAsync(userResult.Value, cancellationToken);
         if (tokensResult.IsFailure) 
             return tokensResult;
 
-        cookieService.SetRefreshToken(tokensResult.Value.RefreshToken, dateTimeProvider.UtcNow.AddDays(15));
+        var utcNow = dateTimeProvider.UtcNow;
+        cookieService.SetRefreshToken(tokensResult.Value.RefreshToken, utcNow.AddDays(15));
+        
         return tokensResult;
     }
 }

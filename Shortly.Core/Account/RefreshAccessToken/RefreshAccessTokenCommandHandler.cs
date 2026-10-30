@@ -1,4 +1,5 @@
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Users;
@@ -7,7 +8,8 @@ namespace Shortly.Core.Account.RefreshAccessToken;
 
 internal sealed class RefreshAccessTokenCommandHandler(
     IJwtService jwtService,
-    ICookieService cookieService) : ICommandHandler<RefreshAccessTokenCommand, AccessTokenResponse>
+    ICookieService cookieService,
+    IDateTimeProvider dateTimeProvider) : ICommandHandler<RefreshAccessTokenCommand, AccessTokenResponse>
 {
     public async Task<Result<AccessTokenResponse>> Handle(RefreshAccessTokenCommand request, CancellationToken cancellationToken)
     {
@@ -18,7 +20,8 @@ internal sealed class RefreshAccessTokenCommandHandler(
         var result = await jwtService.RefreshAccessTokenAsync(refreshToken, cancellationToken);
         if (result.IsFailure) return result;
 
-        cookieService.SetRefreshToken(result.Value.RefreshToken, DateTime.UtcNow.AddDays(15));
+        var utcNow = dateTimeProvider.UtcNow;
+        cookieService.SetRefreshToken(result.Value.RefreshToken, utcNow.AddDays(15));
 
         return result;
     }

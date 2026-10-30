@@ -10,7 +10,6 @@ internal sealed class GoogleLoginCommandHandler(
     IUserRepository userRepository,
     IJwtService jwtService,
     ICookieService cookieService,
-    IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<GoogleLoginCommand, AccessTokenResponse>
 {
     public async Task<Result<AccessTokenResponse>> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
@@ -22,13 +21,14 @@ internal sealed class GoogleLoginCommandHandler(
         {
             user = User.RegisterOAuth(request.Email, request.GoogleId, request.Picture, dateTimeProvider.UtcNow);
             userRepository.Add(user);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         var tokensResult = await jwtService.IssueTokensAsync(user, cancellationToken);
         if (tokensResult.IsFailure) return tokensResult;
 
-        cookieService.SetRefreshToken(tokensResult.Value.RefreshToken, dateTimeProvider.UtcNow.AddDays(15));
+        var utcNow = dateTimeProvider.UtcNow;
+        cookieService.SetRefreshToken(tokensResult.Value.RefreshToken, utcNow.AddDays(15));
+        
         return tokensResult;
     }
 }

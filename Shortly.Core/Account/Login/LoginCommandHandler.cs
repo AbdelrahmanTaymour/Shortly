@@ -37,8 +37,6 @@ internal sealed class LoginCommandHandler(
         if (loginResult.IsFailure) 
             return Result.Failure<AccessTokenResponse>(loginResult.Error);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
         var tokensResult = await jwtService.IssueTokensAsync(user, cancellationToken);
         if (tokensResult.IsFailure) 
             return tokensResult;

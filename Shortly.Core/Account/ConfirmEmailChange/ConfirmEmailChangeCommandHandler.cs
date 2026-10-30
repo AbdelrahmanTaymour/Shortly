@@ -2,7 +2,6 @@ using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Extensions;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.RepositoryContract.Tokens;
 using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
 
@@ -18,28 +17,22 @@ internal sealed class ConfirmEmailChangeCommandHandler(
     {
         var tokenHash = Sha256Extensions.ComputeHash(request.Token);
         var token = await tokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
+        if (token?.NewEmail is null) return Result.Failure(UserActionTokenErrors.NotFound);
 
-        if (token is null || token.TokenType != enUserActionTokenType.EmailChange || token.NewEmail is null)
-            return Result.Failure(UserActionTokenErrors.NotFound);
-        
-        if (token.Used) 
-            return Result.Failure(UserActionTokenErrors.Used);
-        
-        if (token.ExpiresAt < dateTimeProvider.UtcNow) 
-            return Result.Failure(UserActionTokenErrors.Expired);
+        var utcNow = dateTimeProvider.UtcNow;
+        var validation = token.EnsureValidFor(enUserActionTokenType.EmailChange, utcNow);
+        if (validation.IsFailure) return validation;
 
         if (await userRepository.EmailExistsAsync(token.NewEmail, cancellationToken))
             return Result.Failure(UserErrors.EmailOrUsernameNotUnique); // someone claimed it between request and confirm
 
         var user = await userRepository.GetByIdAsync(token.UserId, cancellationToken);
-        if (user is null) 
-            return Result.Failure(UserErrors.NotFound);
+        if (user is null) return Result.Failure(UserErrors.NotFound);
 
-        var changeResult = user.ChangeEmail(token.NewEmail, dateTimeProvider.UtcNow);
-        if (changeResult.IsFailure) 
-            return changeResult;
+        var changeResult = user.ChangeEmail(token.NewEmail, utcNow);
+        if (changeResult.IsFailure) return changeResult;
 
-        await tokenRepository.ConsumeTokenAsync(tokenHash, enUserActionTokenType.EmailChange, cancellationToken);
+        token.MarkUsed(utcNow);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
