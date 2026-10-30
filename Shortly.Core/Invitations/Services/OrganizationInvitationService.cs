@@ -6,13 +6,13 @@ using Shortly.Core.Extensions;
 using Shortly.Core.Invitations.Contracts;
 using Shortly.Core.Invitations.DTOs;
 using Shortly.Core.Invitations.Mappers;
-using Shortly.Core.Users_legacy.Contracts;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
 using Shortly.Domain.RepositoryContract.Invitations;
 using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.RepositoryContract.Organizations;
+using Shortly.Domain.Users;
 
 namespace Shortly.Core.Invitations.Services;
 
@@ -25,7 +25,7 @@ public class OrganizationInvitationService(
     IOrganizationInvitationRepository invitationRepository,
     IOrganizationRepository organizationRepository,
     IOrganizationMemberRepository memberRepository,
-    IUserService userService,
+    IUserRepository userRepository,
     IEmailNotifier notifier,
     IConfiguration configuration,
     ILogger<OrganizationInvitationService> logger) : IOrganizationInvitationService
@@ -85,7 +85,7 @@ public class OrganizationInvitationService(
         if (invitation == null || invitation.Status == enInvitationStatus.Failure || invitation.Status == enInvitationStatus.Registered || invitation.Status == enInvitationStatus.Rejected || invitation.IsExpired)
             throw new ValidationException("Invalid invitation.");
         
-        var user = await userService.GetByEmailAsync(invitation.InvitedUserEmail, cancellationToken);
+        var user = await userRepository.GetByEmailAsync(invitation.InvitedUserEmail, cancellationToken);
         if(user.Id != userId)
             throw new ForbiddenException("The invited user does not match the current user.");
         

@@ -1,5 +1,7 @@
 using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
+using Shortly.Domain.RepositoryContract.Invitations;
+using Shortly.Domain.Users;
 
 namespace Shortly.Core.Invitations.DTOs;
 

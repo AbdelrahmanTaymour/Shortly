@@ -3,11 +3,11 @@ using Shortly.Core.Exceptions.ClientErrors;
 using Shortly.Core.Organizations_legacy.Contracts;
 using Shortly.Core.Organizations_legacy.DTOs;
 using Shortly.Core.Organizations_legacy.Mappers;
-using Shortly.Core.Users_legacy.Contracts;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Members;
 using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.RepositoryContract.Organizations;
+using Shortly.Domain.Users;
 
 namespace Shortly.Core.Organizations_legacy.Services;
 
@@ -18,13 +18,13 @@ namespace Shortly.Core.Organizations_legacy.Services;
 /// </summary>
 /// <param name="organizationRepository">The repository for organization data operations.</param>
 /// <param name="memberRepository">The repository for organization member data operations.</param>
-/// <param name="userService">The service for user-related operations and validation.</param>
+/// <param name="userRepository">The service for user-related operations and validation.</param>
 /// <param name="logger">The logger instance for recording operation details and errors.</param>
 public class OrganizationService(
     IOrganizationRepository organizationRepository,
     IOrganizationUsageRepository organizationUsageRepository,
     IOrganizationMemberRepository memberRepository,
-    IUserService userService,
+    IUserRepository userRepository,
     ILogger<OrganizationService> logger) : IOrganizationService
 {
     /// <inheritdoc />
@@ -64,7 +64,7 @@ public class OrganizationService(
     /// <inheritdoc />
     public async Task<OrganizationDto> CreateOrganizationAsync(CreateOrganizationDto dto, Guid ownerId)
     {
-        var userExists = await userService.ExistsAsync(ownerId);
+        var userExists = await userRepository.ExistsAsync(ownerId);
         if(!userExists)
             throw new NotFoundException("User", ownerId);
 

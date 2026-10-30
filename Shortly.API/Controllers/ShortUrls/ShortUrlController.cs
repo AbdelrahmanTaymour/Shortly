@@ -15,6 +15,7 @@ using Shortly.Core.ShortUrls.CreateShortUrl;
 using Shortly.Core.ShortUrls.DeactivateShortUrl;
 using Shortly.Core.ShortUrls.DeleteShortUrl;
 using Shortly.Core.ShortUrls.GetMyShortUrls;
+using Shortly.Core.ShortUrls.GetShortUrlByCode;
 using Shortly.Core.ShortUrls.GetShortUrlById;
 using Shortly.Core.ShortUrls.RemoveShortUrlPassword;
 using Shortly.Core.ShortUrls.SearchShortUrls;
@@ -25,6 +26,7 @@ using Shortly.Domain.Abstractions;
 namespace Shortly.API.Controllers.ShortUrls;
 
 [ApiController]
+[Authorize]
 [Route("api/short-urls")]
 [Produces("application/json")]
 public class ShortUrlController(ISender sender) : ControllerBase
@@ -39,6 +41,16 @@ public class ShortUrlController(ISender sender) : ControllerBase
         return result.IsFailure
             ? result.ToProblemDetails()
             : Ok(result.Value);
+    }
+    
+    [HttpGet("{shortCode}", Name = "GetShortUrlByShortCode")]
+    [ProducesResponseType(typeof(ShortUrlResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetShortUrlByShortCode(string shortCode, CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new GetShortUrlByCodeQuery(shortCode), cancellationToken);
+
+        return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
     [HttpGet("mine", Name = "GetMyShortUrls")]
@@ -69,7 +81,7 @@ public class ShortUrlController(ISender sender) : ControllerBase
     }
 
     [HttpPost(Name = "CreateShortUrl")]
-    [ProducesResponseType(typeof(long), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
     [AllowAnonymous]
@@ -79,7 +91,7 @@ public class ShortUrlController(ISender sender) : ControllerBase
 
         return result.IsFailure
             ? result.ToProblemDetails()
-            : CreatedAtAction(nameof(GetById), new { id = result.Value }, result.Value);
+            : CreatedAtAction(nameof(GetShortUrlByShortCode), new { shortCode = result.Value }, result.Value);
     }
 
     [HttpPut("{id:long}", Name = "UpdateShortUrl")]
