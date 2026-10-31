@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Entities;
 using Shortly.Domain.RepositoryContract.Teams;
-using Shortly.Infrastructure.Repositories.Members;
 
 namespace Shortly.Infrastructure.Repositories.Teams;
 
@@ -84,27 +83,7 @@ internal sealed class OrganizationTeamRepository(
             throw new DatabaseException("An error occurred while retrieving managed teams.", ex);
         }
     }
-
-    /// <inheritdoc />
-    public async Task<OrganizationTeam?> GetByIdWithMembersAsync(Guid teamId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            return await dbContext.Set<OrganizationTeam>()
-                .AsNoTracking()
-                .Include(t => t.TeamMembers)
-                    .ThenInclude(tm => tm.Member)
-                         .ThenInclude(m => m.User)
-                .Include(t => t.TeamManager)
-                .FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error retrieving team with members for team ID {TeamId}.", teamId);
-            throw new DatabaseException("An error occurred while retrieving the team with members.", ex);
-        }
-    }
-
+    
     /// <inheritdoc />
     public async Task<OrganizationTeam?> GetByNameAndOrganizationAsync(string name, Guid organizationId, CancellationToken cancellationToken = default)
     {

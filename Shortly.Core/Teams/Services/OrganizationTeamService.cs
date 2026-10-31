@@ -5,7 +5,7 @@ using Shortly.Core.Teams.DTOs;
 using Shortly.Core.Teams.Mappers;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
-using Shortly.Domain.RepositoryContract.Members;
+using Shortly.Domain.Members;
 using Shortly.Domain.RepositoryContract.Teams;
 
 namespace Shortly.Core.Teams.Services;
@@ -37,10 +37,7 @@ public class OrganizationTeamService(
     /// <inheritdoc />
     public async Task<OrganizationTeamDto> GetTeamWithMembersAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
-        var team = await teamRepository.GetByIdWithMembersAsync(teamId, cancellationToken);
-        if (team == null)
-            throw new NotFoundException("Team", teamId);
-        return team.MapToOrganizationTeamDto();
+       throw new NotImplementedException();
     }
 
     /// <inheritdoc />
@@ -61,7 +58,7 @@ public class OrganizationTeamService(
     public async Task<OrganizationTeamDto> CreateTeamAsync(CreateTeamRequest request)
     {
         // Validate team manager is a member of the organization
-        var isManagerMember = await memberRepository.ExistsAsync(request.TeamManagerId);
+        var isManagerMember = await memberRepository.IsMemberOfOrganizationAsync(request.TeamManagerId, request.OrganizationId);
         
         if(!isManagerMember)
             throw new BusinessRuleException("Team manager must be a member of the organization.");
@@ -103,7 +100,7 @@ public class OrganizationTeamService(
             throw new NotFoundException("Team", teamId);
         
         // check if the member exists in the organization
-        var isMember = await memberRepository.ExistsAsync(memberId, team.OrganizationId, cancellationToken);
+        var isMember = await memberRepository.IsMemberOfOrganizationAsync(memberId, team.OrganizationId, cancellationToken);
         if(!isMember)
             throw new BusinessRuleException("Member must be a member of the organization.");
         

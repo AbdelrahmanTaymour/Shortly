@@ -6,12 +6,12 @@ using Shortly.Core.Extensions;
 using Shortly.Core.Invitations.Contracts;
 using Shortly.Core.Invitations.DTOs;
 using Shortly.Core.Invitations.Mappers;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
 using Shortly.Domain.Organizations;
 using Shortly.Domain.RepositoryContract.Invitations;
-using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.Users;
 
 namespace Shortly.Core.Invitations.Services;
@@ -28,6 +28,7 @@ public class OrganizationInvitationService(
     IUserRepository userRepository,
     IEmailNotifier notifier,
     IConfiguration configuration,
+    IUnitOfWork unitOfWork,
     ILogger<OrganizationInvitationService> logger) : IOrganizationInvitationService
 {
     /// <inheritdoc />
@@ -86,19 +87,14 @@ public class OrganizationInvitationService(
             throw new ValidationException("Invalid invitation.");
         
         var user = await userRepository.GetByEmailAsync(invitation.InvitedUserEmail, cancellationToken);
-        if(user.Id != userId)
+        if(user?.Id != userId)
             throw new ForbiddenException("The invited user does not match the current user.");
+
+        var member = OrganizationMember.Invite(invitation.OrganizationId, userId, invitation.InvitedUserRoleId,
+            invitation.InvitedBy, DateTime.UtcNow);
+        memberRepository.Add(member);
         
-       
-        // Add a user as a member
-        await memberRepository.AddAsync(new OrganizationMember
-        {
-            OrganizationId = invitation.OrganizationId,
-            UserId = userId,
-            Role = invitation.InvitedUserRoleId,
-            InvitedBy = invitation.InvitedBy,
-            JoinedAt = DateTime.UtcNow
-        }, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Update invitation status as Registered
         await invitationRepository.AcceptInvitationAsync(invitation.Id, cancellationToken);
@@ -233,12 +229,12 @@ public class OrganizationInvitationService(
     /// If the email is sent successfully, the invitation record is updated to reflect that it has been sent.
     /// The inviter's username is resolved from the organization membership list.
     /// </remarks>
-    private async Task SendInvitationEmail(Organization organization, OrganizationInvitation invitation, string invitationToken, CancellationToken cancellationToken = default)
+    private async Task SendInvitationEmail(Organization organization, OrganizationInvitation invitation,
+        string invitationToken, CancellationToken cancellationToken = default)
     {
-        var inviterUsername = await memberRepository.GetMemberUsernameAsync(invitation.OrganizationId, invitation.InvitedBy, cancellationToken) ?? "Unknown";
         var inviteeName = invitation.InvitedUserEmail.Split('@')[0];
 
-        notifier.EnqueueSendUserInvitation(invitation.InvitedUserEmail, inviterUsername,
-            inviteeName, invitationToken,organization.Name);
+        notifier.EnqueueSendUserInvitation(invitation.InvitedUserEmail, inviteeName,
+            inviteeName, invitationToken, organization.Name);
     }
 }

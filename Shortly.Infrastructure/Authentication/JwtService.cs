@@ -10,7 +10,6 @@ using Shortly.Domain.Abstractions;
 using Shortly.Domain.Entities;
 using Shortly.Domain.Members;
 using Shortly.Domain.RefreshToken;
-using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Authentication;

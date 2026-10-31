@@ -5,7 +5,6 @@ using Shortly.Domain.Abstractions;
 using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
 using Shortly.Domain.Organizations;
-using Shortly.Domain.RepositoryContract.Members;
 using Shortly.Domain.Users;
 
 namespace Shortly.Core.Organizations.CreateOrganization;
@@ -32,15 +31,7 @@ internal sealed class CreateOrganizationCommandHandler(
             request.MemberLimit ?? 10, userContext.UserId, enSubscriptionPlan.Free, utcNow);
         organizationRepository.Add(organization);
 
-        var membership = new OrganizationMember
-        {
-            Id = Guid.NewGuid(),
-            OrganizationId = organization.Id,
-            UserId = userContext.UserId,
-            Role = MemberRole.OrgOwner,
-            InvitedBy = userContext.UserId,
-            JoinedAt = DateTime.UtcNow
-        };
+        var membership = OrganizationMember.CreateOwner(organization.Id, userContext.UserId, utcNow);
         memberRepository.Add(membership);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
