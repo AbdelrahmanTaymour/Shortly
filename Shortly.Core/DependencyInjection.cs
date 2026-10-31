@@ -3,8 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.Abstractions.Behaviors;
 using Shortly.Core.Common;
-using Shortly.Core.Invitations.Contracts;
-using Shortly.Core.Invitations.Services;
 using Shortly.Domain.ShortUrls;
 
 namespace Shortly.Core;
@@ -26,9 +24,6 @@ public static class DependencyInjection
 
         services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
         
-        // Organization Management (legacy, not yet migrated to CQRS)
-        services.AddScoped<IOrganizationInvitationService, OrganizationInvitationService>();
-
         return services;
     }
 }

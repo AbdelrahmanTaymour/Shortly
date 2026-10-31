@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Extensions;
 using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Teams.GetManagedTeams;
+using Shortly.Core.Teams.GetTeam;
 using Shortly.Core.Users.DeleteAccount;
 using Shortly.Core.Users.GetLoggedInUser;
 using Shortly.Core.Users.GetMyProfile;
@@ -11,16 +13,16 @@ using Shortly.Core.Users.UpdateProfile;
 using Shortly.Domain.Users;
 using Shortly.Infrastructure.Authorization;
 
-namespace Shortly.API.Controllers.Users;
+namespace Shortly.API.Controllers.Profile;
 
 [ApiController]
-[Route("api/users")]
+[Route("api/me")]
 [Produces("application/json")]
 [Authorize]
 [RequiredPermission(enPermissions.ManageOwnAccount)]
-public class UsersController(ISender sender) : ControllerBase
+public class ProfileController(ISender sender) : ControllerBase
 {
-    [HttpGet("me", Name = "GetLoggedInUser")]
+    [HttpGet(Name = "GetLoggedInUser")]
     [ProducesResponseType(typeof(LoggedInUserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status401Unauthorized)]
@@ -64,6 +66,14 @@ public class UsersController(ISender sender) : ControllerBase
     public async Task<IActionResult> GetMyQuotaStatus(CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new GetMyQuotaStatusQuery(), cancellationToken);
+        return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
+    }
+    
+    [HttpGet("managed-teams", Name = "GetMyManagedTeams")]
+    [ProducesResponseType(typeof(IReadOnlyList<OrganizationTeamResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyManagedTeams(CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new GetMyManagedTeamsQuery(), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 }

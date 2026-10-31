@@ -18,7 +18,8 @@ internal sealed class ChangeTeamManagerCommandHandler(
     public async Task<Result> Handle(ChangeTeamManagerCommand request, CancellationToken cancellationToken)
     {
         var team = await teamRepository.GetByIdAsync(request.TeamId, cancellationToken);
-        if (team is null) return Result.Failure(OrganizationTeamErrors.NotFound);
+        if (team is null || team.OrganizationId != request.OrganizationId)
+            return Result.Failure(OrganizationTeamErrors.NotFound);
 
         var caller =
             await memberRepository.GetByOrganizationAndUserAsync(team.OrganizationId, userContext.UserId,

@@ -13,7 +13,8 @@ internal sealed class DeleteTeamCommandHandler(
     public async Task<Result> Handle(DeleteTeamCommand request, CancellationToken cancellationToken)
     {
         var team = await teamRepository.GetByIdAsync(request.TeamId, cancellationToken);
-        if (team is null) return Result.Failure(OrganizationTeamErrors.NotFound);
+        if (team is null || team.OrganizationId != request.OrganizationId)
+            return Result.Failure(OrganizationTeamErrors.NotFound);
 
         var caller = await memberRepository.GetByOrganizationAndUserAsync(team.OrganizationId, userContext.UserId, cancellationToken);
         if (caller is null || caller.Role < MemberRole.OrgAdmin)

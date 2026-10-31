@@ -26,7 +26,7 @@ public class OrganizationTeamsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetTeamById(Guid organizationId, Guid teamId, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetTeamQuery(teamId), cancellationToken);
+        var result = await sender.Send(new GetTeamQuery(organizationId, teamId), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
     
@@ -58,7 +58,7 @@ public class OrganizationTeamsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> UpdateTeam(Guid organizationId, Guid teamId, [FromBody] UpdateTeamRequest request, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new UpdateTeamCommand(teamId, request.Name, request.Description), cancellationToken);
+        var result = await sender.Send(new UpdateTeamCommand(organizationId, teamId, request.Name, request.Description), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
@@ -66,7 +66,7 @@ public class OrganizationTeamsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteTeam(Guid organizationId, Guid teamId, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new DeleteTeamCommand(teamId), cancellationToken);
+        var result = await sender.Send(new DeleteTeamCommand(organizationId, teamId), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
@@ -74,7 +74,7 @@ public class OrganizationTeamsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> ChangeManager(Guid organizationId, Guid teamId, [FromBody] ChangeTeamManagerRequest request, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new ChangeTeamManagerCommand(teamId, request.NewManagerId), cancellationToken);
+        var result = await sender.Send(new ChangeTeamManagerCommand(organizationId, teamId, request.NewManagerId), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
@@ -82,7 +82,7 @@ public class OrganizationTeamsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> AddMember(Guid organizationId, Guid teamId, [FromBody] AddTeamMemberRequest request, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new AddTeamMemberCommand(teamId, request.MemberId), cancellationToken);
+        var result = await sender.Send(new AddTeamMemberCommand(organizationId, teamId, request.MemberId), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
@@ -90,7 +90,7 @@ public class OrganizationTeamsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> RemoveMember(Guid organizationId, Guid teamId, Guid memberId, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new RemoveTeamMemberCommand(teamId, memberId), cancellationToken);
+        var result = await sender.Send(new RemoveTeamMemberCommand(organizationId, teamId, memberId), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 }
