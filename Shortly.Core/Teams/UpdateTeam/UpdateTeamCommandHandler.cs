@@ -13,7 +13,8 @@ internal sealed class UpdateTeamCommandHandler(
     public async Task<Result> Handle(UpdateTeamCommand request, CancellationToken cancellationToken)
     {
         var team = await teamRepository.GetByIdAsync(request.TeamId, cancellationToken);
-        if (team is null) return Result.Failure(OrganizationTeamErrors.NotFound);
+        if (team is null || team.OrganizationId != request.OrganizationId)
+            return Result.Failure(OrganizationTeamErrors.NotFound); // deliberately NotFound, not a separate "mismatch" error — don't confirm the team exists elsewhere
 
         if (!await CallerHasTeamAuthorityAsync(memberRepository, team, userContext.UserId, cancellationToken))
             return Result.Failure(OrganizationTeamErrors.InsufficientRole);

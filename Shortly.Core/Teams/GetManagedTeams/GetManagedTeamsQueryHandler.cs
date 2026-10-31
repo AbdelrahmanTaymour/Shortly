@@ -1,4 +1,5 @@
 using Dapper;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Teams.GetOrganizationTeams;
@@ -7,10 +8,10 @@ using Shortly.Domain.Abstractions;
 
 namespace Shortly.Core.Teams.GetManagedTeams;
 
-internal sealed class GetManagedTeamsQueryHandler(ISqlConnectionFactory sqlConnectionFactory)
-    : IQueryHandler<GetManagedTeamsQuery, IReadOnlyList<OrganizationTeamResponse>>
+internal sealed class GetMyManagedTeamsQueryHandler(IUserContext userContext, ISqlConnectionFactory sqlConnectionFactory)
+    : IQueryHandler<GetMyManagedTeamsQuery, IReadOnlyList<OrganizationTeamResponse>>
 {
-    public async Task<Result<IReadOnlyList<OrganizationTeamResponse>>> Handle(GetManagedTeamsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<IReadOnlyList<OrganizationTeamResponse>>> Handle(GetMyManagedTeamsQuery request, CancellationToken cancellationToken)
     {
         const string sql = """
                            SELECT ot.id AS Id, ot.organization_id AS OrganizationId, ot.team_manager_id AS TeamManagerId,
@@ -19,11 +20,11 @@ internal sealed class GetManagedTeamsQueryHandler(ISqlConnectionFactory sqlConne
                            FROM organization_teams ot
                            JOIN organization_members om ON om.id = ot.team_manager_id
                            JOIN users u ON u.id = om.user_id
-                           WHERE ot.team_manager_id = @ManagerId
+                           WHERE om.user_id = @UserId
                            ORDER BY ot.name
                            """;
         using var connection = sqlConnectionFactory.CreateConnection();
-        var rows = (await connection.QueryAsync<OrganizationTeamResponse>(sql, new { request.ManagerId })).ToList();
+        var rows = (await connection.QueryAsync<OrganizationTeamResponse>(sql, new { userContext.UserId })).ToList();
         return rows;
     }
 }

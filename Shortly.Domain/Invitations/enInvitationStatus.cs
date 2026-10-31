@@ -1,4 +1,4 @@
-namespace Shortly.Domain.Enums;
+namespace Shortly.Domain.Invitations;
 
 /// <summary>
 /// Pending: The system has queued the invitation email for sending.

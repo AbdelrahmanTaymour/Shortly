@@ -16,7 +16,8 @@ internal sealed class RemoveTeamMemberCommandHandler(
     public async Task<Result> Handle(RemoveTeamMemberCommand request, CancellationToken cancellationToken)
     {
         var team = await teamRepository.GetByIdAsync(request.TeamId, cancellationToken);
-        if (team is null) return Result.Failure(OrganizationTeamErrors.NotFound);
+        if (team is null || team.OrganizationId != request.OrganizationId)
+            return Result.Failure(OrganizationTeamErrors.NotFound);
 
         if (!await CallerHasTeamAuthorityAsync(memberRepository, team, userContext.UserId, cancellationToken))
             return Result.Failure(OrganizationTeamErrors.InsufficientRole);

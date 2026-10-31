@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Quartz;
 using Shortly.Core.Abstractions.Clock;
+using Shortly.Domain.Invitations;
 using Shortly.Domain.RefreshToken;
 using Shortly.Domain.Tokens;
 
@@ -10,6 +11,7 @@ namespace Shortly.Infrastructure.ScheduledJobs;
 public sealed class ExpiredTokenCleanupJob(
     IUserActionTokenRepository userActionTokenRepository,
     IRefreshTokenRepository refreshTokenRepository,
+    IOrganizationInvitationRepository invitationRepository,
     IDateTimeProvider dateTimeProvider,
     ILogger<ExpiredTokenCleanupJob> logger) : IJob
 {
@@ -20,12 +22,15 @@ public sealed class ExpiredTokenCleanupJob(
 
         try
         {
-            var deletedActionTokens = await userActionTokenRepository.DeleteExpiredOrUsedAsync(utcNow, cancellationToken);
+            var deletedActionTokens =
+                await userActionTokenRepository.DeleteExpiredOrUsedAsync(utcNow, cancellationToken);
             var deletedRefreshTokens = await refreshTokenRepository.CleanupExpiredAsync(utcNow, cancellationToken);
+            var deletedInvitationTokens =
+                await invitationRepository.CleanupExpiredInvitations(utcNow, cancellationToken);
 
             logger.LogInformation(
-                "Token cleanup removed {ActionTokens} user action tokens and {RefreshTokens} refresh tokens.",
-                deletedActionTokens, deletedRefreshTokens);
+                "Token cleanup removed {ActionTokens} user action tokens, {RefreshTokens} refresh tokens, and {deletedInvitationTokens} invitation tokens.",
+                deletedActionTokens, deletedRefreshTokens, deletedInvitationTokens);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
