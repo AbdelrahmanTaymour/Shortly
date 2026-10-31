@@ -49,23 +49,9 @@ public class OrganizationTeamMemberRepository(
         }
     }
 
-    /// <inheritdoc />
-    public async Task<IEnumerable<OrganizationTeamMember>> GetByTeamIdAsync(Guid teamId, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<OrganizationTeamMember>> GetByTeamIdAsync(Guid teamId, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            return await dbContext.Set<OrganizationTeamMember>()
-                .Include(tm => tm.Member)
-                .ThenInclude(m => m.User)
-                .Where(tm => tm.TeamId == teamId)
-                .OrderBy(tm => tm.JoinedAt)
-                .ToListAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error retrieving team members for team {TeamId}.", teamId);
-            throw new DatabaseException("An error occurred while retrieving team members.", ex);
-        }
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />

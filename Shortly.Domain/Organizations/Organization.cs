@@ -7,9 +7,6 @@ namespace Shortly.Domain.Organizations;
 
 public sealed class Organization : Entity<Guid>
 {
-    private readonly List<OrganizationMember> _members = [];
-    private readonly List<OrganizationTeam> _teams = [];
-
     private Organization(Guid id, string name, string? description, string? website, string? logoUrl,
         int memberLimit, Guid ownerId, enSubscriptionPlan subscriptionPlanId, DateTime utcNow) : base(id)
     {
@@ -44,9 +41,7 @@ public sealed class Organization : Entity<Guid>
     public bool IsDeleted => DeletedAt != null;
 
     public OrganizationUsage Usage { get; private set; } = null!;
-    public IReadOnlyCollection<OrganizationMember> Members => _members;
-    public IReadOnlyCollection<OrganizationTeam> Teams => _teams;
-
+    
     public static Organization Create(string name, string? description, string? website, string? logoUrl,
         int memberLimit, Guid ownerId, enSubscriptionPlan subscriptionPlanId, DateTime utcNow)
         => new(Guid.NewGuid(), name, description, website, logoUrl, memberLimit, ownerId, subscriptionPlanId, utcNow);

@@ -44,15 +44,6 @@ public interface IOrganizationTeamRepository
     Task<IEnumerable<OrganizationTeam>> GetManagedTeamsAsync(Guid managerId, CancellationToken cancellationToken = default);
    
     /// <summary>
-    /// Retrieves an organization team by its unique identifier, including all team members and their user details.
-    /// </summary>
-    /// <param name="teamId">The unique identifier of the team.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
-    /// <returns>The organization team with members and team manager details if found; otherwise, null.</returns>
-    /// <exception cref="DatabaseException">Thrown when a database error occurs.</exception>
-    Task<OrganizationTeam?> GetByIdWithMembersAsync(Guid teamId, CancellationToken cancellationToken = default);
-   
-    /// <summary>
     /// Retrieves an organization team by its name within a specific organization.
     /// </summary>
     /// <param name="name">The name of the team to retrieve.</param>
