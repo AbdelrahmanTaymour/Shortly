@@ -23,8 +23,8 @@ using Shortly.Domain.Members;
 using Shortly.Domain.Organizations;
 using Shortly.Domain.RefreshToken;
 using Shortly.Domain.RepositoryContract.Invitations;
-using Shortly.Domain.RepositoryContract.Teams;
 using Shortly.Domain.ShortUrls;
+using Shortly.Domain.Teams;
 using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
 using Shortly.Infrastructure.Authentication;
@@ -36,7 +36,6 @@ using Shortly.Infrastructure.Data;
 using Shortly.Infrastructure.Email;
 using Shortly.Infrastructure.Repositories;
 using Shortly.Infrastructure.Repositories.Invetations;
-using Shortly.Infrastructure.Repositories.Teams;
 using Shortly.Infrastructure.ScheduledJobs;
 
 namespace Shortly.Infrastructure;

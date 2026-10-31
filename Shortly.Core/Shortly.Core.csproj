@@ -21,4 +21,8 @@
         <ProjectReference Include="..\Shortly.Domain\Shortly.Domain.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Teams\GetManagedTeams\" />
+    </ItemGroup>
+
 </Project>

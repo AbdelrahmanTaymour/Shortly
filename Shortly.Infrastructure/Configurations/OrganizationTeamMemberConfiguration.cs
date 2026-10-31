@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Shortly.Domain.Entities;
 using Shortly.Domain.Members;
+using Shortly.Domain.Teams;
 
 namespace Shortly.Infrastructure.Configurations;
 
@@ -10,7 +10,6 @@ public sealed class OrganizationTeamMemberConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<OrganizationTeamMember> builder)
     {
         builder.ToTable("team_members");
-
         builder.HasKey(otm => otm.Id);
 
         builder.Property(otm => otm.JoinedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -21,6 +20,12 @@ public sealed class OrganizationTeamMemberConfiguration : IEntityTypeConfigurati
 
         builder.HasIndex(otm => otm.MemberId)
             .HasDatabaseName("ix_team_members_member_id");
+
+        builder.HasOne<OrganizationTeam>()
+            .WithMany()
+            .HasForeignKey(otm => otm.TeamId)
+            .HasConstraintName("fk_team_members_organization_teams")
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne<OrganizationMember>()
             .WithMany()
