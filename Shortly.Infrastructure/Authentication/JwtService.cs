@@ -7,7 +7,6 @@ using Microsoft.IdentityModel.Tokens;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Entities;
 using Shortly.Domain.Members;
 using Shortly.Domain.RefreshToken;
 using Shortly.Domain.Users;

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Shortly.Core.Exceptions.DTOs;
+namespace Shortly.Core.Exceptions;
 
 /// <summary>
 ///     Represents a structured error response for client-side consumption

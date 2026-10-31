@@ -2,7 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Extensions;
-using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Exceptions;
 using Shortly.Core.Teams.AddTeamMember;
 using Shortly.Core.Teams.ChangeTeamManager;
 using Shortly.Core.Teams.CreateTeam;

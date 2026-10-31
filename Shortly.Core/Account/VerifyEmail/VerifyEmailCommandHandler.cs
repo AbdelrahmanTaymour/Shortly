@@ -1,7 +1,6 @@
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
-using Shortly.Core.Extensions;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
@@ -11,13 +10,14 @@ namespace Shortly.Core.Account.VerifyEmail;
 internal sealed class VerifyEmailCommandHandler(
     IUserActionTokenRepository tokenRepository,
     IUserRepository userRepository,
+    ITokenHasher tokenHasher,
     IJwtService jwtService,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<VerifyEmailCommand, AccessTokenResponse>
 {
     public async Task<Result<AccessTokenResponse>> Handle(VerifyEmailCommand request, CancellationToken cancellationToken)
     {
-        var tokenHash = Sha256Extensions.ComputeHash(request.Token);
+        var tokenHash = tokenHasher.Hash(request.Token);
         var token = await tokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
         if (token is null) return Result.Failure<AccessTokenResponse>(UserActionTokenErrors.NotFound);
 

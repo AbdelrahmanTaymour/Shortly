@@ -8,7 +8,7 @@ using Shortly.Core.Account.Logout;
 using Shortly.Core.Account.LogoutAll;
 using Shortly.Core.Account.RefreshAccessToken;
 using Shortly.Core.Account.Register;
-using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Exceptions;
 
 namespace Shortly.API.Controllers.Auth;
 

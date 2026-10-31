@@ -1,9 +1,7 @@
-using System.Security.Cryptography;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Email;
 using Shortly.Core.Abstractions.Messaging;
-using Shortly.Core.Extensions;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
@@ -15,6 +13,7 @@ internal sealed class InitiateEmailChangeCommandHandler(
     IUserRepository userRepository,
     IUserActionTokenRepository tokenRepository,
     IPasswordHasher passwordHasher,
+    ITokenHasher tokenHasher,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IEmailNotifier notifier) : ICommandHandler<InitiateEmailChangeCommand>
@@ -33,8 +32,8 @@ internal sealed class InitiateEmailChangeCommandHandler(
         var utcNow = dateTimeProvider.UtcNow;
         await tokenRepository.InvalidateActiveTokensAsync(user.Id, enUserActionTokenType.EmailChange, utcNow, cancellationToken);
 
-        var plainToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-        var tokenResult = UserActionToken.IssueEmailChange(user.Id, Sha256Extensions.ComputeHash(plainToken), request.NewEmail, utcNow);
+        var plainToken = tokenHasher.GenerateToken();
+        var tokenResult = UserActionToken.IssueEmailChange(user.Id, tokenHasher.Hash(plainToken), request.NewEmail, utcNow);
         if (tokenResult.IsFailure) return Result.Failure(tokenResult.Error);
 
         tokenRepository.Add(tokenResult.Value);

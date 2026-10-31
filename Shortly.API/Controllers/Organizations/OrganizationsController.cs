@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.API.Extensions;
 using Shortly.Core.Abstractions.Authentication;
-using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Exceptions;
 using Shortly.Core.Organizations.ActivateOrganization;
 using Shortly.Core.Organizations.CreateOrganization;
 using Shortly.Core.Organizations.DeactivateOrganization;
