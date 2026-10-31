@@ -16,7 +16,6 @@ using Shortly.Core.Abstractions.ClickTracking;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Email;
-using Shortly.Core.Exceptions.ServerErrors;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.ClickEvents;
 using Shortly.Domain.Invitations;
@@ -46,6 +45,9 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+        services.AddSingleton<ITokenHasher, TokenHasher>();
+        
+        services.AddMemoryCache();
         services.AddSingleton<ISubscriptionPlanLimitsProvider, SubscriptionPlanLimitsProvider>();
         
         AddPersistence(services, configuration);
@@ -136,15 +138,15 @@ public static class DependencyInjection
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(
                             configuration["Jwt:Key"]
-                            ?? throw new ConfigurationException("JWT signing key is missing in configuration."))),
+                            ?? throw new InvalidOperationException("JWT signing key is missing in configuration."))),
                     ClockSkew = TimeSpan.Zero
                 })
             .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
             {
                 options.ClientId = configuration["Authentication:Google:ClientId"]
-                                   ?? throw new ConfigurationException("Google ClientId is missing in configuration.");
+                                   ?? throw new InvalidOperationException("Google ClientId is missing in configuration.");
                 options.ClientSecret = configuration["Authentication:Google:ClientSecret"]
-                                       ?? throw new ConfigurationException(
+                                       ?? throw new InvalidOperationException(
                                            "Google ClientSecret is missing in configuration.");
 
                 options.Scope.Add("profile");

@@ -6,7 +6,7 @@ using Shortly.Core.Admin.GetOrganizationDetail;
 using Shortly.Core.Admin.ResetAllOrganizationsUsage;
 using Shortly.Core.Admin.ResetOrganizationUsage;
 using Shortly.Core.Admin.SearchOrganizations;
-using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Exceptions;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Users;
 using Shortly.Infrastructure.Authorization;

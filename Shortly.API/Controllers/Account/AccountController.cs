@@ -11,7 +11,7 @@ using Shortly.Core.Account.ResetPassword;
 using Shortly.Core.Account.SendEmailVerification;
 using Shortly.Core.Account.ValidateResetToken;
 using Shortly.Core.Account.VerifyEmail;
-using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Exceptions;
 
 namespace Shortly.API.Controllers.Account;
 

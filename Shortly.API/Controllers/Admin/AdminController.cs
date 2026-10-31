@@ -14,7 +14,7 @@ using Shortly.Core.Admin.ResetAllUsersUsage;
 using Shortly.Core.Admin.ResetUserUsage;
 using Shortly.Core.Admin.SearchUsers;
 using Shortly.Core.Admin.UnlockUser;
-using Shortly.Core.Exceptions.DTOs;
+using Shortly.Core.Exceptions;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Users;
 using Shortly.Infrastructure.Authorization;

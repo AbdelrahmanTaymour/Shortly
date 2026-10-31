@@ -1,9 +1,7 @@
-using System.Security.Cryptography;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Email;
 using Shortly.Core.Abstractions.Messaging;
-using Shortly.Core.Extensions;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Tokens;
 using Shortly.Domain.Users;
@@ -14,6 +12,7 @@ internal sealed class SendEmailVerificationCommandHandler(
     IUserRepository userRepository,
     IUserActionTokenRepository tokenRepository,
     IUserContext userContext,
+    ITokenHasher tokenHasher,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IEmailNotifier emailNotifier) : ICommandHandler<SendEmailVerificationCommand>
@@ -22,15 +21,15 @@ internal sealed class SendEmailVerificationCommandHandler(
     {
         var email = request.Email ?? userContext.Email;
         var user = await userRepository.GetByEmailAsync(email, cancellationToken);
-        if (user is null) return Result.Success(); // never reveal whether the email exists
+        if (user is null) return Result.Success();
 
         if (user.IsEmailConfirmed) return Result.Failure(UserErrors.EmailAlreadyConfirmed);
 
         var utcNow = dateTimeProvider.UtcNow;
         await tokenRepository.InvalidateActiveTokensAsync(user.Id, enUserActionTokenType.EmailVerification, utcNow, cancellationToken);
 
-        var plainToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-        var token = UserActionToken.IssueEmailVerification(user.Id, Sha256Extensions.ComputeHash(plainToken), utcNow);
+        var plainToken = tokenHasher.GenerateToken();
+        var token = UserActionToken.IssueEmailVerification(user.Id, tokenHasher.Hash(plainToken), utcNow);
 
         tokenRepository.Add(token);
         await unitOfWork.SaveChangesAsync(cancellationToken);

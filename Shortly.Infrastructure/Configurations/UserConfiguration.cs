@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Shortly.Domain.Entities;
+using Shortly.Domain.SubscriptionPlan;
 using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Configurations;
