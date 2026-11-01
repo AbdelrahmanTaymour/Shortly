@@ -1,5 +1,4 @@
 using Shortly.Core.Abstractions.Messaging;
-using Shortly.Domain.ShortUrls;
 
 namespace Shortly.Core.ShortUrls.CreateShortUrl;
 

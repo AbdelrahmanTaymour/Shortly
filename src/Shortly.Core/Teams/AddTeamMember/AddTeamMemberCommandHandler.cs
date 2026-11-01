@@ -21,28 +21,26 @@ internal sealed class AddTeamMemberCommandHandler(
         if (team is null || team.OrganizationId != request.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.NotFound);
 
-        if (!await CallerHasTeamAuthorityAsync(memberRepository, team, userContext.UserId,
-                cancellationToken))
+        if (!await CallerHasTeamAuthorityAsync(memberRepository, team, userContext.UserId, cancellationToken))
             return Result.Failure(OrganizationTeamErrors.InsufficientRole);
 
-        if (!await memberRepository.IsMemberOfOrganizationAsync(request.MemberId, team.OrganizationId,
-                cancellationToken))
+        var targetMembership = await memberRepository.GetByIdAsync(request.MemberId, cancellationToken);
+        if (targetMembership is null || targetMembership.OrganizationId != team.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.MemberNotOrgMember);
 
-        if (await teamMemberRepository.IsMemberOfTeamAsync(request.MemberId, request.TeamId, cancellationToken))
+        if (await teamMemberRepository.IsMemberOfTeamAsync(targetMembership.Id, request.TeamId, cancellationToken))
             return Result.Failure(OrganizationTeamErrors.AlreadyTeamMember);
 
-        teamMemberRepository.Add(OrganizationTeamMember.Create(request.TeamId, request.MemberId,
-            dateTimeProvider.UtcNow));
+        teamMemberRepository.Add(OrganizationTeamMember.Create(request.TeamId, targetMembership.Id, dateTimeProvider.UtcNow));
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
-    
-    private static async Task<bool> CallerHasTeamAuthorityAsync(
-        IOrganizationMemberRepository memberRepository, OrganizationTeam team, Guid callerId, CancellationToken cancellationToken)
+
+    internal static async Task<bool> CallerHasTeamAuthorityAsync(
+        IOrganizationMemberRepository memberRepository, OrganizationTeam team, Guid callerUserId, CancellationToken cancellationToken)
     {
-        if (team.TeamManagerId == callerId) return true; // the team's own manager can administer it
-        var caller = await memberRepository.GetByOrganizationAndUserAsync(team.OrganizationId, callerId, cancellationToken);
-        return caller is not null && caller.Role >= MemberRole.OrgAdmin;
+        var caller = await memberRepository.GetByOrganizationAndUserAsync(team.OrganizationId, callerUserId, cancellationToken);
+        if (caller is null) return false;
+        return caller.Id == team.TeamManagerId || caller.Role >= MemberRole.OrgAdmin;
     }
 }

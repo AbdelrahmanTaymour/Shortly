@@ -6,13 +6,13 @@ using Shortly.Domain.Tokens;
 
 namespace Shortly.Core.Account.ValidateResetToken;
 
-internal sealed class ValidateResetTokenQueryHandler(
+internal sealed class ValidateResetTokenQueryCommand(
     IUserActionTokenRepository tokenRepository, 
     ITokenHasher tokenHasher, 
     IDateTimeProvider dateTimeProvider)
-    : IQueryHandler<ValidateResetTokenQuery, bool>
+    : ICommandHandler<ValidateResetTokenCommand, bool>
 {
-    public async Task<Result<bool>> Handle(ValidateResetTokenQuery request, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(ValidateResetTokenCommand request, CancellationToken cancellationToken)
     {
         var tokenHash = tokenHasher.Hash(request.Token);
         var token = await tokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);

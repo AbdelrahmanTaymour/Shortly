@@ -1,4 +1,3 @@
-using Shortly.Domain.Enums;
 using Shortly.Domain.Invitations;
 using Shortly.Domain.Members;
 

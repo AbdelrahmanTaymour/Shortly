@@ -5,50 +5,78 @@ using Shortly.Domain.Abstractions;
 
 namespace Shortly.Core.Analytics.GetEngagementMetrics;
 
-internal sealed class GetEngagementMetricsQueryHandler(ISqlConnectionFactory sqlConnectionFactory)
+internal sealed class GetEngagementMetricsQueryHandler(
+    ISqlConnectionFactory sqlConnectionFactory)
     : IQueryHandler<GetEngagementMetricsQuery, EngagementMetricsResponse>
 {
-    public async Task<Result<EngagementMetricsResponse>> Handle(GetEngagementMetricsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<EngagementMetricsResponse>> Handle(
+        GetEngagementMetricsQuery request,
+        CancellationToken cancellationToken)
     {
-        var scope = new AnalyticsScope(request.ShortUrlId, request.UserId, request.OrganizationId, request.From, request.To);
-        using var connection = sqlConnectionFactory.CreateConnection();
+        var scope = new AnalyticsScope(
+            request.ShortUrlId,
+            request.UserId,
+            request.OrganizationId,
+            request.From,
+            request.To);
 
         var sql = $"""
             WITH scoped AS (
-                SELECT ce.session_id, ce.clicked_at
+                SELECT
+                    ce.session_id AS SessionId,
+                    ce.clicked_at_utc AS ClickedAtUtc
                 FROM click_events ce
-                JOIN short_urls s ON s.id = ce.short_url_id
+                INNER JOIN short_urls s ON s.id = ce.short_url_id
                 WHERE {scope.BuildWhereClause()}
+                  AND NULLIF(BTRIM(ce.session_id), '') IS NOT NULL
             ),
             sessions AS (
-                SELECT session_id, COUNT(*) AS clicks,
-                       MAX(clicked_at) - MIN(clicked_at) AS duration
-                FROM scoped GROUP BY session_id
+                SELECT
+                    SessionId,
+                    COUNT(*) AS Clicks,
+                    MAX(ClickedAtUtc) - MIN(ClickedAtUtc) AS Duration
+                FROM scoped
+                GROUP BY SessionId
             )
             SELECT
-                COUNT(*)                                                  AS SessionCount,
-                COUNT(*) FILTER (WHERE clicks = 1)                        AS SingleClickSessions,
-                COUNT(*) FILTER (WHERE clicks > 1)                        AS ReturningVisitors,
-                COUNT(*) FILTER (WHERE clicks = 1)                        AS NewVisitors,
-                COALESCE(AVG(clicks), 0)                                  AS ClicksPerSession,
-                COALESCE(AVG(EXTRACT(EPOCH FROM duration)), 0)            AS AvgSessionSeconds
-            FROM sessions
+                COUNT(*) AS SessionCount,
+                COUNT(*) FILTER (WHERE Clicks = 1) AS SingleClickSessions,
+                COUNT(*) FILTER (WHERE Clicks > 1) AS MultiClickSessions,
+                COALESCE(AVG(Clicks), 0) AS ClicksPerSession,
+                COALESCE(AVG(EXTRACT(EPOCH FROM Duration)), 0) AS AvgSessionSeconds
+            FROM sessions;
             """;
 
-        var row = await connection.QuerySingleAsync<EngagementRow>(sql, new
-        {
-            request.ShortUrlId, request.UserId, request.OrganizationId, request.From, request.To
-        });
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                request.ShortUrlId,
+                request.UserId,
+                request.OrganizationId,
+                request.From,
+                request.To
+            },
+            cancellationToken: cancellationToken);
 
-        var bounceRate = row.SessionCount == 0 ? 0 : row.SingleClickSessions * 100.0 / row.SessionCount;
-        var returnRate = row.SessionCount == 0 ? 0 : row.ReturningVisitors * 100.0 / row.SessionCount;
+        using var connection = sqlConnectionFactory.CreateConnection();
+
+        var row = await connection.QuerySingleAsync<EngagementRow>(command);
+
+        var bounceRate = row.SessionCount == 0
+            ? 0
+            : row.SingleClickSessions * 100.0 / row.SessionCount;
+
+        var multiClickSessionRate = row.SessionCount == 0
+            ? 0
+            : row.MultiClickSessions * 100.0 / row.SessionCount;
 
         return new EngagementMetricsResponse
         {
             BounceRate = bounceRate,
-            ReturnVisitorRate = returnRate,
-            NewVisitors = row.NewVisitors,
-            ReturningVisitors = row.ReturningVisitors,
+            ReturnVisitorRate = multiClickSessionRate,
+            NewVisitors = row.SingleClickSessions,
+            ReturningVisitors = row.MultiClickSessions,
             AverageSessionDuration = TimeSpan.FromSeconds(row.AvgSessionSeconds),
             ClicksPerSession = row.ClicksPerSession
         };
@@ -56,10 +84,9 @@ internal sealed class GetEngagementMetricsQueryHandler(ISqlConnectionFactory sql
 
     private sealed class EngagementRow
     {
-        public int SessionCount { get; init; }
+        public long SessionCount { get; init; }
         public int SingleClickSessions { get; init; }
-        public int ReturningVisitors { get; init; }
-        public int NewVisitors { get; init; }
+        public int MultiClickSessions { get; init; }
         public double ClicksPerSession { get; init; }
         public double AvgSessionSeconds { get; init; }
     }

@@ -2,9 +2,9 @@ using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
 using Shortly.Domain.Organizations;
+using Shortly.Domain.SubscriptionPlan;
 using Shortly.Domain.Users;
 
 namespace Shortly.Core.Organizations.CreateOrganization;

@@ -1,5 +1,4 @@
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Enums;
 
 namespace Shortly.Domain.ShortUrls;
 

@@ -1,4 +1,4 @@
-using Shortly.Domain.Enums;
+using Shortly.Domain.SubscriptionPlan;
 using Shortly.Domain.Users;
 
 namespace Shortly.API.Controllers.Admin;

@@ -1,0 +1,13 @@
+using FluentValidation;
+
+namespace Shortly.Core.Account.ForgotPassword;
+
+internal sealed class ForgotPasswordCommandValidator : AbstractValidator<ForgotPasswordCommand>
+{
+    public ForgotPasswordCommandValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty()
+            .EmailAddress();
+    }
+}

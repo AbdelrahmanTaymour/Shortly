@@ -37,6 +37,13 @@ public sealed class UserProfile
         return Result.Success();
     }
 
+    public Result UpdateName(string? name, DateTime utcNow)
+    {
+        Name = name;
+        UpdatedAtUtc = utcNow;
+        return Result.Success();
+    }
+
     public Result UpdateProfilePicture(string? url, DateTime utcNow)
     {
         ProfilePictureUrl = url;

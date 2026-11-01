@@ -2,4 +2,4 @@ using Shortly.Core.Abstractions.Messaging;
 
 namespace Shortly.Core.Account.ValidateResetToken;
 
-public sealed record ValidateResetTokenQuery(string Token) : IQuery<bool>;
+public sealed record ValidateResetTokenCommand(string Token) : ICommand<bool>;

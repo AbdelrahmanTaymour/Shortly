@@ -17,23 +17,53 @@ internal sealed class GetAnalyticsOverviewQueryHandler(
 
         var sql = $"""
             WITH scoped AS (
-                SELECT ce.clicked_at, ce.session_id, ce.country, ce.referrer_domain
+                SELECT
+                    ce.clicked_at_utc AS ClickedAtUtc,
+                    ce.session_id AS SessionId,
+                    ce.country AS Country,
+                    ce.referrer_domain AS ReferrerDomain
                 FROM click_events ce
-                JOIN short_urls s ON s.id = ce.short_url_id
+                INNER JOIN short_urls s ON s.id = ce.short_url_id
                 WHERE {scope.BuildWhereClause()}
             )
             SELECT
-                COUNT(*)                                                              AS TotalClicks,
-                COUNT(DISTINCT session_id)                                            AS UniqueClicks,
-                COUNT(DISTINCT clicked_at::date)                                      AS ActiveDays,
-                MIN(clicked_at)                                                       AS FirstClickAtUtc,
-                MAX(clicked_at)                                                       AS LastClickAtUtc,
-                COUNT(*) FILTER (WHERE clicked_at::date = CURRENT_DATE)               AS ClicksToday,
-                COUNT(*) FILTER (WHERE clicked_at >= date_trunc('week', now()))       AS ClicksThisWeek,
-                COUNT(*) FILTER (WHERE clicked_at >= date_trunc('month', now()))      AS ClicksThisMonth,
-                (SELECT country FROM scoped WHERE country IS NOT NULL GROUP BY country ORDER BY COUNT(*) DESC LIMIT 1)         AS TopCountry,
-                (SELECT referrer_domain FROM scoped WHERE referrer_domain IS NOT NULL GROUP BY referrer_domain ORDER BY COUNT(*) DESC LIMIT 1) AS TopReferrer
-            FROM scoped
+                COUNT(*) AS TotalClicks,
+                COUNT(DISTINCT SessionId) AS UniqueClicks,
+                COUNT(DISTINCT ClickedAtUtc::date) AS ActiveDays,
+                MIN(ClickedAtUtc) AS FirstClickAtUtc,
+                MAX(ClickedAtUtc) AS LastClickAtUtc,
+            
+                COUNT(*) FILTER (
+                    WHERE ClickedAtUtc::date = CURRENT_DATE
+                ) AS ClicksToday,
+            
+                COUNT(*) FILTER (
+                    WHERE ClickedAtUtc >= date_trunc('week', NOW())
+                ) AS ClicksThisWeek,
+            
+                COUNT(*) FILTER (
+                    WHERE ClickedAtUtc >= date_trunc('month', NOW())
+                ) AS ClicksThisMonth,
+            
+                (
+                    SELECT Country
+                    FROM scoped
+                    WHERE NULLIF(TRIM(Country), '') IS NOT NULL
+                    GROUP BY Country
+                    ORDER BY COUNT(*) DESC, Country
+                    LIMIT 1
+                ) AS TopCountry,
+            
+                (
+                    SELECT ReferrerDomain
+                    FROM scoped
+                    WHERE NULLIF(TRIM(ReferrerDomain), '') IS NOT NULL
+                    GROUP BY ReferrerDomain
+                    ORDER BY COUNT(*) DESC, ReferrerDomain
+                    LIMIT 1
+                ) AS TopReferrer
+            
+            FROM scoped;
             """;
 
         var row = await connection.QuerySingleAsync<OverviewRow>(sql, BuildParameters(request));

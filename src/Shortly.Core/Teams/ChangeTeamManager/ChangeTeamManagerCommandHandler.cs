@@ -21,21 +21,18 @@ internal sealed class ChangeTeamManagerCommandHandler(
         if (team is null || team.OrganizationId != request.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.NotFound);
 
-        var caller =
-            await memberRepository.GetByOrganizationAndUserAsync(team.OrganizationId, userContext.UserId,
-                cancellationToken);
+        var caller = await memberRepository.GetByOrganizationAndUserAsync(team.OrganizationId, userContext.UserId, cancellationToken);
         if (caller is null || caller.Role < MemberRole.OrgAdmin)
             return Result.Failure(OrganizationTeamErrors.InsufficientRole);
 
-        if (!await memberRepository.IsMemberOfOrganizationAsync(request.NewManagerId, team.OrganizationId,
-                cancellationToken))
+        var newManagerMembership = await memberRepository.GetByIdAsync(request.NewManagerId, cancellationToken);
+        if (newManagerMembership is null || newManagerMembership.OrganizationId != team.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.ManagerNotOrgMember);
 
-        team.ChangeManager(request.NewManagerId);
+        team.ChangeManager(newManagerMembership.Id);
 
-        if (!await teamMemberRepository.IsMemberOfTeamAsync(request.NewManagerId, request.TeamId, cancellationToken))
-            teamMemberRepository.Add(OrganizationTeamMember.Create(request.TeamId, request.NewManagerId,
-                dateTimeProvider.UtcNow));
+        if (!await teamMemberRepository.IsMemberOfTeamAsync(newManagerMembership.Id, request.TeamId, cancellationToken))
+            teamMemberRepository.Add(OrganizationTeamMember.Create(request.TeamId, newManagerMembership.Id, dateTimeProvider.UtcNow));
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();

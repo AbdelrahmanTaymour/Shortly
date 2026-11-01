@@ -1,5 +1,4 @@
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
 using Shortly.Domain.Users;
 

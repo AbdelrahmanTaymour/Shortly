@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Shortly.Domain.Enums;
 using Shortly.Domain.Invitations;
 
 namespace Shortly.Infrastructure.Repositories;

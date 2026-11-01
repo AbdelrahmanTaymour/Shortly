@@ -1,12 +1,38 @@
-using Shortly.Domain.Enums;
 using Shortly.Domain.Members;
+using Shortly.Domain.SubscriptionPlan;
 
 namespace Shortly.Core.Admin.GetOrganizationDetail;
 
-public sealed record OrganizationMemberSummary(Guid UserId, string Username, string Email, MemberRole Role, bool IsActive);
-public sealed record OrganizationTeamSummary(Guid Id, string Name, int MemberCount);
+public sealed record OrganizationMemberSummary
+{
+    public Guid UserId { get; init; }
+    public required string Username { get; init; }
+    public required string Email { get; init; }
+    public MemberRole Role { get; init; }
+    public bool IsActive { get; init; }
+}
 
-public sealed record OrganizationDetailResponse(
-    Guid Id, string Name, string? Description, string? Website, string? LogoUrl, int MemberLimit,
-    bool IsActive, bool IsSubscribed, DateTime CreatedAt, Guid OwnerId, string OwnerEmail,
-    enSubscriptionPlan SubscriptionPlanId, IReadOnlyList<OrganizationMemberSummary> Members, IReadOnlyList<OrganizationTeamSummary> Teams);
+public sealed record OrganizationTeamSummary
+{
+    public Guid Id { get; init; }
+    public required string Name { get; init; }
+    public int MemberCount { get; init; }
+}
+
+public sealed record OrganizationDetailResponse
+{
+    public Guid Id { get; init; }
+    public required string Name { get; init; }
+    public string? Description { get; init; }
+    public string? Website { get; init; }
+    public string? LogoUrl { get; init; }
+    public int MemberLimit { get; init; }
+    public bool IsActive { get; init; }
+    public bool IsSubscribed { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public Guid OwnerId { get; init; }
+    public required string OwnerEmail { get; init; }
+    public enSubscriptionPlan SubscriptionPlan { get; init; }
+    public required IReadOnlyList<OrganizationMemberSummary> Members { get; init; }
+    public required IReadOnlyList<OrganizationTeamSummary> Teams { get; init; }
+}

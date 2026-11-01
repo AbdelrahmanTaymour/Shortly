@@ -2,8 +2,17 @@ using Shortly.Core.Analytics.GetDeviceStats;
 
 namespace Shortly.Core.Analytics.GetTrafficStats;
 
-public sealed record ReferrerBreakdown(string Domain, int Clicks, double Percentage);
-public sealed record CampaignBreakdown(string CampaignName, string? Source, string? Medium, int Clicks, double Percentage);
+public sealed record ReferrerBreakdown(
+    string Domain,
+    int Clicks,
+    double Percentage);
+
+public sealed record CampaignBreakdown(
+    string CampaignName,
+    string? Source,
+    string? Medium,
+    int Clicks,
+    double Percentage);
 
 public sealed class TrafficStatsResponse
 {

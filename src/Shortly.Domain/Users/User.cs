@@ -1,5 +1,5 @@
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Enums;
+using Shortly.Domain.SubscriptionPlan;
 
 namespace Shortly.Domain.Users;
 

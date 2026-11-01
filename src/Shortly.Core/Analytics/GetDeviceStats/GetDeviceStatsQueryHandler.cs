@@ -5,79 +5,150 @@ using Shortly.Domain.Abstractions;
 
 namespace Shortly.Core.Analytics.GetDeviceStats;
 
-internal sealed class GetDeviceStatsQueryHandler(ISqlConnectionFactory sqlConnectionFactory)
+internal sealed class GetDeviceStatsQueryHandler(
+    ISqlConnectionFactory sqlConnectionFactory)
     : IQueryHandler<GetDeviceStatsQuery, DeviceStatsResponse>
 {
     private const int TopN = 6;
 
-    public async Task<Result<DeviceStatsResponse>> Handle(GetDeviceStatsQuery request,
+    public async Task<Result<DeviceStatsResponse>> Handle(
+        GetDeviceStatsQuery request,
         CancellationToken cancellationToken)
     {
-        var scope = new AnalyticsScope(request.ShortUrlId, request.UserId, request.OrganizationId, request.From,
+        var scope = new AnalyticsScope(
+            request.ShortUrlId,
+            request.UserId,
+            request.OrganizationId,
+            request.From,
             request.To);
+
+        var parameters = new
+        {
+            request.ShortUrlId,
+            request.UserId,
+            request.OrganizationId,
+            request.From,
+            request.To,
+            TopN
+        };
+
         using var connection = sqlConnectionFactory.CreateConnection();
 
-        var sql = $"""
-                   WITH scoped AS (
-                       SELECT ce.device_type, ce.browser, ce.operating_system
-                       FROM click_events ce
-                       JOIN short_urls s ON s.id = ce.short_url_id
-                       WHERE {scope.BuildWhereClause()}
-                   ),
-                   by_device AS (SELECT device_type AS name, COUNT(*) AS clicks, ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn FROM scoped GROUP BY device_type),
-                   by_browser AS (SELECT browser AS name, COUNT(*) AS clicks, ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn FROM scoped GROUP BY browser),
-                   by_os AS (SELECT operating_system AS name, COUNT(*) AS clicks, ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn FROM scoped GROUP BY operating_system)
-                   SELECT 'device' AS dimension, name, clicks FROM by_device WHERE rn <= @TopN
-                   UNION ALL SELECT 'browser', name, clicks FROM by_browser WHERE rn <= @TopN
-                   UNION ALL SELECT 'os', name, clicks FROM by_os WHERE rn <= @TopN;
+        var dimensionsSql = $"""
+            WITH scoped AS (
+                SELECT
+                    COALESCE(NULLIF(BTRIM(ce.device_type), ''), 'Unknown') AS DeviceType,
+                    COALESCE(NULLIF(BTRIM(ce.browser), ''), 'Unknown') AS Browser,
+                    COALESCE(NULLIF(BTRIM(ce.operating_system), ''), 'Unknown') AS OperatingSystem
+                FROM click_events ce
+                INNER JOIN short_urls s ON s.id = ce.short_url_id
+                WHERE {scope.BuildWhereClause()}
+            ),
+            by_device AS (
+                SELECT
+                    DeviceType AS Name,
+                    COUNT(*) AS Clicks,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC, DeviceType) AS Rn
+                FROM scoped
+                GROUP BY DeviceType
+            ),
+            by_browser AS (
+                SELECT
+                    Browser AS Name,
+                    COUNT(*) AS Clicks,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC, Browser) AS Rn
+                FROM scoped
+                GROUP BY Browser
+            ),
+            by_os AS (
+                SELECT
+                    OperatingSystem AS Name,
+                    COUNT(*) AS Clicks,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC, OperatingSystem) AS Rn
+                FROM scoped
+                GROUP BY OperatingSystem
+            )
+            SELECT 'device' AS Dimension, Name, Clicks
+            FROM by_device
+            WHERE Rn <= @TopN
 
-                   SELECT
-                       COUNT(*) FILTER (WHERE device_type = 'Mobile')  AS Mobile,
-                       COUNT(*) FILTER (WHERE device_type = 'Desktop') AS Desktop,
-                       COUNT(*) FILTER (WHERE device_type = 'Tablet')  AS Tablet,
-                       COUNT(*)                                        AS Total
-                   FROM scoped
-                   """;
+            UNION ALL
 
-        using var multi = await connection.QueryMultipleAsync(sql, new
+            SELECT 'browser', Name, Clicks
+            FROM by_browser
+            WHERE Rn <= @TopN
+
+            UNION ALL
+
+            SELECT 'os', Name, Clicks
+            FROM by_os
+            WHERE Rn <= @TopN;
+            """;
+
+        var totalsSql = $"""
+            WITH scoped AS (
+                SELECT
+                    COALESCE(NULLIF(BTRIM(ce.device_type), ''), 'Unknown') AS DeviceType
+                FROM click_events ce
+                INNER JOIN short_urls s ON s.id = ce.short_url_id
+                WHERE {scope.BuildWhereClause()}
+            )
+            SELECT
+                COUNT(*) FILTER (WHERE DeviceType = 'Mobile') AS Mobile,
+                COUNT(*) FILTER (WHERE DeviceType = 'Desktop') AS Desktop,
+                COUNT(*) FILTER (WHERE DeviceType = 'Tablet') AS Tablet,
+                COUNT(*) AS Total
+            FROM scoped;
+            """;
+
+        var dimensionCommand = new CommandDefinition(
+            dimensionsSql,
+            parameters,
+            cancellationToken: cancellationToken);
+
+        var totalsCommand = new CommandDefinition(
+            totalsSql,
+            parameters,
+            cancellationToken: cancellationToken);
+
+        var rows = (await connection.QueryAsync<DimensionRow>(dimensionCommand)).AsList();
+
+        var totals = await connection.QuerySingleAsync<DeviceTotalsRow>(totalsCommand);
+
+        IReadOnlyList<DeviceBreakdown> Pick(string dimension)
         {
-            request.ShortUrlId, request.UserId, request.OrganizationId, request.From, request.To, TopN
-        });
-
-        var rows = (await multi.ReadAsync<DimensionRow>()).ToList();
-        var totals = await multi.ReadSingleAsync<DeviceTotalsRow>();
-        var total = Math.Max(totals.Total, 1);
-
-        IReadOnlyList<DeviceBreakdown> Pick(string dim)
-        {
-            var group = rows.Where(r => r.Dimension == dim).ToList();
-            var sum = Math.Max(group.Sum(r => r.Clicks), 1);
-            return group.Select(r => new DeviceBreakdown(r.Name, r.Clicks, r.Clicks * 100.0 / sum)).ToList();
+            return rows
+                .Where(r => r.Dimension == dimension)
+                .Select(r => new DeviceBreakdown(
+                    r.Name,
+                    r.Clicks,
+                    totals.Total == 0 ? 0 : r.Clicks * 100.0 / totals.Total))
+                .ToList();
         }
-        
+
         return new DeviceStatsResponse
         {
             TopDeviceTypes = Pick("device"),
             TopBrowsers = Pick("browser"),
             TopOperatingSystems = Pick("os"),
-            MobilePercentage = totals.Mobile * 100.0 / total,
-            DesktopPercentage = totals.Desktop * 100.0 / total,
-            TabletPercentage = totals.Tablet * 100.0 / total
+            MobilePercentage = totals.Total == 0 ? 0 : totals.Mobile * 100.0 / totals.Total,
+            DesktopPercentage = totals.Total == 0 ? 0 : totals.Desktop * 100.0 / totals.Total,
+            TabletPercentage = totals.Total == 0 ? 0 : totals.Tablet * 100.0 / totals.Total
         };
     }
 
     private sealed class DimensionRow
     {
-        public string Dimension { get; } = "";
-        public string Name { get; } = "";
+        public string Dimension { get; init; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
         public int Clicks { get; init; }
     }
 
     private sealed class DeviceTotalsRow
     {
-        public int Mobile { get; init; }
-        public int Desktop { get; init; }
-        public int Tablet { get; init; }
-        public int Total { get; init; }
+        public long Mobile { get; init; }
+        public long Desktop { get; init; }
+        public long Tablet { get; init; }
+        public long Total { get; init; }
     }
 }

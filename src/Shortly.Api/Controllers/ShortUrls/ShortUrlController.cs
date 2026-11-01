@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -67,12 +68,15 @@ public class ShortUrlController(ISender sender) : ControllerBase
     [HttpGet("search", Name = "SearchShortUrls")]
     [ProducesResponseType(typeof(PagedResponse<ShortUrlResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Search([FromQuery] SearchShortUrlsRequest request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Search([FromQuery] SearchShortUrlsQuery query, [FromServices] IValidator<SearchShortUrlsQuery> validator, CancellationToken cancellationToken = default)
     {
-        var query = new SearchShortUrlsQuery(
-            request.Search, request.Status, request.Visibility, request.DateFrom, request.DateTo,
-            request.SortBy, request.Page, request.PageSize);
+        var validationResult = await validator.ValidateAsync(query, cancellationToken);
 
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(validationResult);
+        }
+        
         var result = await sender.Send(query, cancellationToken);
 
         return result.IsFailure
@@ -127,7 +131,7 @@ public class ShortUrlController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     public async Task<IActionResult> CheckCodeAvailability([FromQuery] string shortCode, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new CheckShortCodeAvailabilityQuery(shortCode), cancellationToken);
+        var result = await sender.Send(new CheckShortCodeAvailabilityCommand(shortCode), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 

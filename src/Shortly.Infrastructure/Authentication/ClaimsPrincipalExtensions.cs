@@ -12,7 +12,9 @@ internal static class ClaimsPrincipalExtensions
     private const string MemberRoleClaim = "member_role";
 
     public static Guid? GetUserId(this ClaimsPrincipal? principal) =>
-        Guid.TryParse(principal?.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
+        Guid.TryParse(principal?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
+            ? id
+            : null;
 
     public static string? GetUsername(this ClaimsPrincipal? principal) =>
         principal?.FindFirstValue(ClaimTypes.Name);
@@ -24,14 +26,24 @@ internal static class ClaimsPrincipalExtensions
         principal?.FindFirstValue(JwtRegisteredClaimNames.Jti);
 
     public static UserRole? GetUserRole(this ClaimsPrincipal? principal) =>
-        Enum.TryParse<UserRole>(principal?.FindFirstValue(ClaimTypes.Role), out var role) ? role : null;
+        Enum.TryParse<UserRole>(principal?
+            .FindFirstValue(ClaimTypes.Role), ignoreCase: true, out var role) 
+            ? role 
+            : null;
 
     public static MemberRole? GetMemberRole(this ClaimsPrincipal? principal) =>
-        Enum.TryParse<MemberRole>(principal?.FindFirstValue(MemberRoleClaim), out var role) ? role : null;
+        Enum.TryParse<MemberRole>(
+            principal?.FindFirstValue(MemberRoleClaim), ignoreCase: true, out var role)
+            ? role
+            : null;
 
     public static Guid? GetOrganizationId(this ClaimsPrincipal? principal) =>
-        Guid.TryParse(principal?.FindFirstValue(OrganizationIdClaim), out var id) ? id : null;
+        Guid.TryParse(principal?.FindFirstValue(OrganizationIdClaim), out var id)
+            ? id
+            : null;
 
     public static Guid? GetMemberId(this ClaimsPrincipal? principal) =>
-        Guid.TryParse(principal?.FindFirstValue(MemberIdClaim), out var id) ? id : null;
+        Guid.TryParse(principal?.FindFirstValue(MemberIdClaim), out var id)
+            ? id
+            : null;
 }

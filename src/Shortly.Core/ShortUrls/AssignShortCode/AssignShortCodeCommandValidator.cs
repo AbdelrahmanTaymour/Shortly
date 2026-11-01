@@ -1,15 +1,19 @@
 using FluentValidation;
-using Shortly.Domain.ShortUrls;
 
 namespace Shortly.Core.ShortUrls.AssignShortCode;
 
-public sealed class AssignShortCodeCommandValidator : AbstractValidator<AssignShortCodeCommand>
+internal sealed class AssignShortCodeCommandValidator
+    : AbstractValidator<AssignShortCodeCommand>
 {
     public AssignShortCodeCommandValidator()
     {
-        RuleFor(c => c.NewShortCode)
+        RuleFor(x => x.ShortUrlId).GreaterThan(0);
+
+        RuleFor(x => x.NewShortCode)
             .NotEmpty()
-            .Length(ShortCode.MinLength, ShortCode.MaxLength)
-            .Matches("^[a-zA-Z0-9_-]+$");
+            .MinimumLength(3)
+            .MaximumLength(50)
+            .Matches("^[a-zA-Z0-9_-]+$")
+            .WithMessage("Short code can only contain letters, numbers, hyphens, and underscores.");
     }
 }

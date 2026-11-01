@@ -1,5 +1,6 @@
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Messaging;
+using Shortly.Core.Teams.AddTeamMember;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Members;
 using Shortly.Domain.Teams;
@@ -19,9 +20,10 @@ internal sealed class RemoveTeamMemberCommandHandler(
         if (team is null || team.OrganizationId != request.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.NotFound);
 
-        if (!await CallerHasTeamAuthorityAsync(memberRepository, team, userContext.UserId, cancellationToken))
+        if (!await AddTeamMemberCommandHandler.CallerHasTeamAuthorityAsync(memberRepository, team, userContext.UserId, cancellationToken))
             return Result.Failure(OrganizationTeamErrors.InsufficientRole);
 
+        // request.MemberId is already an OrganizationMember.Id — direct comparison/lookup, no resolution needed.
         if (request.MemberId == team.TeamManagerId)
             return Result.Failure(OrganizationTeamErrors.CannotRemoveManager);
 
@@ -31,13 +33,5 @@ internal sealed class RemoveTeamMemberCommandHandler(
         teamMemberRepository.Remove(membership);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
-    }
-    
-    private static async Task<bool> CallerHasTeamAuthorityAsync(
-        IOrganizationMemberRepository memberRepository, OrganizationTeam team, Guid callerId, CancellationToken cancellationToken)
-    {
-        if (team.TeamManagerId == callerId) return true; // the team's own manager can administer it
-        var caller = await memberRepository.GetByOrganizationAndUserAsync(team.OrganizationId, callerId, cancellationToken);
-        return caller is not null && caller.Role >= MemberRole.OrgAdmin;
     }
 }

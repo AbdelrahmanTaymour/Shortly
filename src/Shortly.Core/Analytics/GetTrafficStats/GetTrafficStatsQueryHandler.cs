@@ -11,76 +11,205 @@ internal sealed class GetTrafficStatsQueryHandler(ISqlConnectionFactory sqlConne
 {
     private const int TopN = 10;
 
-    public async Task<Result<TrafficStatsResponse>> Handle(GetTrafficStatsQuery request,
-        CancellationToken cancellationToken)
+    public async Task<Result<TrafficStatsResponse>> Handle(GetTrafficStatsQuery request, CancellationToken cancellationToken)
     {
-        var scope = new AnalyticsScope(request.ShortUrlId, request.UserId, request.OrganizationId, request.From,
+        var scope = new AnalyticsScope(
+            request.ShortUrlId,
+            request.UserId,
+            request.OrganizationId,
+            request.From,
             request.To);
+
         using var connection = sqlConnectionFactory.CreateConnection();
 
         var sql = $"""
-                   WITH scoped AS (
-                       SELECT ce.traffic_source, ce.referrer_domain, ce.utm_campaign, ce.utm_source, ce.utm_medium
-                       FROM click_events ce
-                       JOIN short_urls s ON s.id = ce.short_url_id
-                       WHERE {scope.BuildWhereClause()}
-                   ),
-                   by_source AS (SELECT traffic_source AS name, COUNT(*) AS clicks, ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn FROM scoped GROUP BY traffic_source),
-                   by_referrer AS (SELECT referrer_domain AS name, COUNT(*) AS clicks, ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn FROM scoped WHERE referrer_domain IS NOT NULL GROUP BY referrer_domain),
-                   by_campaign AS (SELECT utm_campaign AS name, utm_source, utm_medium, COUNT(*) AS clicks, ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rn FROM scoped WHERE utm_campaign IS NOT NULL GROUP BY utm_campaign, utm_source, utm_medium)
-                   SELECT name, clicks FROM by_source WHERE rn <= @TopN6;
+            WITH scoped AS (
+                SELECT
+                    NULLIF(BTRIM(ce.traffic_source), '') AS traffic_source
+                FROM click_events ce
+                INNER JOIN short_urls s ON s.id = ce.short_url_id
+                WHERE {scope.BuildWhereClause()}
+            ),
+            by_source AS (
+                SELECT
+                    traffic_source AS name,
+                    COUNT(*) AS clicks,
+                    ROW_NUMBER() OVER (
+                        ORDER BY COUNT(*) DESC, traffic_source
+                    ) AS rn
+                FROM scoped
+                WHERE traffic_source IS NOT NULL
+                GROUP BY traffic_source
+            )
+            SELECT
+                name AS "Name",
+                clicks AS "Clicks"
+            FROM by_source
+            WHERE rn <= @TopN;
 
-                   SELECT name AS Domain, clicks AS Clicks FROM by_referrer WHERE rn <= @TopN;
-                   SELECT name AS CampaignName, utm_source AS Source, utm_medium AS Medium, clicks AS Clicks FROM by_campaign WHERE rn <= @TopN;
+            WITH scoped AS (
+                SELECT
+                    NULLIF(BTRIM(ce.referrer_domain), '') AS referrer_domain
+                FROM click_events ce
+                INNER JOIN short_urls s ON s.id = ce.short_url_id
+                WHERE {scope.BuildWhereClause()}
+            ),
+            by_referrer AS (
+                SELECT
+                    referrer_domain AS name,
+                    COUNT(*) AS clicks,
+                    ROW_NUMBER() OVER (
+                        ORDER BY COUNT(*) DESC, referrer_domain
+                    ) AS rn
+                FROM scoped
+                WHERE referrer_domain IS NOT NULL
+                GROUP BY referrer_domain
+            )
+            SELECT
+                name AS "Domain",
+                clicks AS "Clicks"
+            FROM by_referrer
+            WHERE rn <= @TopN;
 
-                   SELECT
-                       COUNT(*) FILTER (WHERE traffic_source = 'Direct')   AS Direct,
-                       COUNT(*) FILTER (WHERE traffic_source = 'Search')   AS Search,
-                       COUNT(*) FILTER (WHERE traffic_source = 'Social')   AS Social,
-                       COUNT(*) FILTER (WHERE traffic_source = 'Referral') AS Referral,
-                       COUNT(*)                                            AS Total
-                   FROM scoped
-                   """;
+            WITH scoped AS (
+                SELECT
+                    NULLIF(BTRIM(ce.utm_campaign), '') AS utm_campaign,
+                    ce.utm_source,
+                    ce.utm_medium
+                FROM click_events ce
+                INNER JOIN short_urls s ON s.id = ce.short_url_id
+                WHERE {scope.BuildWhereClause()}
+            ),
+            by_campaign AS (
+                SELECT
+                    utm_campaign AS name,
+                    utm_source,
+                    utm_medium,
+                    COUNT(*) AS clicks,
+                    ROW_NUMBER() OVER (
+                        ORDER BY
+                            COUNT(*) DESC,
+                            utm_campaign,
+                            utm_source,
+                            utm_medium
+                    ) AS rn
+                FROM scoped
+                WHERE utm_campaign IS NOT NULL
+                GROUP BY utm_campaign, utm_source, utm_medium
+            )
+            SELECT
+                name AS "CampaignName",
+                utm_source AS "Source",
+                utm_medium AS "Medium",
+                clicks AS "Clicks"
+            FROM by_campaign
+            WHERE rn <= @TopN;
 
-        using var multi = await connection.QueryMultipleAsync(sql, new
-        {
-            request.ShortUrlId, request.UserId, request.OrganizationId, request.From, request.To, TopN, TopN6 = 6
-        });
+            WITH scoped AS (
+                SELECT
+                    NULLIF(BTRIM(ce.traffic_source), '') AS traffic_source
+                FROM click_events ce
+                INNER JOIN short_urls s ON s.id = ce.short_url_id
+                WHERE {scope.BuildWhereClause()}
+            )
+            SELECT
+                COUNT(*) FILTER (
+                    WHERE traffic_source = 'Direct'
+                ) AS "Direct",
+                COUNT(*) FILTER (
+                    WHERE traffic_source = 'Search'
+                ) AS "Search",
+                COUNT(*) FILTER (
+                    WHERE traffic_source = 'Social'
+                ) AS "Social",
+                COUNT(*) FILTER (
+                    WHERE traffic_source = 'Referral'
+                ) AS "Referral",
+                COUNT(*) AS "Total"
+            FROM scoped;
+            """;
 
-        var sources = (await multi.ReadAsync<DeviceBreakdown>()).ToList();
-        var sourceTotal = Math.Max(sources.Sum(s => s.Clicks), 1);
-        sources = sources.Select(s => s with { Percentage = s.Clicks * 100.0 / sourceTotal }).ToList();
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                request.ShortUrlId,
+                request.UserId,
+                request.OrganizationId,
+                request.From,
+                request.To,
+                TopN
+            },
+            cancellationToken: cancellationToken);
 
-        var referrers = (await multi.ReadAsync<ReferrerBreakdown>()).ToList();
-        var referrerTotal = Math.Max(referrers.Sum(r => r.Clicks), 1);
-        referrers = referrers.Select(r => r with { Percentage = r.Clicks * 100.0 / referrerTotal }).ToList();
+        using var multi = await connection.QueryMultipleAsync(command);
 
-        var campaigns = (await multi.ReadAsync<CampaignBreakdown>()).ToList();
-        var campaignTotal = Math.Max(campaigns.Sum(c => c.Clicks), 1);
-        campaigns = campaigns.Select(c => c with { Percentage = c.Clicks * 100.0 / campaignTotal }).ToList();
-
+        var sourceRows = (await multi.ReadAsync<TrafficSourceRow>()).ToList();
+        var referrerRows = (await multi.ReadAsync<ReferrerRow>()).ToList();
+        var campaignRows = (await multi.ReadAsync<CampaignRow>()).ToList();
         var totals = await multi.ReadSingleAsync<TrafficTotalsRow>();
-        var total = Math.Max(totals.Total, 1);
-
 
         return new TrafficStatsResponse
         {
-            TopTrafficSources = sources,
-            TopReferrers = referrers,
-            TopCampaigns = campaigns,
-            DirectPercentage = totals.Direct * 100.0 / total,
-            SearchPercentage = totals.Search * 100.0 / total,
-            SocialPercentage = totals.Social * 100.0 / total,
-            ReferralPercentage = totals.Referral * 100.0 / total
+            TopTrafficSources = sourceRows
+                .Select(source => new DeviceBreakdown(
+                    source.Name,
+                    source.Clicks,
+                    CalculatePercentage(source.Clicks, totals.Total)))
+                .ToList(),
+
+            TopReferrers = referrerRows
+                .Select(referrer => new ReferrerBreakdown(
+                    referrer.Domain,
+                    referrer.Clicks,
+                    CalculatePercentage(referrer.Clicks, totals.Total)))
+                .ToList(),
+
+            TopCampaigns = campaignRows
+                .Select(campaign => new CampaignBreakdown(
+                    campaign.CampaignName,
+                    campaign.Source,
+                    campaign.Medium,
+                    campaign.Clicks,
+                    CalculatePercentage(campaign.Clicks, totals.Total)))
+                .ToList(),
+
+            DirectPercentage = CalculatePercentage(totals.Direct, totals.Total),
+            SearchPercentage = CalculatePercentage(totals.Search, totals.Total),
+            SocialPercentage = CalculatePercentage(totals.Social, totals.Total),
+            ReferralPercentage = CalculatePercentage(totals.Referral, totals.Total)
         };
+    }
+
+    private static double CalculatePercentage(long clicks, long total) =>
+        total == 0 ? 0 : clicks * 100.0 / total;
+
+    private sealed class TrafficSourceRow
+    {
+        public string Name { get; init; } = string.Empty;
+        public int Clicks { get; init; }
+    }
+
+    private sealed class ReferrerRow
+    {
+        public string Domain { get; init; } = string.Empty;
+        public int Clicks { get; init; }
+    }
+
+    private sealed class CampaignRow
+    {
+        public string CampaignName { get; init; } = string.Empty;
+        public string? Source { get; init; }
+        public string? Medium { get; init; }
+        public int Clicks { get; init; }
     }
 
     private sealed class TrafficTotalsRow
     {
-        public int Direct { get; init; }
-        public int Search { get; init; }
-        public int Social { get; init; }
-        public int Referral { get; init; }
-        public int Total { get; init; }
+        public long Direct { get; init; }
+        public long Search { get; init; }
+        public long Social { get; init; }
+        public long Referral { get; init; }
+        public long Total { get; init; }
     }
 }

@@ -2,7 +2,7 @@ using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Shortly.Core.Abstractions.Cache;
 using Shortly.Core.Abstractions.Data;
-using Shortly.Domain.Enums;
+using Shortly.Domain.SubscriptionPlan;
 
 namespace Shortly.Infrastructure.Cache;
 
@@ -12,17 +12,33 @@ internal sealed class SubscriptionPlanLimitsProvider(
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(6);
 
-    public async Task<int> GetMaxLinksPerMonthAsync(enSubscriptionPlan planId, CancellationToken cancellationToken = default)
+    private const string Sql = """
+                               SELECT max_links_per_month AS MaxLinksPerMonth, max_qr_codes_per_month AS MaxQrCodesPerMonth,
+                                      click_data_retention_days AS ClickDataRetentionDays, link_analysis AS LinkAnalysis,
+                                      bulk_creation AS BulkCreation, link_protection AS LinkProtection,
+                                      custom_short_code AS CustomShortCode, campaign_tracking AS CampaignTracking,
+                                      geo_device_tracking AS GeoDeviceTracking
+                               FROM subscription_plans
+                               WHERE id = @PlanId
+                               """;
+
+    public async Task<SubscriptionPlanLimits> GetLimitsAsync(enSubscriptionPlan planId, CancellationToken cancellationToken = default)
     {
-        var cacheKey = $"subscription-plan:{(byte)planId}:max-links";
-        if (cache.TryGetValue(cacheKey, out int cached)) return cached;
+        var cacheKey = $"subscription-plan:{(byte)planId}:limits";
+        if (cache.TryGetValue(cacheKey, out SubscriptionPlanLimits? cached) && cached is not null)
+            return cached;
 
         using var connection = sqlConnectionFactory.CreateConnection();
-        var maxLinks = await connection.QuerySingleOrDefaultAsync<int?>(
-            "SELECT max_links_per_month FROM subscription_plans WHERE id = @PlanId", new { PlanId = (byte)planId });
+        var command = new CommandDefinition(Sql, new { PlanId = (byte)planId }, cancellationToken: cancellationToken);
+        var limits = await connection.QuerySingleOrDefaultAsync<SubscriptionPlanLimits>(command);
 
-        var value = maxLinks ?? -1;
-        cache.Set(cacheKey, value, CacheDuration);
-        return value;
+        if (limits is null)
+        {
+            throw new InvalidOperationException(
+                $"Subscription plan '{planId}' has no matching row in subscription_plans. Check migrations/seed data.");
+        }
+
+        cache.Set(cacheKey, limits, CacheDuration);
+        return limits;
     }
 }

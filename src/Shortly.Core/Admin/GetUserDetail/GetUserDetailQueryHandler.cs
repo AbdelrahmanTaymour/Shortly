@@ -13,15 +13,15 @@ internal sealed class GetUserDetailQueryHandler(ISqlConnectionFactory sqlConnect
     {
         const string sql = """
             SELECT u.id AS Id, u.email AS Email, u.username AS Username, u.role AS Role,
-                   u.subscription_plan_id AS SubscriptionPlanId, u.is_active AS IsActive,
+                   u.subscription_plan_id AS SubscriptionPlan, u.is_active AS IsActive,
                    u.is_email_confirmed AS IsEmailConfirmed, u.is_o_auth_user AS IsOAuthUser,
-                   u.created_at AS CreatedAtUtc, u.updated_at AS UpdatedAtUtc, u.last_login_at AS LastLoginAtUtc,
-                   u.is_deleted AS IsDeleted, u.deleted_at AS DeletedAtUtc,
+                   u.created_at_utc AS CreatedAtUtc, u.updated_at_utc AS UpdatedAtUtc, u.last_login_at_utc AS LastLoginAtUtc,
+                   u.is_deleted AS IsDeleted, u.deleted_at_utc AS DeletedAtUtc,
                    p.name AS ProfileName, p.bio AS ProfileBio, p.phone_number AS ProfilePhoneNumber,
                    p.company AS ProfileCompany, p.location AS ProfileLocation, p.country AS ProfileCountry,
                    s.failed_login_attempts AS FailedLoginAttempts,
-                   (s.locked_until IS NOT NULL AND s.locked_until > NOW()) AS IsLockedOut,
-                   s.locked_until AS LockedUntilUtc, s.two_factor_enabled AS TwoFactorEnabled,
+                   (s.locked_until_utc IS NOT NULL AND s.locked_until_utc > NOW()) AS IsLockedOut,
+                   s.locked_until_utc AS LockedUntilUtc, s.two_factor_enabled AS TwoFactorEnabled,
                    uu.monthly_links_created AS MonthlyLinksCreated, uu.total_links_created AS TotalLinksCreated,
                    uu.monthly_qr_codes_created AS MonthlyQrCodesCreated, uu.total_qr_codes_created AS TotalQrCodesCreated
             FROM users u

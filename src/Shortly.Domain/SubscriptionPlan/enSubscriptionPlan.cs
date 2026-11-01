@@ -1,4 +1,4 @@
-namespace Shortly.Domain.Enums;
+namespace Shortly.Domain.SubscriptionPlan;
 
 public enum enSubscriptionPlan : byte
 {

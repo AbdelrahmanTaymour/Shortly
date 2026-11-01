@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Shortly.Domain.Enums;
 using Shortly.Domain.Invitations;
 using Shortly.Domain.Organizations;
 using Shortly.Domain.Users;

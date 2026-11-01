@@ -2,7 +2,6 @@ using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Enums;
 using Shortly.Domain.ShortUrls;
 
 namespace Shortly.Core.ShortUrls.BulkCreateShortUrls;

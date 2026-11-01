@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
-using Shortly.Domain.Enums;
 
 namespace Shortly.Domain.Users;
 

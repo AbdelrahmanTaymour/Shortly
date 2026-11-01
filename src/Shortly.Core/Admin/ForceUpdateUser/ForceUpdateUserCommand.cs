@@ -1,6 +1,6 @@
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Admin.GetUserDetail;
-using Shortly.Domain.Enums;
+using Shortly.Domain.SubscriptionPlan;
 using Shortly.Domain.Users;
 
 namespace Shortly.Core.Admin.ForceUpdateUser;

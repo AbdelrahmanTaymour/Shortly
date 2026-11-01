@@ -24,6 +24,8 @@ public sealed class OrganizationConfiguration : IEntityTypeConfiguration<Organiz
         builder.Property(o => o.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         builder.Property(o => o.SubscriptionPlanId).HasConversion<byte>();
 
+        builder.Ignore(o => o.IsDeleted);
+        
         builder.HasIndex(o => o.IsActive).HasDatabaseName("ix_organizations_is_active");
         builder.HasIndex(o => new { o.IsActive, o.DeletedAt }).HasDatabaseName("ix_organizations_is_active_deleted_at");
         builder.HasIndex(o => new { o.OwnerId, o.Name }).IsUnique().HasDatabaseName("ux_organizations_owner_id_name");

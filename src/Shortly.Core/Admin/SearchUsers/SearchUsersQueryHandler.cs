@@ -7,62 +7,111 @@ using Shortly.Domain.Users;
 
 namespace Shortly.Core.Admin.SearchUsers;
 
-internal sealed class SearchUsersQueryHandler(ISqlConnectionFactory sqlConnectionFactory)
+internal sealed class SearchUsersQueryHandler(
+    ISqlConnectionFactory sqlConnectionFactory)
     : IQueryHandler<SearchUsersQuery, PagedResponse<UserAdminSummaryResponse>>
 {
-    public async Task<Result<PagedResponse<UserAdminSummaryResponse>>> Handle(SearchUsersQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResponse<UserAdminSummaryResponse>>> Handle(
+        SearchUsersQuery request,
+        CancellationToken cancellationToken)
     {
-        var page = request.Page < 1 ? 1 : request.Page;
-        var pageSize = request.PageSize switch { < 1 => 10, > 50 => 50, _ => request.PageSize };
+        var page = Math.Max(1, request.Page);
 
-        var where = new StringBuilder("WHERE 1 = 1");
+        var pageSize = request.PageSize switch
+        {
+            < 1 => 10,
+            > 50 => 50,
+            _ => request.PageSize
+        };
+
+        var where = new StringBuilder();
         var parameters = new DynamicParameters();
 
         switch (request.Status)
         {
-            case UserStatusFilter.Active: where.Append(" AND is_active = TRUE AND is_deleted = FALSE"); break;
-            case UserStatusFilter.Inactive: where.Append(" AND is_active = FALSE AND is_deleted = FALSE"); break;
-            case UserStatusFilter.Deleted: where.Append(" AND is_deleted = TRUE"); break;
-            case UserStatusFilter.All: break;
+            case UserStatusFilter.Active:
+                where.Append(" AND u.is_active = TRUE AND u.is_deleted = FALSE");
+                break;
+
+            case UserStatusFilter.Inactive:
+                where.Append(" AND u.is_active = FALSE AND u.is_deleted = FALSE");
+                break;
+
+            case UserStatusFilter.Deleted:
+                where.Append(" AND u.is_deleted = TRUE");
+                break;
+
+            case UserStatusFilter.All:
+                break;
         }
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            where.Append(" AND (email ILIKE @Search OR username ILIKE @Search)");
-            parameters.Add("Search", $"%{request.Search}%");
+            where.Append(" AND (u.email ILIKE @Search OR u.username ILIKE @Search)");
+            parameters.Add("Search", $"%{request.Search.Trim()}%");
         }
 
         if (request.Role.HasValue)
         {
-            where.Append(" AND role = @Role");
-            parameters.Add("Role", (byte)request.Role.Value);
+            where.Append(" AND u.role = @Role");
+            parameters.Add("Role", request.Role.Value);
         }
 
         var sql = $"""
-            SELECT id AS Id, email AS Email, username AS Username, role AS Role, is_active AS IsActive,
-                   is_email_confirmed AS IsEmailConfirmed, created_at AS CreatedAtUtc, last_login_at AS LastLoginAtUtc,
-                   COUNT(*) OVER() AS TotalCount
-            FROM users
-            {where}
-            ORDER BY created_at DESC
-            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY
-            """;
+                   SELECT COUNT(*)
+                   FROM users u
+                   WHERE TRUE
+                   {where};
+
+                   SELECT
+                       u.id AS Id,
+                       u.email AS Email,
+                       u.username AS Username,
+                       u.role AS Role,
+                       u.is_active AS IsActive,
+                       u.is_email_confirmed AS IsEmailConfirmed,
+                       u.created_at_utc AS CreatedAtUtc,
+                       u.last_login_at_utc AS LastLoginAtUtc
+                   FROM users u
+                   WHERE TRUE
+                   {where}
+                   ORDER BY u.created_at_utc DESC, u.id
+                   OFFSET @Offset ROWS
+                   FETCH NEXT @PageSize ROWS ONLY;
+                   """;
 
         parameters.Add("Offset", (page - 1) * pageSize);
         parameters.Add("PageSize", pageSize);
 
         using var connection = sqlConnectionFactory.CreateConnection();
-        var rows = (await connection.QueryAsync<UserRow>(sql, parameters)).ToList();
 
-        if (rows.Count == 0)
-            return new PagedResponse<UserAdminSummaryResponse> { Items = [], Page = page, PageSize = pageSize, TotalCount = 0, TotalPages = 0 };
+        var command = new CommandDefinition(
+            sql,
+            parameters,
+            cancellationToken: cancellationToken);
 
-        var totalCount = rows[0].TotalCount;
+        using var results = await connection.QueryMultipleAsync(command);
+
+        var totalCount = await results.ReadSingleAsync<int>();
+        var rows = (await results.ReadAsync<UserRow>()).AsList();
+
         return new PagedResponse<UserAdminSummaryResponse>
         {
-            Items = rows.Select(r => new UserAdminSummaryResponse(
-                r.Id, r.Email, r.Username, r.Role, r.IsActive, r.IsEmailConfirmed, r.CreatedAtUtc, r.LastLoginAtUtc)).ToList(),
-            Page = page, PageSize = pageSize, TotalCount = totalCount,
+            Items = rows.Select(r => new UserAdminSummaryResponse
+            {
+                Id = r.Id,
+                Email = r.Email,
+                Username = r.Username,
+                Role = r.Role,
+                IsActive = r.IsActive,
+                IsEmailConfirmed = r.IsEmailConfirmed,
+                CreatedAtUtc = r.CreatedAtUtc,
+                LastLoginAtUtc = r.LastLoginAtUtc
+            }).ToList(),
+
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
             TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
         };
     }
@@ -70,13 +119,19 @@ internal sealed class SearchUsersQueryHandler(ISqlConnectionFactory sqlConnectio
     private sealed class UserRow
     {
         public Guid Id { get; init; }
-        public string Email { get; init; } = "";
-        public string Username { get; init; } = "";
+
+        public string Email { get; init; } = null!;
+
+        public string Username { get; init; } = null!;
+
         public UserRole Role { get; init; }
+
         public bool IsActive { get; init; }
+
         public bool IsEmailConfirmed { get; init; }
+
         public DateTime CreatedAtUtc { get; init; }
+
         public DateTime? LastLoginAtUtc { get; init; }
-        public int TotalCount { get; init; }
     }
 }

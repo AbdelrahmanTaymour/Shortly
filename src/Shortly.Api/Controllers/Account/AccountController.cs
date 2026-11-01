@@ -117,7 +117,7 @@ public class AccountController(ISender sender) : ControllerBase
         [FromBody] ValidateResetTokenRequest request,
         CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new ValidateResetTokenQuery(request.Token), cancellationToken);
+        var result = await sender.Send(new ValidateResetTokenCommand(request.Token), cancellationToken);
 
         return result.IsFailure
             ? result.ToProblemDetails()
