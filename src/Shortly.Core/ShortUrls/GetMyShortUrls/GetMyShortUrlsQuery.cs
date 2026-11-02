@@ -4,4 +4,4 @@ using Shortly.Domain.Abstractions;
 
 namespace Shortly.Core.ShortUrls.GetMyShortUrls;
 
-public sealed record GetMyShortUrlsQuery(int Page, int PageSize) : IQuery<PagedResponse<ShortUrlResponse>>;
+public sealed record GetMyShortUrlsQuery(int Page = 1, int PageSize = 20) : IQuery<PagedResponse<ShortUrlResponse>>;

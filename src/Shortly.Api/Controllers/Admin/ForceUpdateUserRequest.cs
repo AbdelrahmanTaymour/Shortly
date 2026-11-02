@@ -1,7 +1,7 @@
 using Shortly.Domain.SubscriptionPlan;
 using Shortly.Domain.Users;
 
-namespace Shortly.API.Controllers.Admin;
+namespace Shortly.Api.Controllers.Admin;
 
 public sealed record ForceUpdateUserRequest(
     string? Email, string? Username, UserRole? Role, enSubscriptionPlan? SubscriptionPlanId, bool? IsActive,

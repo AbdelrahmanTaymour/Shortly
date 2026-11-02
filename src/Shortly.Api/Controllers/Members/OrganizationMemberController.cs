@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Exceptions;
 using Shortly.Core.Members.AddMember;
 using Shortly.Core.Members.GetMembership;
@@ -10,7 +10,7 @@ using Shortly.Core.Members.RemoveMember;
 using Shortly.Core.Members.UpdateMemberRole;
 using Shortly.Domain.Abstractions;
 
-namespace Shortly.API.Controllers.Members;
+namespace Shortly.Api.Controllers.Members;
 
 [ApiController]
 [Route("api/organizations/{organizationId:guid}/members")]

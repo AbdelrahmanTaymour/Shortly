@@ -1,12 +1,12 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Invitations.AcceptInvitation;
 using Shortly.Core.Invitations.RejectInvitation;
 using Shortly.Core.Invitations.ValidateInvitationToken;
 
-namespace Shortly.API.Controllers.Invitations;
+namespace Shortly.Api.Controllers.Invitations;
 
 [ApiController]
 [Route("api/invitations")]

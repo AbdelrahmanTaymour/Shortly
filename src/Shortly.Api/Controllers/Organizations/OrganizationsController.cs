@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Exceptions;
 using Shortly.Core.Organizations.ActivateOrganization;
@@ -15,7 +15,7 @@ using Shortly.Core.Organizations.SwitchOrganization;
 using Shortly.Core.Organizations.TransferOwnership;
 using Shortly.Core.Organizations.UpdateOrganization;
 
-namespace Shortly.API.Controllers.Organizations;
+namespace Shortly.Api.Controllers.Organizations;
 
 [ApiController]
 [Route("api/organizations")]

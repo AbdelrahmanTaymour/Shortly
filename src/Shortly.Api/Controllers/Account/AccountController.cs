@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Account.ChangePassword;
 using Shortly.Core.Account.ConfirmEmailChange;
@@ -13,7 +13,7 @@ using Shortly.Core.Account.ValidateResetToken;
 using Shortly.Core.Account.VerifyEmail;
 using Shortly.Core.Exceptions;
 
-namespace Shortly.API.Controllers.Account;
+namespace Shortly.Api.Controllers.Account;
 
 [ApiController]
 [Route("api/account")] // Changed from api/auth to avoid collisions

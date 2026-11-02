@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Exceptions;
 using Shortly.Core.Teams.GetManagedTeams;
 using Shortly.Core.Teams.GetTeam;
@@ -13,7 +13,7 @@ using Shortly.Core.Users.UpdateProfile;
 using Shortly.Domain.Users;
 using Shortly.Infrastructure.Authorization;
 
-namespace Shortly.API.Controllers.Profile;
+namespace Shortly.Api.Controllers.Profile;
 
 [ApiController]
 [Route("api/me")]

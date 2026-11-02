@@ -10,6 +10,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.Domain", "src\Short
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.Infrastructure", "src\Shortly.Infrastructure\Shortly.Infrastructure.csproj", "{46FF601C-5CC0-44A4-A6C6-7E79A6E9A014}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.Domain.UnitTests", "tests\Shortly.Domain.UnitTests\Shortly.Domain.UnitTests.csproj", "{633E93D9-A4A1-417F-A3DB-BE280131DA6D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F254472A-8E07-4AF2-BEDB-0C9982F52FBB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -68,6 +72,18 @@ Global
 		{46FF601C-5CC0-44A4-A6C6-7E79A6E9A014}.Release|x64.Build.0 = Release|Any CPU
 		{46FF601C-5CC0-44A4-A6C6-7E79A6E9A014}.Release|x86.ActiveCfg = Release|Any CPU
 		{46FF601C-5CC0-44A4-A6C6-7E79A6E9A014}.Release|x86.Build.0 = Release|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Debug|x64.Build.0 = Debug|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Debug|x86.Build.0 = Debug|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Release|x64.ActiveCfg = Release|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Release|x64.Build.0 = Release|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Release|x86.ActiveCfg = Release|Any CPU
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -77,5 +93,6 @@ Global
 		{92D6E787-AEEB-4753-8197-78C33F2B867B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{B6073DCD-545B-4BBC-937F-F32025C029AC} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{46FF601C-5CC0-44A4-A6C6-7E79A6E9A014} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{633E93D9-A4A1-417F-A3DB-BE280131DA6D} = {F254472A-8E07-4AF2-BEDB-0C9982F52FBB}
 	EndGlobalSection
 EndGlobal

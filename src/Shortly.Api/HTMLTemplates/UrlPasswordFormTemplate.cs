@@ -1,6 +1,6 @@
 using System.Web;
 
-namespace Shortly.API.HTMLTemplates;
+namespace Shortly.Api.HTMLTemplates;
 
 /// <summary>
 /// Provides a template generator for rendering a password-protected short URL form.

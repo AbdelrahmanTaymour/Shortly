@@ -1,3 +1,3 @@
-namespace Shortly.API.Controllers.Organizations;
+namespace Shortly.Api.Controllers.Organizations;
 
 public sealed record TransferOwnershipRequest(Guid NewOwnerId);

@@ -1,3 +1,3 @@
-namespace Shortly.API.Controllers.Auth;
+namespace Shortly.Api.Controllers.Auth;
 
 public sealed record ForgotPasswordRequest(string Email);

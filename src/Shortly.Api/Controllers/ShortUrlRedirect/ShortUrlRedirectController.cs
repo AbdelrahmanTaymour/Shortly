@@ -1,13 +1,13 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
-using Shortly.API.HTMLTemplates;
+using Shortly.Api.Extensions;
+using Shortly.Api.HTMLTemplates;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.ShortUrls.RedirectToShortUrl;
 using Shortly.Domain.ShortUrls;
 
-namespace Shortly.API.Controllers.ShortUrlRedirect;
+namespace Shortly.Api.Controllers.ShortUrlRedirect;
 
 [ApiController]
 [Route("")]

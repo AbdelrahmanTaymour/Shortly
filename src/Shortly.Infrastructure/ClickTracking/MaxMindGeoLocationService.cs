@@ -19,9 +19,7 @@ internal sealed class MaxMindGeoLocationService
     private DatabaseReader? _reader;
     private bool _disposed;
 
-    public MaxMindGeoLocationService(
-        IOptions<GeoLite2Options> options,
-        ILogger<MaxMindGeoLocationService> logger)
+    public MaxMindGeoLocationService(IOptions<GeoLite2Options> options, ILogger<MaxMindGeoLocationService> logger)
     {
         _options = options.Value;
         _logger = logger;
@@ -29,9 +27,7 @@ internal sealed class MaxMindGeoLocationService
         _reader = TryCreateReader();
     }
 
-    public Task<GeoLocationInfo> LookupAsync(
-        string ipAddress,
-        CancellationToken cancellationToken)
+    public Task<GeoLocationInfo> LookupAsync(string ipAddress, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -46,9 +42,7 @@ internal sealed class MaxMindGeoLocationService
         {
             if (_reader is not null && _reader.TryCity(ip, out var response))
             {
-                return Task.FromResult(
-                    new GeoLocationInfo(
-                        response.Country.Name ?? "Unknown", response.City.Name ?? "Unknown"));
+                return Task.FromResult(new GeoLocationInfo(response.Country.Name ?? "Unknown", response.City.Name ?? "Unknown"));
             }
         }
         catch (AddressNotFoundException)
@@ -112,9 +106,7 @@ internal sealed class MaxMindGeoLocationService
 
         if (!File.Exists(path))
         {
-            _logger.LogWarning(
-                "GeoLite2 database not found at {Path}.",
-                path);
+            _logger.LogWarning("GeoLite2 database not found at {Path}.", path);
 
             return null;
         }
@@ -200,10 +192,10 @@ internal sealed class MaxMindGeoLocationService
 
         return a == 0                              // 0.0.0.0/8
             || a == 10                             // 10.0.0.0/8
-            || a == 100 && (b & 0xC0) == 0x40     // 100.64.0.0/10
+            || a == 100 && (b & 0xC0) == 0x40      // 100.64.0.0/10
             || a == 127                            // 127.0.0.0/8
             || a == 169 && b == 254                // 169.254.0.0/16
-            || a == 172 && b is >= 16 and <= 31     // 172.16.0.0/12
+            || a == 172 && b is >= 16 and <= 31    // 172.16.0.0/12
             || a == 192 && b == 168                // 192.168.0.0/16
             || a == 192 && b == 0 && c == 0       // 192.0.0.0/24
             || a == 192 && b == 0 && c == 2       // 192.0.2.0/24
@@ -216,19 +208,13 @@ internal sealed class MaxMindGeoLocationService
 
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
+        if (_disposed) return;
 
         _lock.EnterWriteLock();
 
         try
         {
-            if (_disposed)
-            {
-                return;
-            }
+            if (_disposed) return;
 
             _reader?.Dispose();
             _reader = null;

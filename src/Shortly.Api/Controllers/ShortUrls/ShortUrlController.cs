@@ -2,7 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Exceptions;
 using Shortly.Core.ShortUrls.ActivateShortUrl;
 using Shortly.Core.ShortUrls.AssignShortCode;
@@ -24,7 +24,7 @@ using Shortly.Core.ShortUrls.SetShortUrlPassword;
 using Shortly.Core.ShortUrls.UpdateShortUrl;
 using Shortly.Domain.Abstractions;
 
-namespace Shortly.API.Controllers.ShortUrls;
+namespace Shortly.Api.Controllers.ShortUrls;
 
 [ApiController]
 [Authorize]

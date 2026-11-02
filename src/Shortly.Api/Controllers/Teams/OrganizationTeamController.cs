@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Exceptions;
 using Shortly.Core.Teams.AddTeamMember;
 using Shortly.Core.Teams.ChangeTeamManager;
@@ -13,7 +13,7 @@ using Shortly.Core.Teams.GetTeamMembers;
 using Shortly.Core.Teams.RemoveTeamMember;
 using Shortly.Core.Teams.UpdateTeam;
 
-namespace Shortly.API.Controllers.Teams;
+namespace Shortly.Api.Controllers.Teams;
 
 [ApiController]
 [Route("api/organizations/{organizationId:guid}/teams")]

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.Core.Account.GoogleLogin;
 
-namespace Shortly.API.Controllers.OAuth;
+namespace Shortly.Api.Controllers.OAuth;
 
 [ApiController]
 [Route("api/oauth")]

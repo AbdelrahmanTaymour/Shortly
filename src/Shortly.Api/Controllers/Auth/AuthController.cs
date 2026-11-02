@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Account.Login;
 using Shortly.Core.Account.Logout;
@@ -10,7 +10,7 @@ using Shortly.Core.Account.RefreshAccessToken;
 using Shortly.Core.Account.Register;
 using Shortly.Core.Exceptions;
 
-namespace Shortly.API.Controllers.Auth;
+namespace Shortly.Api.Controllers.Auth;
 
 [ApiController]
 [Route("api/auth")]

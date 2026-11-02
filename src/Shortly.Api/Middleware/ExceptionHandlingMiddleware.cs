@@ -2,7 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Shortly.API.Middleware;
+namespace Shortly.Api.Middleware;
 
 public class ExceptionHandlingMiddleware(
     RequestDelegate next,

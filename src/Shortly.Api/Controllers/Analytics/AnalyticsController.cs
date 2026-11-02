@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Analytics.GetAnalyticsOverview;
 using Shortly.Core.Analytics.GetDeviceStats;
@@ -15,7 +15,7 @@ using Shortly.Core.Analytics.GetUrlsApproachingClickLimit;
 using Shortly.Core.ShortUrls.GetShortUrlById;
 using Shortly.Domain.Abstractions;
 
-namespace Shortly.API.Controllers.Analytics;
+namespace Shortly.Api.Controllers.Analytics;
 
 [ApiController]
 [Route("api/analytics")]

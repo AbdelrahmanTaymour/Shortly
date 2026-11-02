@@ -1,4 +1,4 @@
-namespace Shortly.API.Controllers.ShortUrls;
+namespace Shortly.Api.Controllers.ShortUrls;
 
 public sealed record UpdateShortUrlRequest(
     string OriginalUrl, string ShortCode, string? Title, string? Description,

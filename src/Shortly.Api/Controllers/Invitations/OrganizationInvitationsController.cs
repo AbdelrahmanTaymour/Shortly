@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Invitations.CancelInvitation;
 using Shortly.Core.Invitations.CreateInvitation;
 using Shortly.Core.Invitations.GetInvitationById;
@@ -9,7 +9,7 @@ using Shortly.Core.Invitations.GetOrganizationInvitations;
 using Shortly.Core.Invitations.ResendInvitation;
 using Shortly.Domain.Abstractions;
 
-namespace Shortly.API.Controllers.Invitations;
+namespace Shortly.Api.Controllers.Invitations;
 
 [ApiController]
 [Route("api/organizations/{organizationId:guid}/invitations")]

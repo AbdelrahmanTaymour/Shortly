@@ -4,11 +4,11 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using Shortly.API.Middleware;
+using Shortly.Api.Middleware;
 using Shortly.Core;
 using Shortly.Infrastructure;
 
-namespace Shortly.API;
+namespace Shortly.Api;
 
 /// <summary>
 /// Represents the entry point for the Shortly API application.

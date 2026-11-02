@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shortly.API.Extensions;
+using Shortly.Api.Extensions;
 using Shortly.Core.Admin.BulkActivateUsers;
 using Shortly.Core.Admin.BulkDeactivateUsers;
 using Shortly.Core.Admin.BulkDeleteUsers;
@@ -19,7 +19,7 @@ using Shortly.Domain.Abstractions;
 using Shortly.Domain.Users;
 using Shortly.Infrastructure.Authorization;
 
-namespace Shortly.API.Controllers.Admin;
+namespace Shortly.Api.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/users")]

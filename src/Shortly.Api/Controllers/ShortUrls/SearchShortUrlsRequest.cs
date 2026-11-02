@@ -1,6 +1,6 @@
 using Shortly.Core.ShortUrls.SearchShortUrls;
 
-namespace Shortly.API.Controllers.ShortUrls;
+namespace Shortly.Api.Controllers.ShortUrls;
 
 public sealed record SearchShortUrlsRequest(
     string? Search, ShortUrlStatusFilter Status, ShortUrlVisibilityFilter Visibility,

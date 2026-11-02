@@ -1,3 +1,3 @@
-namespace Shortly.API.Controllers.Teams;
+namespace Shortly.Api.Controllers.Teams;
 
 public sealed record UpdateTeamRequest(string? Name, string? Description);

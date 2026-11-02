@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortly.Domain.Abstractions;
 
-namespace Shortly.API.Extensions;
+namespace Shortly.Api.Extensions;
 
 public static class ResultExtensions
 {
