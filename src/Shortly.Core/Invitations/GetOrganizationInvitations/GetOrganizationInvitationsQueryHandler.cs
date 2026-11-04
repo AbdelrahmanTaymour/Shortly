@@ -4,13 +4,13 @@ using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Invitations.GetInvitationById;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Invitations;
 using Shortly.Domain.Members;
 
 namespace Shortly.Core.Invitations.GetOrganizationInvitations;
 
 internal sealed class GetOrganizationInvitationsQueryHandler(
-    IUserContext userContext, IOrganizationMemberRepository memberRepository, ISqlConnectionFactory sqlConnectionFactory)
+    IOrganizationAuthorizationService organizationAuthorization, 
+    ISqlConnectionFactory sqlConnectionFactory)
     : IQueryHandler<GetOrganizationInvitationsQuery, PagedResponse<OrganizationInvitationResponse>>
 {
     private const string Sql = """
@@ -28,9 +28,8 @@ internal sealed class GetOrganizationInvitationsQueryHandler(
 
     public async Task<Result<PagedResponse<OrganizationInvitationResponse>>> Handle(GetOrganizationInvitationsQuery request, CancellationToken cancellationToken)
     {
-        var caller = await memberRepository.GetByOrganizationAndUserAsync(request.OrganizationId, userContext.UserId, cancellationToken);
-        if (caller is null || caller.Role < MemberRole.OrgAdmin)
-            return Result.Failure<PagedResponse<OrganizationInvitationResponse>>(OrganizationInvitationErrors.InsufficientRole);
+        var caller = await organizationAuthorization.RequireRoleAsync(request.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
+        if (caller.IsFailure) return Result.Failure<PagedResponse<OrganizationInvitationResponse>>(caller.Error);
 
         var page = request.Page < 1 ? 1 : request.Page;
         var pageSize = request.PageSize is < 1 or > 100 ? 20 : request.PageSize;

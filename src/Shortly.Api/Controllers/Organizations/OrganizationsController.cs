@@ -62,22 +62,22 @@ public class OrganizationsController(ISender sender) : ControllerBase
         return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
     
-    [HttpPost("{id:guid}/activate", Name = "AdminActivateOrganization")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpPost("{id:guid}/activate", Name = "ActivateOrganization")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new ActivateOrganizationCommand(id), cancellationToken);
-        return result.IsFailure ? result.ToProblemDetails() : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
-    [HttpPost("{id:guid}/deactivate", Name = "AdminDeactivateOrganization")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpPost("{id:guid}/deactivate", Name = "DeactivateOrganization")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new DeactivateOrganizationCommand(id), cancellationToken);
-        return result.IsFailure ? result.ToProblemDetails() : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
     [HttpPost("{id:guid}/transfer-ownership", Name = "TransferOrganizationOwnership")]

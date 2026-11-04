@@ -8,6 +8,7 @@ namespace Shortly.Core.ShortUrls.DeactivateShortUrl;
 internal sealed class DeactivateShortUrlCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     IUnitOfWork unitOfWork) : ICommandHandler<DeactivateShortUrlCommand>
 {
     public async Task<Result> Handle(DeactivateShortUrlCommand request, CancellationToken cancellationToken)
@@ -15,7 +16,7 @@ internal sealed class DeactivateShortUrlCommandHandler(
         var shortUrl = await shortUrlRepository.GetByIdAsync(request.ShortUrlId, cancellationToken);
         if (shortUrl is null) return Result.Failure(ShortUrlErrors.NotFound);
 
-        if (!ShortUrlAuthorization.CanManage(shortUrl, userContext))
+        if (!await ShortUrlAuthorization.CanManageAsync(shortUrl, userContext, organizationAuthorization, cancellationToken))
             return Result.Failure(ShortUrlErrors.NotFound);
 
         var result = shortUrl.Deactivate();

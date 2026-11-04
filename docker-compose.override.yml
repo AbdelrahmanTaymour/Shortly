@@ -1,0 +1,15 @@
+# LOCAL DEVELOPMENT ONLY. Merged automatically by `docker compose up`; not used with `-f docker-compose.yml`.
+# Development turns on Swagger and applies EF Core migrations at startup, and exposes PostgreSQL on localhost.
+services:
+  shortly-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # Sign-in with Google only works with real credentials; placeholders let the API boot without them.
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-dev-placeholder}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-dev-placeholder}
+      Jwt__Issuer: ${JWT__ISSUER:-shortly-dev}
+      Jwt__Audience: ${JWT__AUDIENCE:-shortly-dev-clients}
+
+  shortly-db:
+    ports:
+      - "5432:5432"

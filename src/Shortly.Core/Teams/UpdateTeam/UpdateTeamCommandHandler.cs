@@ -8,8 +8,7 @@ using Shortly.Domain.Teams;
 namespace Shortly.Core.Teams.UpdateTeam;
 
 internal sealed class UpdateTeamCommandHandler(
-    IUserContext userContext,
-    IOrganizationMemberRepository memberRepository,
+    IOrganizationAuthorizationService organizationAuthorization,
     IOrganizationTeamRepository teamRepository,
     IUnitOfWork unitOfWork) : ICommandHandler<UpdateTeamCommand>
 {
@@ -19,8 +18,8 @@ internal sealed class UpdateTeamCommandHandler(
         if (team is null || team.OrganizationId != request.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.NotFound);
 
-        if (!await AddTeamMemberCommandHandler.CallerHasTeamAuthorityAsync(memberRepository, team, userContext.UserId, cancellationToken))
-            return Result.Failure(OrganizationTeamErrors.InsufficientRole);
+        var authority = await TeamAuthorization.RequireAuthorityAsync(organizationAuthorization, team, cancellationToken);
+        if (authority.IsFailure) return Result.Failure(authority.Error);
 
         if (request.Name is not null) team.Rename(request.Name);
         if (request.Description is not null) team.UpdateDescription(request.Description);

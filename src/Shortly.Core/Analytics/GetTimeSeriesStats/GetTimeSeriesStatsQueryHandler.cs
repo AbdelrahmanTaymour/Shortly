@@ -5,19 +5,18 @@ using Shortly.Domain.Abstractions;
 
 namespace Shortly.Core.Analytics.GetTimeSeriesStats;
 
-internal sealed class GetTimeSeriesStatsQueryHandler(ISqlConnectionFactory sqlConnectionFactory)
+internal sealed class GetTimeSeriesStatsQueryHandler(ISqlConnectionFactory sqlConnectionFactory,
+    AnalyticsScopeResolver scopeResolver)
     : IQueryHandler<GetTimeSeriesStatsQuery, TimeSeriesStatsResponse>
 {
     public async Task<Result<TimeSeriesStatsResponse>> Handle(
         GetTimeSeriesStatsQuery request,
         CancellationToken cancellationToken)
     {
-        var scope = new AnalyticsScope(
-            request.ShortUrlId,
-            request.UserId,
-            request.OrganizationId,
-            request.From,
-            request.To);
+        var scopeResult = await scopeResolver.ResolveAsync(
+            request.ShortUrlId, request.From, request.To, AnalyticsFeature.LinkAnalysis, cancellationToken);
+        if (scopeResult.IsFailure) return Result.Failure<TimeSeriesStatsResponse>(scopeResult.Error);
+        var scope = scopeResult.Value;
 
         using var connection = sqlConnectionFactory.CreateConnection();
 
@@ -69,11 +68,11 @@ internal sealed class GetTimeSeriesStatsQueryHandler(ISqlConnectionFactory sqlCo
             sql,
             new
             {
-                request.ShortUrlId,
-                request.UserId,
-                request.OrganizationId,
-                request.From,
-                request.To
+                scope.ShortUrlId,
+                scope.UserId,
+                scope.OrganizationId,
+                scope.From,
+                scope.To
             },
             cancellationToken: cancellationToken);
 

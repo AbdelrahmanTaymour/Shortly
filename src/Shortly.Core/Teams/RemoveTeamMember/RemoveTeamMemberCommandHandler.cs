@@ -8,8 +8,7 @@ using Shortly.Domain.Teams;
 namespace Shortly.Core.Teams.RemoveTeamMember;
 
 internal sealed class RemoveTeamMemberCommandHandler(
-    IUserContext userContext,
-    IOrganizationMemberRepository memberRepository,
+    IOrganizationAuthorizationService organizationAuthorization,
     IOrganizationTeamRepository teamRepository,
     IOrganizationTeamMemberRepository teamMemberRepository,
     IUnitOfWork unitOfWork) : ICommandHandler<RemoveTeamMemberCommand>
@@ -20,8 +19,8 @@ internal sealed class RemoveTeamMemberCommandHandler(
         if (team is null || team.OrganizationId != request.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.NotFound);
 
-        if (!await AddTeamMemberCommandHandler.CallerHasTeamAuthorityAsync(memberRepository, team, userContext.UserId, cancellationToken))
-            return Result.Failure(OrganizationTeamErrors.InsufficientRole);
+        var authority = await TeamAuthorization.RequireAuthorityAsync(organizationAuthorization, team, cancellationToken);
+        if (authority.IsFailure) return Result.Failure(authority.Error);
 
         // request.MemberId is already an OrganizationMember.Id — direct comparison/lookup, no resolution needed.
         if (request.MemberId == team.TeamManagerId)

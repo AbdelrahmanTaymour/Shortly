@@ -17,8 +17,6 @@ public interface IUserContext
     UserRole? Role { get; }
 
     Guid? OrganizationId { get; }
-    Guid? MemberId { get; }
-    MemberRole? MemberRole { get; }
     enShortUrlOwnerType OwnerType { get; }
 
     string? AnonymousSessionId { get; }

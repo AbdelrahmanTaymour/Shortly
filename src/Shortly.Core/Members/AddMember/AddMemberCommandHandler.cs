@@ -10,6 +10,7 @@ namespace Shortly.Core.Members.AddMember;
 internal sealed class AddMemberCommandHandler(
     IUserContext userContext,
     IOrganizationRepository organizationRepository,
+    IOrganizationAuthorizationService organizationAuthorization,
     IOrganizationMemberRepository memberRepository,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<AddMemberCommand>
@@ -19,17 +20,16 @@ internal sealed class AddMemberCommandHandler(
         var organization = await organizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
         if (organization is null) return Result.Failure(OrganizationErrors.NotFound);
 
-        var caller =
-            await memberRepository.GetByOrganizationAndUserAsync(request.OrganizationId, userContext.UserId,
-                cancellationToken);
-        if (caller is null || caller.Role < MemberRole.OrgAdmin)
-            return Result.Failure(OrganizationMemberErrors.InsufficientRole);
+        var caller = await organizationAuthorization.RequireRoleAsync(request.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
+        if (caller.IsFailure) return Result.Failure(caller.Error);
 
         if (request.Role == MemberRole.OrgOwner)
             return Result.Failure(OrganizationMemberErrors.CannotGrantOwnerRoleDirectly);
 
-        if (await memberRepository.IsMemberOfOrganizationAsync(request.UserId, request.OrganizationId,
-                cancellationToken))
+        // A previously removed member keeps their (inactive) row; it is reactivated instead of inserting a duplicate.
+        var existing = await memberRepository.GetByOrganizationAndUserAsync(request.OrganizationId, request.UserId,
+            cancellationToken);
+        if (existing is { IsActive: true })
             return Result.Failure(OrganizationMemberErrors.AlreadyMember);
 
         var currentCount =
@@ -37,9 +37,20 @@ internal sealed class AddMemberCommandHandler(
         if (currentCount >= organization.MemberLimit)
             return Result.Failure(OrganizationMemberErrors.MemberLimitReached);
 
-        var member = OrganizationMember.Invite(request.OrganizationId, request.UserId, request.Role, userContext.UserId,
-            dateTimeProvider.UtcNow);
-        memberRepository.Add(member);
+        if (existing is not null)
+        {
+            var reactivated = existing.Reactivate();
+            if (reactivated.IsFailure) return reactivated;
+
+            var roleChanged = existing.ChangeRole(request.Role);
+            if (roleChanged.IsFailure) return roleChanged;
+        }
+        else
+        {
+            memberRepository.Add(OrganizationMember.Invite(request.OrganizationId, request.UserId, request.Role,
+                userContext.UserId, dateTimeProvider.UtcNow));
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }

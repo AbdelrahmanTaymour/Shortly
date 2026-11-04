@@ -4,6 +4,11 @@
 **/out/
 **/publish/
 
+# Not needed to build the API
+tests/
+docs/
+**/data/
+
 # Files
 Dockerfile*
 **/*.trx

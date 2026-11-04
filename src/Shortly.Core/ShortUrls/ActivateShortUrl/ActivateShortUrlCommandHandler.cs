@@ -8,13 +8,14 @@ namespace Shortly.Core.ShortUrls.ActivateShortUrl;
 public class ActivateShortUrlCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     IUnitOfWork unitOfWork) : ICommandHandler<ActivateShortUrlCommand>
 {
     public async Task<Result> Handle(ActivateShortUrlCommand request, CancellationToken cancellationToken)
     {
         var shortUrl = await shortUrlRepository.GetByIdAsync(request.ShortUrlId, cancellationToken);
         if (shortUrl is null || 
-            !ShortUrlAuthorization.CanManage(shortUrl, userContext)) 
+            !await ShortUrlAuthorization.CanManageAsync(shortUrl, userContext, organizationAuthorization, cancellationToken)) 
             return Result.Failure(ShortUrlErrors.NotFound);
 
         var result = shortUrl.Activate();

@@ -10,6 +10,8 @@ namespace Shortly.Core.ShortUrls.UpdateShortUrl;
 internal sealed class UpdateShortUrlCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
+    ShortUrlOwnerResolver ownerResolver,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<UpdateShortUrlCommand>
 {
@@ -18,7 +20,7 @@ internal sealed class UpdateShortUrlCommandHandler(
         var shortUrl = await shortUrlRepository.GetByIdAsync(request.ShortUrlId, cancellationToken);
         if (shortUrl is null) return Result.Failure(ShortUrlErrors.NotFound);
 
-        if (!ShortUrlAuthorization.CanManage(shortUrl, userContext))
+        if (!await ShortUrlAuthorization.CanManageAsync(shortUrl, userContext, organizationAuthorization, cancellationToken))
             return Result.Failure(ShortUrlErrors.NotFound); // 404, not 403 — to not reveal existence
 
         var urlResult = OriginalUrl.Create(request.OriginalUrl);
@@ -28,6 +30,13 @@ internal sealed class UpdateShortUrlCommandHandler(
         if (codeResult.IsFailure) return Result.Failure(codeResult.Error);
 
         var codeChanged = !string.Equals(shortUrl.ShortCode.Value, codeResult.Value.Value, StringComparison.Ordinal);
+        if (codeChanged)
+        {
+            // Changing the code is a custom-short-code feature; editing other properties of a link is not.
+            var limits = await ownerResolver.GetLimitsForLinkAsync(shortUrl, cancellationToken);
+            if (!limits.CustomShortCode) return Result.Failure(ShortUrlErrors.CustomShortCodeNotAllowed);
+        }
+
         if (codeChanged && await shortUrlRepository.ExistsByShortCodeAsync(codeResult.Value, cancellationToken))
             return Result.Failure(ShortUrlErrors.ShortCodeAlreadyExists);
 

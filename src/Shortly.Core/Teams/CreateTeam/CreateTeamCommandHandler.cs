@@ -8,7 +8,7 @@ using Shortly.Domain.Teams;
 namespace Shortly.Core.Teams.CreateTeam;
 
 internal sealed class CreateTeamCommandHandler(
-    IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     IOrganizationMemberRepository memberRepository,
     IOrganizationTeamRepository teamRepository,
     IOrganizationTeamMemberRepository teamMemberRepository,
@@ -17,12 +17,11 @@ internal sealed class CreateTeamCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateTeamCommand request, CancellationToken cancellationToken)
     {
-        var caller = await memberRepository.GetByOrganizationAndUserAsync(request.OrganizationId, userContext.UserId, cancellationToken);
-        if (caller is null || caller.Role < MemberRole.OrgAdmin)
-            return Result.Failure<Guid>(OrganizationTeamErrors.InsufficientRole);
+        var caller = await organizationAuthorization.RequireRoleAsync(request.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
+        if (caller.IsFailure) return Result.Failure<Guid>(caller.Error);
 
         var managerMembership = await memberRepository.GetByIdAsync(request.TeamManagerId, cancellationToken);
-        if (managerMembership is null || managerMembership.OrganizationId != request.OrganizationId)
+        if (managerMembership is not { IsActive: true } || managerMembership.OrganizationId != request.OrganizationId)
             return Result.Failure<Guid>(OrganizationTeamErrors.ManagerNotOrgMember);
 
         if (await teamRepository.IsTeamNameExistAsync(request.Name, request.OrganizationId, cancellationToken))

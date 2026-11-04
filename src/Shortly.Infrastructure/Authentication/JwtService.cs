@@ -22,6 +22,8 @@ internal sealed class JwtService(
 {
     private readonly IConfigurationSection _jwt = configuration.GetSection("Jwt");
 
+    public TimeSpan RefreshTokenLifetime => TimeSpan.FromDays(double.Parse(_jwt["RefreshTokenExpirationDays"] ?? "15"));
+
     public Task<Result<AccessTokenResponse>> IssueTokensAsync(
         User user,
         CancellationToken cancellationToken = default) =>
@@ -39,23 +41,19 @@ internal sealed class JwtService(
         CancellationToken cancellationToken)
     {
         var accessToken = GenerateAccessToken(user, membership);
-
         var expiresInSeconds = int.Parse(_jwt["AccessTokenExpirationMinutes"] ?? "15") * 60;
-
-        var refreshLifetime = TimeSpan.FromDays(double.Parse(_jwt["RefreshTokenExpirationDays"] ?? "15"));
-
         var refreshTokenString = GenerateRefreshTokenString();
         var utcNow = dateTimeProvider.UtcNow;
 
+        // Store only the SHA-256 hash of the refresh token for database security
         var refreshToken = RefreshToken.Issue(
             user.Id,
             Sha256(refreshTokenString),
-            refreshLifetime,
+            RefreshTokenLifetime,
             membership?.OrganizationId,
             utcNow);
 
         refreshTokenRepository.Add(refreshToken);
-
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new AccessTokenResponse(accessToken, refreshTokenString, expiresInSeconds);
@@ -65,47 +63,48 @@ internal sealed class JwtService(
         string refreshToken, CancellationToken cancellationToken = default)
     {
         var utcNow = dateTimeProvider.UtcNow;
-
-        var stored = await refreshTokenRepository.GetByTokenHashAsync(Sha256(refreshToken), cancellationToken);
-
+        var currentHash = Sha256(refreshToken);
+        
+        var stored = await refreshTokenRepository.GetByTokenHashAsync(currentHash, cancellationToken);
         if (stored is null || !stored.IsActive(utcNow))
+            return Result.Failure<AccessTokenResponse>(AuthenticationErrors.InvalidRefreshToken);
+
+        // Ensure the user is still allowed to log in (not deactivated or locked)
+        if (!stored.User.CanLogIn(utcNow))
         {
+            await refreshTokenRepository.RevokeAsync(currentHash, utcNow, cancellationToken);
             return Result.Failure<AccessTokenResponse>(AuthenticationErrors.InvalidRefreshToken);
         }
 
         OrganizationMember? membership = null;
-
         if (stored.OrganizationId is { } organizationId)
         {
-            membership = await memberRepository.GetByOrganizationAndUserAsync(
-                organizationId,
-                stored.UserId,
-                cancellationToken);
+            membership = await memberRepository.GetActiveByOrganizationAndUserAsync(
+                organizationId, stored.UserId, cancellationToken);
 
-            // to not issue an organization-scoped token for an inactive membership
+            // Strip membership if it became inactive or the organization was deleted
             if (membership is not { IsActive: true })
                 membership = null;
         }
 
         var newRefreshTokenString = GenerateRefreshTokenString();
 
-        var refreshLifetime = TimeSpan.FromDays(double.Parse(_jwt["RefreshTokenExpirationDays"] ?? "15"));
-
-        await refreshTokenRepository.RotateAsync(
+        // Rotate the token using compare-and-swap to block concurrent reuse attacks
+        var rotated = await refreshTokenRepository.RotateAsync(
             stored.Id,
+            currentHash,
             Sha256(newRefreshTokenString),
-            refreshLifetime,
+            RefreshTokenLifetime,
             utcNow,
             cancellationToken);
 
-        var accessToken = GenerateAccessToken(stored.User, membership);
+        if (!rotated)
+            return Result.Failure<AccessTokenResponse>(AuthenticationErrors.InvalidRefreshToken);
 
+        var accessToken = GenerateAccessToken(stored.User, membership);
         var expiresInSeconds = int.Parse(_jwt["AccessTokenExpirationMinutes"] ?? "15") * 60;
 
-        return new AccessTokenResponse(
-            accessToken,
-            newRefreshTokenString,
-            expiresInSeconds);
+        return new AccessTokenResponse(accessToken, newRefreshTokenString, expiresInSeconds);
     }
 
     public async Task<Result> RevokeAsync(string refreshToken, CancellationToken cancellationToken = default)
@@ -134,7 +133,7 @@ internal sealed class JwtService(
                 new Claim("shortCode", shortCode),
                 new Claim("type", "redirect")
             ],
-            expires: DateTime.UtcNow.Add(lifetime),
+            expires: dateTimeProvider.UtcNow.Add(lifetime),
             signingCredentials: SigningCredentials());
 
         return new JwtSecurityTokenHandler().WriteToken(token);
@@ -166,6 +165,7 @@ internal sealed class JwtService(
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
+        // Attach organization scope claims if applicable
         if (membership is not null)
         {
             claims.Add(new Claim("organization_id", membership.OrganizationId.ToString()));
@@ -177,7 +177,7 @@ internal sealed class JwtService(
             _jwt["Issuer"],
             _jwt["Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(double.Parse(_jwt["AccessTokenExpirationMinutes"] ?? "15")),
+            expires: dateTimeProvider.UtcNow.AddMinutes(double.Parse(_jwt["AccessTokenExpirationMinutes"] ?? "15")),
             signingCredentials: SigningCredentials());
 
         return new JwtSecurityTokenHandler().WriteToken(token);

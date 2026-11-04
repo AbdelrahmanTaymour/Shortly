@@ -10,6 +10,8 @@ namespace Shortly.Core.ShortUrls.AssignShortCode;
 internal sealed class AssignShortCodeCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
+    ShortUrlOwnerResolver ownerResolver,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<AssignShortCodeCommand>
 {
@@ -18,8 +20,11 @@ internal sealed class AssignShortCodeCommandHandler(
         var shortUrl = await shortUrlRepository.GetByIdAsync(request.ShortUrlId, cancellationToken);
         if (shortUrl is null) return Result.Failure(ShortUrlErrors.NotFound);
 
-        if (!ShortUrlAuthorization.CanManage(shortUrl, userContext))
+        if (!await ShortUrlAuthorization.CanManageAsync(shortUrl, userContext, organizationAuthorization, cancellationToken))
             return Result.Failure(ShortUrlErrors.NotFound);
+
+        var limits = await ownerResolver.GetLimitsForLinkAsync(shortUrl, cancellationToken);
+        if (!limits.CustomShortCode) return Result.Failure(ShortUrlErrors.CustomShortCodeNotAllowed);
 
         var codeResult = ShortCode.Create(request.NewShortCode);
         if (codeResult.IsFailure) return Result.Failure(codeResult.Error);

@@ -28,6 +28,22 @@ internal sealed class UserRepository(ApplicationDbContext dbContext) :
             .ToListAsync(cancellationToken);
     }
     
+    public async Task RecordFailedLoginAsync(
+        Guid userId, DateTime utcNow, int maxAttempts, TimeSpan lockoutDuration, CancellationToken cancellationToken = default)
+    {
+        var lockedUntil = utcNow.Add(lockoutDuration);
+        var reason = $"{maxAttempts} consecutive failed login attempts";
+
+        // One UPDATE: every right-hand side sees the row as it was before this statement, so concurrent attempts each add one.
+        await DbContext.Set<UserSecurity>()
+            .Where(s => s.UserId == userId)
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(s => s.FailedLoginAttempts, s => s.FailedLoginAttempts + 1)
+                .SetProperty(s => s.LockedUntilUtc, s => s.FailedLoginAttempts + 1 >= maxAttempts ? lockedUntil : s.LockedUntilUtc)
+                .SetProperty(s => s.LockoutReason, s => s.FailedLoginAttempts + 1 >= maxAttempts ? reason : s.LockoutReason)
+                .SetProperty(s => s.UpdatedAtUtc, utcNow), cancellationToken);
+    }
+
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         ActiveUsers().FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 

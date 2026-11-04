@@ -8,6 +8,7 @@ namespace Shortly.Core.ShortUrls.BulkDeleteShortUrls;
 internal sealed class BulkDeleteShortUrlsCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     IUnitOfWork unitOfWork) : ICommandHandler<BulkDeleteShortUrlsCommand, BulkOperationResponse>
 {
     public async Task<Result<BulkOperationResponse>> Handle(BulkDeleteShortUrlsCommand request, CancellationToken cancellationToken)
@@ -17,7 +18,7 @@ internal sealed class BulkDeleteShortUrlsCommandHandler(
         var succeeded = 0;
         foreach (var shortUrl in shortUrls)
         {
-            if (!ShortUrlAuthorization.CanManage(shortUrl, userContext)) continue;
+            if (!await ShortUrlAuthorization.CanManageAsync(shortUrl, userContext, organizationAuthorization, cancellationToken)) continue;
             shortUrlRepository.Remove(shortUrl);
             succeeded++;
         }

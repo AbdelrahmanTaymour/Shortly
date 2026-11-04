@@ -1,4 +1,5 @@
 using Dapper;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
@@ -6,12 +7,17 @@ using Shortly.Domain.Abstractions;
 namespace Shortly.Core.Analytics.GetAnalyticsOverview;
 
 internal sealed class GetAnalyticsOverviewQueryHandler(
-    ISqlConnectionFactory sqlConnectionFactory)
+    ISqlConnectionFactory sqlConnectionFactory,
+    AnalyticsScopeResolver scopeResolver,
+    IDateTimeProvider dateTimeProvider)
     : IQueryHandler<GetAnalyticsOverviewQuery, AnalyticsOverviewResponse>
 {
     public async Task<Result<AnalyticsOverviewResponse>> Handle(GetAnalyticsOverviewQuery request, CancellationToken cancellationToken)
     {
-        var scope = new AnalyticsScope(request.ShortUrlId, request.UserId, request.OrganizationId, request.From, request.To);
+        var scopeResult = await scopeResolver.ResolveAsync(
+            request.ShortUrlId, request.From, request.To, AnalyticsFeature.LinkAnalysis, cancellationToken);
+        if (scopeResult.IsFailure) return Result.Failure<AnalyticsOverviewResponse>(scopeResult.Error);
+        var scope = scopeResult.Value;
         
         using var connection = sqlConnectionFactory.CreateConnection();
 
@@ -34,15 +40,15 @@ internal sealed class GetAnalyticsOverviewQueryHandler(
                 MAX(ClickedAtUtc) AS LastClickAtUtc,
             
                 COUNT(*) FILTER (
-                    WHERE ClickedAtUtc::date = CURRENT_DATE
+                    WHERE ClickedAtUtc::date = @UtcNow::timestamptz::date
                 ) AS ClicksToday,
             
                 COUNT(*) FILTER (
-                    WHERE ClickedAtUtc >= date_trunc('week', NOW())
+                    WHERE ClickedAtUtc >= date_trunc('week', @UtcNow::timestamptz)
                 ) AS ClicksThisWeek,
             
                 COUNT(*) FILTER (
-                    WHERE ClickedAtUtc >= date_trunc('month', NOW())
+                    WHERE ClickedAtUtc >= date_trunc('month', @UtcNow::timestamptz)
                 ) AS ClicksThisMonth,
             
                 (
@@ -66,7 +72,7 @@ internal sealed class GetAnalyticsOverviewQueryHandler(
             FROM scoped;
             """;
 
-        var row = await connection.QuerySingleAsync<OverviewRow>(sql, BuildParameters(request));
+        var row = await connection.QuerySingleAsync<OverviewRow>(sql, BuildParameters(scope, dateTimeProvider.UtcNow));
 
         var activeDays = Math.Max(row.ActiveDays, 1);
         var averagePerDay = row.TotalClicks / (double)activeDays;
@@ -82,14 +88,14 @@ internal sealed class GetAnalyticsOverviewQueryHandler(
             ClicksToday = row.ClicksToday,
             ClicksThisWeek = row.ClicksThisWeek,
             ClicksThisMonth = row.ClicksThisMonth,
-            TopCountry = row.TopCountry,
+            TopCountry = scope.IncludeGeo ? row.TopCountry : null, // geography needs GeoDeviceTracking
             TopReferrer = row.TopReferrer
         };
     }
 
-    private static object BuildParameters(GetAnalyticsOverviewQuery r) => new
+    private static object BuildParameters(AnalyticsScope s, DateTime utcNow) => new
     {
-        r.ShortUrlId, r.UserId, r.OrganizationId, r.From, r.To
+        s.ShortUrlId, s.UserId, s.OrganizationId, s.From, s.To, UtcNow = utcNow
     };
 
     private sealed class OverviewRow

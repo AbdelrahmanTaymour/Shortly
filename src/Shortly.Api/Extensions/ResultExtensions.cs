@@ -17,10 +17,12 @@ public static class ResultExtensions
             Type = GetType(result.Error.Type),
             Title = GetTitle(result.Error.Type),
             Detail = result.Error.Message,
-            Status = statusCode
+            Status = statusCode,
+            Extensions =
+            {
+                ["errorCode"] = result.Error.Code
+            }
         };
-
-        problemDetails.Extensions["errorCode"] = result.Error.Code;
 
         return new ObjectResult(problemDetails) { StatusCode = statusCode };
     }

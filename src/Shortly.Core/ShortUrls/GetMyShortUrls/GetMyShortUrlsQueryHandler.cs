@@ -9,7 +9,8 @@ namespace Shortly.Core.ShortUrls.GetMyShortUrls;
 
 internal sealed class GetMyShortUrlsQueryHandler(
     ISqlConnectionFactory sqlConnectionFactory,
-    IUserContext userContext) : IQueryHandler<GetMyShortUrlsQuery, PagedResponse<ShortUrlResponse>>
+    IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization) : IQueryHandler<GetMyShortUrlsQuery, PagedResponse<ShortUrlResponse>>
 {
     public async Task<Result<PagedResponse<ShortUrlResponse>>> Handle(GetMyShortUrlsQuery request, CancellationToken cancellationToken)
     {
@@ -20,6 +21,11 @@ internal sealed class GetMyShortUrlsQueryHandler(
             > 50 => 50,
             _ => request.PageSize
         };
+
+        // The token's organization claim may be stale: only honor it while the membership is still active.
+        var membership = await organizationAuthorization.ResolveClaimedMembershipAsync(cancellationToken);
+        if (membership.IsFailure) return Result.Failure<PagedResponse<ShortUrlResponse>>(membership.Error);
+        var organizationId = membership.Value?.OrganizationId;
 
         using var connection = sqlConnectionFactory.CreateConnection();
 
@@ -41,7 +47,7 @@ internal sealed class GetMyShortUrlsQueryHandler(
         var rows = (await connection.QueryAsync<ShortUrlRow>(sql, new
         {
             userContext.UserId,
-            userContext.OrganizationId,
+            OrganizationId = organizationId,
             Offset = (page - 1) * pageSize,
             PageSize = pageSize
         })).ToList();

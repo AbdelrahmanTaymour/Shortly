@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Shortly.Api.Extensions;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Account.ChangePassword;
@@ -12,16 +13,18 @@ using Shortly.Core.Account.SendEmailVerification;
 using Shortly.Core.Account.ValidateResetToken;
 using Shortly.Core.Account.VerifyEmail;
 using Shortly.Core.Exceptions;
+using Shortly.Infrastructure.EdgeProtection.Models;
 
 namespace Shortly.Api.Controllers.Account;
 
 [ApiController]
-[Route("api/account")] // Changed from api/auth to avoid collisions
+[Route("api/account")]
 [Produces("application/json")]
 public class AccountController(ISender sender) : ControllerBase
 {
     [HttpPost("send-email-verification", Name = "Account_SendEmailVerification")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [EnableRateLimiting(AccountEmailRateLimitOptions.PolicyName)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
@@ -34,9 +37,7 @@ public class AccountController(ISender sender) : ControllerBase
 
         var result = await sender.Send(command, cancellationToken);
 
-        return result.IsFailure
-            ? result.ToProblemDetails()
-            : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
     [HttpPost("verify-email", Name = "Account_VerifyEmail")]
@@ -53,14 +54,13 @@ public class AccountController(ISender sender) : ControllerBase
 
         var result = await sender.Send(command, cancellationToken);
 
-        return result.IsFailure
-            ? result.ToProblemDetails()
-            : Ok(result.Value);
+        return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
     [HttpPost("change-email", Name = "Account_ChangeEmail")]
+    [EnableRateLimiting(AccountEmailRateLimitOptions.PolicyName)]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
@@ -74,13 +74,11 @@ public class AccountController(ISender sender) : ControllerBase
 
         var result = await sender.Send(command, cancellationToken);
 
-        return result.IsFailure
-            ? result.ToProblemDetails()
-            : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
     [HttpPost("confirm-email-change", Name = "Account_ConfirmEmailChange")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
@@ -93,13 +91,12 @@ public class AccountController(ISender sender) : ControllerBase
 
         var result = await sender.Send(command, cancellationToken);
 
-        return result.IsFailure
-            ? result.ToProblemDetails()
-            : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
     [HttpPost("forgot-password", Name = "Account_ForgotPassword")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [EnableRateLimiting(AccountEmailRateLimitOptions.PolicyName)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ForgotPassword(
         [FromBody] ForgotPasswordRequest request,
@@ -107,7 +104,7 @@ public class AccountController(ISender sender) : ControllerBase
     {
         await sender.Send(new ForgotPasswordCommand(request.Email), cancellationToken);
 
-        return Ok();
+        return NoContent();
     }
 
     [HttpPost("validate-reset-token", Name = "Account_ValidateResetToken")]
@@ -119,13 +116,11 @@ public class AccountController(ISender sender) : ControllerBase
     {
         var result = await sender.Send(new ValidateResetTokenCommand(request.Token), cancellationToken);
 
-        return result.IsFailure
-            ? result.ToProblemDetails()
-            : Ok(result.Value);
+        return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
     [HttpPost("reset-password", Name = "Account_ResetPassword")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
@@ -138,14 +133,12 @@ public class AccountController(ISender sender) : ControllerBase
 
         var result = await sender.Send(command, cancellationToken);
 
-        return result.IsFailure
-            ? result.ToProblemDetails()
-            : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
     [HttpPost("change-password", Name = "Account_ChangePassword")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
@@ -158,8 +151,6 @@ public class AccountController(ISender sender) : ControllerBase
 
         var result = await sender.Send(command, cancellationToken);
 
-        return result.IsFailure
-            ? result.ToProblemDetails()
-            : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 }

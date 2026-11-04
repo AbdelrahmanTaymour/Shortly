@@ -18,7 +18,8 @@ internal sealed class ActivateOrganizationCommandHandler(
         var organization = await organizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
         if (organization is null) return Result.Failure(OrganizationErrors.NotFound);
         
-        if (!userContext.IsAdmin || !userContext.IsOwner(organization.OwnerId))
+        // System administrators OR the organization's owner may manage activation; everyone else is denied.
+        if (!userContext.IsAdmin && !userContext.IsOwner(organization.OwnerId))
             return Result.Failure(OrganizationErrors.NotOwner);
 
         var result = organization.Activate(dateTimeProvider.UtcNow);

@@ -54,4 +54,11 @@ public sealed class UserUsage
         var effectiveCount = utcNow >= MonthlyResetDate ? 0 : MonthlyLinksCreated;
         return effectiveCount >= maxLinksPerMonth;
     }
+
+    public int RemainingMonthlyLinks(int maxLinksPerMonth, DateTime utcNow)
+    {
+        if (maxLinksPerMonth < 0) return int.MaxValue; // unlimited plan
+        var effectiveCount = utcNow >= MonthlyResetDate ? 0 : MonthlyLinksCreated;
+        return Math.Max(0, maxLinksPerMonth - effectiveCount);
+    }
 }

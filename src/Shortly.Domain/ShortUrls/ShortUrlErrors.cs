@@ -7,7 +7,13 @@ public static class ShortUrlErrors
     public static readonly Error ShortCodeEmpty = Error.Validation("ShortUrl.ShortCodeEmpty", "Short code cannot be empty.");
     public static readonly Error ShortCodeInvalidLength = Error.Validation("ShortUrl.ShortCodeInvalidLength", $"Short code must be between {ShortCode.MinLength} and {ShortCode.MaxLength} characters.");
     public static readonly Error ShortCodeInvalidCharacters = Error.Validation("ShortUrl.ShortCodeInvalidCharacters", "Short code may only contain letters, digits, hyphens and underscores.");
+    public static readonly Error ShortCodeGenerationFailed = Error.Conflict("ShortUrl.ShortCodeGenerationFailed", "Could not generate a unique short code. Please try again.");
     public static readonly Error ShortCodeAlreadyExists = Error.Conflict("ShortUrl.ShortCodeAlreadyExists", "This short code is already in use.");
+    public static readonly Error LinkProtectionNotAllowed = Error.Forbidden("ShortUrl.LinkProtectionNotAllowed", "Your plan does not include password protection for links.");
+    public static readonly Error CustomShortCodeNotAllowed = Error.Forbidden("ShortUrl.CustomShortCodeNotAllowed", "Your plan does not include custom short codes.");
+    public static readonly Error LinkAnalysisNotAllowed = Error.Forbidden("ShortUrl.LinkAnalysisNotAllowed", "Your plan does not include link analytics.");
+    public static readonly Error GeoDeviceTrackingNotAllowed = Error.Forbidden("ShortUrl.GeoDeviceTrackingNotAllowed", "Your plan does not include geography and device analytics.");
+    public static readonly Error BulkCreationNotAllowed = Error.Forbidden("ShortUrl.BulkCreationNotAllowed", "Your plan does not include bulk link creation.");
     public static readonly Error MonthlyLinkLimitReached = Error.Forbidden("ShortUrl.MonthlyLinkLimitReached", "You've reached your plan's monthly link creation limit.");
     
     public static readonly Error OriginalUrlEmpty = Error.Validation("ShortUrl.OriginalUrlEmpty", "URL cannot be empty.");

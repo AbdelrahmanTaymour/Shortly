@@ -8,7 +8,7 @@ using Shortly.Domain.Teams;
 namespace Shortly.Core.Teams.AddTeamMember;
 
 internal sealed class AddTeamMemberCommandHandler(
-    IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     IOrganizationMemberRepository memberRepository,
     IOrganizationTeamRepository teamRepository,
     IOrganizationTeamMemberRepository teamMemberRepository,
@@ -21,11 +21,11 @@ internal sealed class AddTeamMemberCommandHandler(
         if (team is null || team.OrganizationId != request.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.NotFound);
 
-        if (!await CallerHasTeamAuthorityAsync(memberRepository, team, userContext.UserId, cancellationToken))
-            return Result.Failure(OrganizationTeamErrors.InsufficientRole);
+        var authority = await TeamAuthorization.RequireAuthorityAsync(organizationAuthorization, team, cancellationToken);
+        if (authority.IsFailure) return Result.Failure(authority.Error);
 
         var targetMembership = await memberRepository.GetByIdAsync(request.MemberId, cancellationToken);
-        if (targetMembership is null || targetMembership.OrganizationId != team.OrganizationId)
+        if (targetMembership is not { IsActive: true } || targetMembership.OrganizationId != team.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.MemberNotOrgMember);
 
         if (await teamMemberRepository.IsMemberOfTeamAsync(targetMembership.Id, request.TeamId, cancellationToken))
@@ -34,13 +34,5 @@ internal sealed class AddTeamMemberCommandHandler(
         teamMemberRepository.Add(OrganizationTeamMember.Create(request.TeamId, targetMembership.Id, dateTimeProvider.UtcNow));
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
-    }
-
-    internal static async Task<bool> CallerHasTeamAuthorityAsync(
-        IOrganizationMemberRepository memberRepository, OrganizationTeam team, Guid callerUserId, CancellationToken cancellationToken)
-    {
-        var caller = await memberRepository.GetByOrganizationAndUserAsync(team.OrganizationId, callerUserId, cancellationToken);
-        if (caller is null) return false;
-        return caller.Id == team.TeamManagerId || caller.Role >= MemberRole.OrgAdmin;
     }
 }

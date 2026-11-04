@@ -1,4 +1,5 @@
 using Dapper;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
@@ -6,7 +7,7 @@ using Shortly.Domain.Users;
 
 namespace Shortly.Core.Admin.GetUserDetail;
 
-internal sealed class GetUserDetailQueryHandler(ISqlConnectionFactory sqlConnectionFactory)
+internal sealed class GetUserDetailQueryHandler(ISqlConnectionFactory sqlConnectionFactory, IDateTimeProvider dateTimeProvider)
     : IQueryHandler<GetUserDetailQuery, UserAdminDetailResponse>
 {
     public async Task<Result<UserAdminDetailResponse>> Handle(GetUserDetailQuery request, CancellationToken cancellationToken)
@@ -20,7 +21,7 @@ internal sealed class GetUserDetailQueryHandler(ISqlConnectionFactory sqlConnect
                    p.name AS ProfileName, p.bio AS ProfileBio, p.phone_number AS ProfilePhoneNumber,
                    p.company AS ProfileCompany, p.location AS ProfileLocation, p.country AS ProfileCountry,
                    s.failed_login_attempts AS FailedLoginAttempts,
-                   (s.locked_until_utc IS NOT NULL AND s.locked_until_utc > NOW()) AS IsLockedOut,
+                   (s.locked_until_utc IS NOT NULL AND s.locked_until_utc > @UtcNow) AS IsLockedOut,
                    s.locked_until_utc AS LockedUntilUtc, s.two_factor_enabled AS TwoFactorEnabled,
                    uu.monthly_links_created AS MonthlyLinksCreated, uu.total_links_created AS TotalLinksCreated,
                    uu.monthly_qr_codes_created AS MonthlyQrCodesCreated, uu.total_qr_codes_created AS TotalQrCodesCreated
@@ -34,7 +35,8 @@ internal sealed class GetUserDetailQueryHandler(ISqlConnectionFactory sqlConnect
             """;
 
         using var connection = sqlConnectionFactory.CreateConnection();
-        var result = await connection.QuerySingleOrDefaultAsync<UserAdminDetailResponse>(sql, request);
+        var result = await connection.QuerySingleOrDefaultAsync<UserAdminDetailResponse>(
+            sql, new { request.UserId, request.Email, request.Username, dateTimeProvider.UtcNow });
 
         return result ?? Result.Failure<UserAdminDetailResponse>(UserErrors.NotFound);
     }

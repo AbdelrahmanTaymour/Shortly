@@ -8,12 +8,13 @@ namespace Shortly.Core.ShortUrls.DeleteShortUrl;
 internal sealed class DeleteShortUrlCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     IUnitOfWork unitOfWork) : ICommandHandler<DeleteShortUrlCommand>
 {
     public async Task<Result> Handle(DeleteShortUrlCommand request, CancellationToken cancellationToken)
     {
         var shortUrl = await shortUrlRepository.GetByIdAsync(request.ShortUrlId, cancellationToken);
-        if (shortUrl is null || !ShortUrlAuthorization.CanManage(shortUrl, userContext)) 
+        if (shortUrl is null || !await ShortUrlAuthorization.CanManageAsync(shortUrl, userContext, organizationAuthorization, cancellationToken)) 
             return Result.Failure(ShortUrlErrors.NotFound);
 
         shortUrlRepository.Remove(shortUrl);

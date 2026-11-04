@@ -10,7 +10,7 @@ internal sealed class SubscriptionPlanLimitsProvider(
     ISqlConnectionFactory sqlConnectionFactory,
     IMemoryCache cache) : ISubscriptionPlanLimitsProvider
 {
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(6);
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
     private const string Sql = """
                                SELECT max_links_per_month AS MaxLinksPerMonth, max_qr_codes_per_month AS MaxQrCodesPerMonth,

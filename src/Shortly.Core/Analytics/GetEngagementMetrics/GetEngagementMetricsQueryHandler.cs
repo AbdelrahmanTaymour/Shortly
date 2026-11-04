@@ -6,19 +6,18 @@ using Shortly.Domain.Abstractions;
 namespace Shortly.Core.Analytics.GetEngagementMetrics;
 
 internal sealed class GetEngagementMetricsQueryHandler(
-    ISqlConnectionFactory sqlConnectionFactory)
+    ISqlConnectionFactory sqlConnectionFactory,
+    AnalyticsScopeResolver scopeResolver)
     : IQueryHandler<GetEngagementMetricsQuery, EngagementMetricsResponse>
 {
     public async Task<Result<EngagementMetricsResponse>> Handle(
         GetEngagementMetricsQuery request,
         CancellationToken cancellationToken)
     {
-        var scope = new AnalyticsScope(
-            request.ShortUrlId,
-            request.UserId,
-            request.OrganizationId,
-            request.From,
-            request.To);
+        var scopeResult = await scopeResolver.ResolveAsync(
+            request.ShortUrlId, request.From, request.To, AnalyticsFeature.LinkAnalysis, cancellationToken);
+        if (scopeResult.IsFailure) return Result.Failure<EngagementMetricsResponse>(scopeResult.Error);
+        var scope = scopeResult.Value;
 
         var sql = $"""
             WITH scoped AS (
@@ -51,11 +50,11 @@ internal sealed class GetEngagementMetricsQueryHandler(
             sql,
             new
             {
-                request.ShortUrlId,
-                request.UserId,
-                request.OrganizationId,
-                request.From,
-                request.To
+                scope.ShortUrlId,
+                scope.UserId,
+                scope.OrganizationId,
+                scope.From,
+                scope.To
             },
             cancellationToken: cancellationToken);
 

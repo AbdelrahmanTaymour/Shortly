@@ -29,7 +29,7 @@ internal sealed class RegisterCommandHandler(
             return tokensResult;
 
         var utcNow = dateTimeProvider.UtcNow;
-        cookieService.SetRefreshToken(tokensResult.Value.RefreshToken, utcNow.AddDays(15));
+        cookieService.SetRefreshToken(tokensResult.Value.RefreshToken, utcNow.Add(jwtService.RefreshTokenLifetime));
         
         return tokensResult;
     }
