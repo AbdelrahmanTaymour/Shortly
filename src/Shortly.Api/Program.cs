@@ -4,7 +4,9 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Shortly.Api.Extensions;
 using Shortly.Api.Middleware;
+using Shortly.Api.Routing;
 using Shortly.Core;
 using Shortly.Infrastructure;
 
@@ -15,26 +17,22 @@ namespace Shortly.Api;
 /// </summary>
 public class Program
 {
-    /// <summary>
-    /// Entry point for the Shortly.API application.
-    /// Initializes the web application, configures services, and sets up the middleware pipeline.
-    /// </summary>
-    /// <param name="args">Command-line arguments passed to the application.</param>
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Basic Services
-        builder.Services.AddControllers().AddJsonOptions(options =>
-        {
-            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        });
-        builder.Services.AddEndpointsApiExplorer();
+        // Configure controllers, custom routing conventions, and global JSON enum serialization
+        builder.Services.AddControllers(options => 
+            options.Conventions.Add(new OrganizationScopedRoutesConvention()))
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            });
 
-        // Validation
+        builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddFluentValidationAutoValidation();
 
-        // ── Swagger / OpenAPI ─────────────────────────────────────────────────
+        // Configure Swagger/OpenAPI documentation with XML comments and JWT Bearer security
         builder.Services.AddSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo
@@ -44,16 +42,14 @@ public class Program
                 Description = "API documentation for the Link Management System"
             });
 
-            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            if (File.Exists(xmlPath)) options.IncludeXmlComments(xmlPath);
-
-            foreach (var xml in new[] { "Shortly.Core.xml", "Shortly.Domain.xml" })
+            // Include XML documentation comments from API, Core, and Domain assemblies
+            foreach (var xml in new[] { $"{Assembly.GetExecutingAssembly().GetName().Name}.xml", "Shortly.Core.xml", "Shortly.Domain.xml" })
             {
                 var fullPath = Path.Combine(AppContext.BaseDirectory, xml);
                 if (File.Exists(fullPath)) options.IncludeXmlComments(fullPath);
             }
 
+            // Register JWT security definition for Swagger UI authorization
             options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
             {
                 Description = "JWT Authorization header. Example: \"Authorization: Bearer {token}\"",
@@ -83,45 +79,45 @@ public class Program
             });
         });
 
-        // ── CORS ──────────────────────────────────────────────────────────────
+        // Configure CORS policies for frontend clients and local development environments
         builder.Services.AddCors(options =>
         {
             options.AddDefaultPolicy(policy =>
             {
-                policy
-                    .WithOrigins(
-                        "http://localhost:3000",
-                        "https://localhost:3000",
-                        "http://127.0.0.1:5500",
-                        "http://127.0.0.1:5501",
-                        "http://127.0.0.1:5502",
-                        "http://127.0.0.1:5503")
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials();
+                policy.WithOrigins(
+                        "http://localhost:3000", "https://localhost:3000",
+                        "http://127.0.0.1:5500", "http://127.0.0.1:5501", 
+                        "http://127.0.0.1:5502", "http://127.0.0.1:5503")
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials();
             });
 
             options.AddPolicy("FrontendPolicy", policy =>
             {
-                policy
-                    .WithOrigins("http://localhost:3000", "https://localhost:3000", "https://shortly-frontend-tau.vercel.app")
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
+                policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "https://shortly-frontend-tau.vercel.app")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
             });
         });
 
-        // ── Infrastructure & Core Registrations ───────────────────────────────
+        // Register custom edge protection, infrastructure, and core business services
+        builder.Services.AddEdgeProtection(builder.Configuration);
         builder.Services.AddInfrastructure(builder.Configuration);
         builder.Services.AddCore(builder.Configuration);
 
         var app = builder.Build();
 
         // ── Middleware Pipeline ───────────────────────────────────────────────
-        app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+        // Must run first to ensure client IP and scheme correctly reflect proxy headers
+        app.UseForwardedHeaders();
+
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
         app.UseHttpsRedirection();
 
+        // Enable Swagger UI only in development environments
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -129,15 +125,16 @@ public class Program
         }
 
         app.UseRouting();
-
         app.UseCors("FrontendPolicy");
 
         app.UseAuthentication();
         app.UseAuthorization();
+        app.UseRateLimiter();
 
-        // Apply pending EF Core migrations (PostgreSQL ApplicationDbContext)
-        using (var scope = app.Services.CreateScope())
+        // Automatically apply pending EF Core migrations on startup if configured or in development
+        if (app.Configuration.GetValue<bool?>("Database:MigrateOnStartup") ?? app.Environment.IsDevelopment())
         {
+            using var scope = app.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             context.Database.Migrate();
         }

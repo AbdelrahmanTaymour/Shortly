@@ -1,3 +1,10 @@
+# Shortly API + PostgreSQL.
+#
+# This file contains no development-only settings: on its own it runs the API as Production.
+#   Local development:  docker compose up --build        (docker-compose.override.yml is merged automatically)
+#   Production-like:    docker compose -f docker-compose.yml up --build
+#
+# Required values come from .env (see .env.template). Nothing here requires Redis or any other extra service.
 services:
   shortly-api:
     build:
@@ -6,57 +13,43 @@ services:
     container_name: shortly-api
     restart: on-failure
     ports:
-      - "5001:80"
-      - "5002:443"
-    env_file:
-      - .env
+      - "${API_PORT:-5001}:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=https://+:443;http://+:80
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=YourSecurePassword123!
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/shortly-api.pfx
-      - ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION_STRING}
-      - ConnectionStrings__REDIS_CONNECTION_STRING=${REDIS_CONNECTION_STRING}
-      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
-      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
-    volumes:
-      - ~/.aspnet/https:/https:ro
+      ConnectionStrings__Database: "Host=shortly-db;Port=5432;Database=shortly;Username=postgres;Password=${DB_PASSWORD:?Set DB_PASSWORD in .env}"
+      Jwt__Key: ${JWT__KEY:?Set JWT__KEY in .env}
+      Jwt__Issuer: ${JWT__ISSUER:?Set JWT__ISSUER in .env}
+      Jwt__Audience: ${JWT__AUDIENCE:?Set JWT__AUDIENCE in .env}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID in .env}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:?Set GOOGLE_CLIENT_SECRET in .env}
+      EmailSettings__Smtp__Username: ${EMAIL_USERNAME:-}
+      EmailSettings__Smtp__Password: ${EMAIL_PASSWORD:-}
     depends_on:
       shortly-db:
-        condition: service_healthy
-      shortly-cache:
         condition: service_healthy
     networks:
       - shortly-network
 
   shortly-db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    platform: linux/amd64
+    image: postgres:18
     container_name: shortly-db
-    ports:
-      - "1433:1433"
+    restart: on-failure
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${DB_PASSWORD}
-      - MSSQL_PID=Developer
+      POSTGRES_DB: shortly
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - shortly-db-data:/var/lib/postgresql
     healthcheck:
-      test: [ "CMD", "/bin/bash", "-c", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$$SA_PASSWORD\" -Q \"SELECT 1\" || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 45s
-    networks:
-      - shortly-network
-
-  shortly-cache:
-    image: redis:7-alpine
-    container_name: shortly-cache
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d shortly"]
       interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       - shortly-network
 
 networks:
   shortly-network:
     driver: bridge
+
+volumes:
+  shortly-db-data:

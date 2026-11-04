@@ -49,14 +49,14 @@ public static class DependencyInjection
         
         services.AddMemoryCache();
         services.AddSingleton<ISubscriptionPlanLimitsProvider, SubscriptionPlanLimitsProvider>();
-        
-        AddPersistence(services, configuration);
-        AddRepositories(services);
-        AddAuthentication(services, configuration);
-        AddAuthorization(services);
-        AddEmail(services, configuration);
-        AddBackgroundJobs(services);
-        AddClickTracking(services, configuration);
+
+        services.AddPersistence(configuration);
+        services.AddRepositories();
+        services.AddAuthentication(configuration);
+        services.AddAuthorization();
+        services.AddEmail(configuration);
+        services.AddBackgroundJobs(configuration);
+        services.AddClickTracking(configuration);
 
         return services;
     }
@@ -77,7 +77,7 @@ public static class DependencyInjection
         services.AddSingleton<ISqlConnectionFactory>(_ => new SqlConnectionFactory(connectionString));
     }
 
-    private static void AddRepositories(IServiceCollection services)
+    private static void AddRepositories(this IServiceCollection services)
     {
         // User Management
         services.AddScoped<IUserRepository, UserRepository>();
@@ -102,7 +102,7 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
     }
     
-    private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)
+    private static void AddAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
         
@@ -158,7 +158,7 @@ public static class DependencyInjection
             });
     }
 
-    private static void AddAuthorization(IServiceCollection services)
+    private static void AddAuthorization(this IServiceCollection services)
     {
         services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
@@ -175,10 +175,12 @@ public static class DependencyInjection
         services.AddScoped<IEmailTemplates, EmailTemplates>();
         services.AddScoped<IEmailNotifier, EmailNotifier>();
 
-        services.AddHostedService<EmailBackgroundWorker>();
+        // Background services can be switched off (BackgroundServices:Email=false)
+        if (configuration.GetValue("BackgroundServices:Email", true))
+            services.AddHostedService<EmailBackgroundWorker>();
     }
 
-    private static void AddBackgroundJobs(IServiceCollection services)
+    private static void AddBackgroundJobs(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddQuartz(q =>
         {
@@ -205,15 +207,16 @@ public static class DependencyInjection
                         .WithMisfireHandlingInstructionFireAndProceed()));
         });
 
-        services.AddQuartzHostedService(options => { options.WaitForJobsToComplete = true; });
+        if (configuration.GetValue("BackgroundServices:ScheduledJobs", true))
+            services.AddQuartzHostedService(options => { options.WaitForJobsToComplete = true; });
     }
 
-    private static void AddClickTracking(IServiceCollection services, IConfiguration configuration)
+    private static void AddClickTracking(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IClickEventQueue, ClickEventQueue>();
-        services.AddHostedService<ClickTrackingBackgroundService>();
+        if (configuration.GetValue("BackgroundServices:ClickTracking", true))
+            services.AddHostedService<ClickTrackingBackgroundService>();
         services.AddSingleton<IUserAgentParser, UserAgentParser>();
-        services.AddScoped<IClickEventRepository, ClickEventRepository>();
 
         services.AddOptions<GeoLite2Options>()
             .Bind(configuration.GetSection(GeoLite2Options.SectionName))
@@ -228,6 +231,7 @@ public static class DependencyInjection
 
         services.AddSingleton<MaxMindGeoLocationService>();
         services.AddSingleton<IGeoLocationService>(sp => sp.GetRequiredService<MaxMindGeoLocationService>());
-        services.AddHostedService<GeoDatabaseUpdaterService>();
+        if (configuration.GetValue("BackgroundServices:GeoDatabaseUpdater", true))
+            services.AddHostedService<GeoDatabaseUpdaterService>();
     }
 }
