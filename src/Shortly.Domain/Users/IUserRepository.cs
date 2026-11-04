@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using System.Linq.Expressions;
-
 namespace Shortly.Domain.Users;
 
 public interface IUserRepository
@@ -16,6 +13,7 @@ public interface IUserRepository
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
     Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
     Task<bool> EmailOrUsernameExistsAsync(string email, string username, CancellationToken cancellationToken = default);
+    Task RecordFailedLoginAsync(Guid userId, DateTime utcNow, int maxAttempts, TimeSpan lockoutDuration, CancellationToken cancellationToken = default);
     void Add(User user);
     void Remove(User user);
 }

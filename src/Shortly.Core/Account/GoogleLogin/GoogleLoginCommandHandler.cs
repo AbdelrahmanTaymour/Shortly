@@ -29,7 +29,7 @@ internal sealed class GoogleLoginCommandHandler(
         var tokensResult = await jwtService.IssueTokensAsync(user, cancellationToken);
         if (tokensResult.IsFailure) return tokensResult;
 
-        cookieService.SetRefreshToken(tokensResult.Value.RefreshToken, utcNow.AddDays(15));
+        cookieService.SetRefreshToken(tokensResult.Value.RefreshToken, utcNow.Add(jwtService.RefreshTokenLifetime));
         
         return tokensResult;
     }

@@ -21,7 +21,7 @@ internal sealed class RefreshAccessTokenCommandHandler(
         if (result.IsFailure) return result;
 
         var utcNow = dateTimeProvider.UtcNow;
-        cookieService.SetRefreshToken(result.Value.RefreshToken, utcNow.AddDays(15));
+        cookieService.SetRefreshToken(result.Value.RefreshToken, utcNow.Add(jwtService.RefreshTokenLifetime));
 
         return result;
     }

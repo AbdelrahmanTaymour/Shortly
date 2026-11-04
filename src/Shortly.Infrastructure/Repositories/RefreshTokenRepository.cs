@@ -9,12 +9,13 @@ public sealed class RefreshTokenRepository(ApplicationDbContext dbContext)
     public async Task<RefreshToken?> GetByTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default)
         => await DbContext.Set<RefreshToken>()
             .AsNoTracking()
-            .Include(rt => rt.User).ThenInclude(u => u.Profile) // only if the caller actually needs Profile — see note below
+            .Include(rt => rt.User).ThenInclude(u => u.Profile)
+            .Include(rt => rt.User).ThenInclude(u => u.Security)
             .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash, cancellationToken);
 
-    public async Task<bool> RotateAsync(Guid id, string newTokenHash, TimeSpan lifetime, DateTime utcNow, CancellationToken cancellationToken = default)
+    public async Task<bool> RotateAsync(Guid id, string currentTokenHash, string newTokenHash, TimeSpan lifetime, DateTime utcNow, CancellationToken cancellationToken = default)
         => await DbContext.Set<RefreshToken>()
-            .Where(rt => rt.Id == id)
+            .Where(rt => rt.Id == id && rt.TokenHash == currentTokenHash && !rt.IsRevoked && rt.ExpiresAt > utcNow)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(rt => rt.TokenHash, newTokenHash)
                 .SetProperty(rt => rt.ExpiresAt, utcNow.Add(lifetime))
