@@ -1,4 +1,5 @@
 using Dapper;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
@@ -6,13 +7,19 @@ using Shortly.Domain.Abstractions;
 namespace Shortly.Core.Analytics.GetShortUrlPortfolioSummary;
 
 internal sealed class GetShortUrlPortfolioSummaryQueryHandler(
-    ISqlConnectionFactory sqlConnectionFactory)
+    ISqlConnectionFactory sqlConnectionFactory,
+    AnalyticsScopeResolver scopeResolver,
+    IDateTimeProvider dateTimeProvider)
     : IQueryHandler<GetShortUrlPortfolioSummaryQuery, ShortUrlPortfolioSummaryResponse>
 {
     public async Task<Result<ShortUrlPortfolioSummaryResponse>> Handle(
         GetShortUrlPortfolioSummaryQuery request,
         CancellationToken cancellationToken)
     {
+        var scopeResult = await scopeResolver.ResolveAsync(null, null, null, AnalyticsFeature.None, cancellationToken);
+        if (scopeResult.IsFailure) return Result.Failure<ShortUrlPortfolioSummaryResponse>(scopeResult.Error);
+        var scope = scopeResult.Value;
+
         using var connection = sqlConnectionFactory.CreateConnection();
 
         const string sql = """
@@ -20,7 +27,7 @@ internal sealed class GetShortUrlPortfolioSummaryQueryHandler(
                                COUNT(*) AS TotalUrls,
                                COUNT(*) FILTER (WHERE is_active) AS ActiveUrls,
                                COUNT(*) FILTER (
-                                   WHERE expires_at IS NOT NULL AND expires_at <= NOW()
+                                   WHERE expires_at IS NOT NULL AND expires_at <= @UtcNow
                                ) AS ExpiredUrls,
                                COUNT(*) FILTER (WHERE is_private) AS PrivateUrls,
                                COUNT(*) FILTER (WHERE is_password_protected) AS PasswordProtectedUrls,
@@ -36,7 +43,7 @@ internal sealed class GetShortUrlPortfolioSummaryQueryHandler(
 
         var command = new CommandDefinition(
             sql,
-            new { request.UserId, request.OrganizationId },
+            new { scope.UserId, scope.OrganizationId, UtcNow = dateTimeProvider.UtcNow },
             cancellationToken: cancellationToken);
 
         var response =

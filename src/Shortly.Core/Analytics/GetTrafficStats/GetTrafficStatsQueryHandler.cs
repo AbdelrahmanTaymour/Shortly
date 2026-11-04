@@ -6,19 +6,18 @@ using Shortly.Domain.Abstractions;
 
 namespace Shortly.Core.Analytics.GetTrafficStats;
 
-internal sealed class GetTrafficStatsQueryHandler(ISqlConnectionFactory sqlConnectionFactory)
+internal sealed class GetTrafficStatsQueryHandler(ISqlConnectionFactory sqlConnectionFactory,
+    AnalyticsScopeResolver scopeResolver)
     : IQueryHandler<GetTrafficStatsQuery, TrafficStatsResponse>
 {
     private const int TopN = 10;
 
     public async Task<Result<TrafficStatsResponse>> Handle(GetTrafficStatsQuery request, CancellationToken cancellationToken)
     {
-        var scope = new AnalyticsScope(
-            request.ShortUrlId,
-            request.UserId,
-            request.OrganizationId,
-            request.From,
-            request.To);
+        var scopeResult = await scopeResolver.ResolveAsync(
+            request.ShortUrlId, request.From, request.To, AnalyticsFeature.LinkAnalysis, cancellationToken);
+        if (scopeResult.IsFailure) return Result.Failure<TrafficStatsResponse>(scopeResult.Error);
+        var scope = scopeResult.Value;
 
         using var connection = sqlConnectionFactory.CreateConnection();
 
@@ -133,11 +132,11 @@ internal sealed class GetTrafficStatsQueryHandler(ISqlConnectionFactory sqlConne
             sql,
             new
             {
-                request.ShortUrlId,
-                request.UserId,
-                request.OrganizationId,
-                request.From,
-                request.To,
+                scope.ShortUrlId,
+                scope.UserId,
+                scope.OrganizationId,
+                scope.From,
+                scope.To,
                 TopN
             },
             cancellationToken: cancellationToken);
@@ -165,7 +164,8 @@ internal sealed class GetTrafficStatsQueryHandler(ISqlConnectionFactory sqlConne
                     CalculatePercentage(referrer.Clicks, totals.Total)))
                 .ToList(),
 
-            TopCampaigns = campaignRows
+            // UTM campaign breakdown needs CampaignTracking; the rest of the traffic report is unaffected.
+            TopCampaigns = !scope.IncludeCampaigns ? [] : campaignRows
                 .Select(campaign => new CampaignBreakdown(
                     campaign.CampaignName,
                     campaign.Source,

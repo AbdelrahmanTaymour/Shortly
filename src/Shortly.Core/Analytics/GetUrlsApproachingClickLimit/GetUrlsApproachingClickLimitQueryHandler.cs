@@ -7,13 +7,18 @@ using Shortly.Domain.Abstractions;
 namespace Shortly.Core.Analytics.GetUrlsApproachingClickLimit;
 
 internal sealed class GetUrlsApproachingClickLimitQueryHandler(
-    ISqlConnectionFactory sqlConnectionFactory)
+    ISqlConnectionFactory sqlConnectionFactory,
+    AnalyticsScopeResolver scopeResolver)
     : IQueryHandler<GetUrlsApproachingClickLimitQuery, PagedResponse<ShortUrlResponse>>
 {
     public async Task<Result<PagedResponse<ShortUrlResponse>>> Handle(
         GetUrlsApproachingClickLimitQuery request,
         CancellationToken cancellationToken)
     {
+        var scopeResult = await scopeResolver.ResolveAsync(null, null, null, AnalyticsFeature.None, cancellationToken);
+        if (scopeResult.IsFailure) return Result.Failure<PagedResponse<ShortUrlResponse>>(scopeResult.Error);
+        var scope = scopeResult.Value;
+
         var page = Math.Max(request.Page, 1);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
         var offset = (long)(page - 1) * pageSize;
@@ -24,7 +29,9 @@ internal sealed class GetUrlsApproachingClickLimitQueryHandler(
             SELECT COUNT(*)
             FROM short_urls
             WHERE click_limit > 0
-              AND total_clicks >= click_limit * @WarningThreshold;
+              AND total_clicks >= click_limit * @WarningThreshold
+              AND ((@UserId IS NOT NULL AND user_id = @UserId)
+                   OR (@OrganizationId IS NOT NULL AND organization_id = @OrganizationId));
 
             SELECT
                 id AS Id,
@@ -42,6 +49,8 @@ internal sealed class GetUrlsApproachingClickLimitQueryHandler(
             FROM short_urls
             WHERE click_limit > 0
               AND total_clicks >= click_limit * @WarningThreshold
+              AND ((@UserId IS NOT NULL AND user_id = @UserId)
+                   OR (@OrganizationId IS NOT NULL AND organization_id = @OrganizationId))
             ORDER BY
                 total_clicks::float8 / click_limit DESC,
                 created_at_utc DESC,
@@ -55,6 +64,8 @@ internal sealed class GetUrlsApproachingClickLimitQueryHandler(
             new
             {
                 request.WarningThreshold,
+                scope.UserId,
+                scope.OrganizationId,
                 Offset = offset,
                 PageSize = pageSize
             },

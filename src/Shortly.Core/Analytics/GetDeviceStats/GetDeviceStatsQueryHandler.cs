@@ -6,7 +6,8 @@ using Shortly.Domain.Abstractions;
 namespace Shortly.Core.Analytics.GetDeviceStats;
 
 internal sealed class GetDeviceStatsQueryHandler(
-    ISqlConnectionFactory sqlConnectionFactory)
+    ISqlConnectionFactory sqlConnectionFactory,
+    AnalyticsScopeResolver scopeResolver)
     : IQueryHandler<GetDeviceStatsQuery, DeviceStatsResponse>
 {
     private const int TopN = 6;
@@ -15,20 +16,18 @@ internal sealed class GetDeviceStatsQueryHandler(
         GetDeviceStatsQuery request,
         CancellationToken cancellationToken)
     {
-        var scope = new AnalyticsScope(
-            request.ShortUrlId,
-            request.UserId,
-            request.OrganizationId,
-            request.From,
-            request.To);
+        var scopeResult = await scopeResolver.ResolveAsync(
+            request.ShortUrlId, request.From, request.To, AnalyticsFeature.GeoDeviceAnalytics, cancellationToken);
+        if (scopeResult.IsFailure) return Result.Failure<DeviceStatsResponse>(scopeResult.Error);
+        var scope = scopeResult.Value;
 
         var parameters = new
         {
-            request.ShortUrlId,
-            request.UserId,
-            request.OrganizationId,
-            request.From,
-            request.To,
+            scope.ShortUrlId,
+            scope.UserId,
+            scope.OrganizationId,
+            scope.From,
+            scope.To,
             TopN
         };
 

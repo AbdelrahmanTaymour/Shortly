@@ -1,4 +1,5 @@
 using Dapper;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
@@ -7,18 +8,24 @@ namespace Shortly.Core.Analytics.GetTopPerformingShortUrls;
 
 
 internal sealed class GetTopPerformingShortUrlsQueryHandler(
-    ISqlConnectionFactory sqlConnectionFactory)
+    ISqlConnectionFactory sqlConnectionFactory,
+    AnalyticsScopeResolver scopeResolver,
+    IDateTimeProvider dateTimeProvider)
     : IQueryHandler<GetTopPerformingShortUrlsQuery, IReadOnlyList<TopPerformingUrlResponse>>
 {
     public async Task<Result<IReadOnlyList<TopPerformingUrlResponse>>> Handle(
         GetTopPerformingShortUrlsQuery request,
         CancellationToken cancellationToken)
     {
+        var scopeResult = await scopeResolver.ResolveAsync(null, null, null, AnalyticsFeature.LinkAnalysis, cancellationToken);
+        if (scopeResult.IsFailure) return Result.Failure<IReadOnlyList<TopPerformingUrlResponse>>(scopeResult.Error);
+        var scope = scopeResult.Value;
+
         var topCount = Math.Clamp(request.TopCount, 1, 100);
 
         DateTime? createdAfter = request.Timeframe is null
             ? null
-            : DateTime.UtcNow.Subtract(request.Timeframe.Value);
+            : dateTimeProvider.UtcNow.Subtract(request.Timeframe.Value);
 
         using var connection = sqlConnectionFactory.CreateConnection();
 
@@ -33,16 +40,18 @@ internal sealed class GetTopPerformingShortUrlsQueryHandler(
                     SELECT MAX(ce.clicked_at_utc)
                     FROM click_events ce
                     WHERE ce.short_url_id = s.id
+                      AND (@From::timestamptz IS NULL OR ce.clicked_at_utc >= @From::timestamptz)
                 ) AS "LastClickAtUtc",
-                (
+                CASE WHEN @IncludeGeo THEN (
                     SELECT ce.country
                     FROM click_events ce
                     WHERE ce.short_url_id = s.id
                       AND NULLIF(BTRIM(ce.country), '') IS NOT NULL
+                      AND (@From::timestamptz IS NULL OR ce.clicked_at_utc >= @From::timestamptz)
                     GROUP BY ce.country
                     ORDER BY COUNT(*) DESC, ce.country
                     LIMIT 1
-                ) AS "TopCountry"
+                ) END AS "TopCountry"
             FROM short_urls s
             WHERE s.is_active
               AND (@UserId IS NULL OR s.user_id = @UserId)
@@ -62,9 +71,11 @@ internal sealed class GetTopPerformingShortUrlsQueryHandler(
             sql,
             new
             {
-                request.UserId,
-                request.OrganizationId,
+                scope.UserId,
+                scope.OrganizationId,
                 CreatedAfter = createdAfter,
+                scope.From,
+                IncludeGeo = scope.IncludeGeo,
                 TopCount = topCount
             },
             cancellationToken: cancellationToken);

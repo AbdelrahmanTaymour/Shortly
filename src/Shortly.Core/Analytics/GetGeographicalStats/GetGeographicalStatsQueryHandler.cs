@@ -5,7 +5,8 @@ using Shortly.Domain.Abstractions;
 
 namespace Shortly.Core.Analytics.GetGeographicalStats;
 
-internal sealed class GetGeographicalStatsQueryHandler(ISqlConnectionFactory sqlConnectionFactory)
+internal sealed class GetGeographicalStatsQueryHandler(ISqlConnectionFactory sqlConnectionFactory,
+    AnalyticsScopeResolver scopeResolver)
     : IQueryHandler<GetGeographicalStatsQuery, GeographicalStatsResponse>
 {
     private const int TopN = 5;
@@ -14,12 +15,10 @@ internal sealed class GetGeographicalStatsQueryHandler(ISqlConnectionFactory sql
         GetGeographicalStatsQuery request,
         CancellationToken cancellationToken)
     {
-        var scope = new AnalyticsScope(
-            request.ShortUrlId,
-            request.UserId,
-            request.OrganizationId,
-            request.From,
-            request.To);
+        var scopeResult = await scopeResolver.ResolveAsync(
+            request.ShortUrlId, request.From, request.To, AnalyticsFeature.GeoDeviceAnalytics, cancellationToken);
+        if (scopeResult.IsFailure) return Result.Failure<GeographicalStatsResponse>(scopeResult.Error);
+        var scope = scopeResult.Value;
 
         using var connection = sqlConnectionFactory.CreateConnection();
 
@@ -77,7 +76,7 @@ internal sealed class GetGeographicalStatsQueryHandler(ISqlConnectionFactory sql
 
         var command = new CommandDefinition(
             sql,
-            Params(request, TopN),
+            Params(scope, TopN),
             cancellationToken: cancellationToken);
 
         using var multi = await connection.QueryMultipleAsync(command);
@@ -110,7 +109,7 @@ internal sealed class GetGeographicalStatsQueryHandler(ISqlConnectionFactory sql
         };
     }
 
-    private static object Params(GetGeographicalStatsQuery r, int topN) => new
+    private static object Params(AnalyticsScope r, int topN) => new
     {
         r.ShortUrlId,
         r.UserId,

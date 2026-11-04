@@ -5,7 +5,9 @@ internal readonly record struct AnalyticsScope(
     Guid? UserId,
     Guid? OrganizationId,
     DateTime? From,
-    DateTime? To)
+    DateTime? To,
+    bool IncludeGeo = false,
+    bool IncludeCampaigns = false)
 {
     public string BuildWhereClause()
     {

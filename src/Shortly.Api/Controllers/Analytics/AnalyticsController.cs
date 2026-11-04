@@ -21,13 +21,13 @@ namespace Shortly.Api.Controllers.Analytics;
 [Route("api/analytics")]
 [Produces("application/json")]
 [Authorize]
-public class AnalyticsController(ISender sender, IUserContext userContext) : ControllerBase
+public class AnalyticsController(ISender sender) : ControllerBase
 {
     [HttpGet("urls/{shortUrlId:long}/overview", Name = "GetUrlAnalyticsOverview")]
     [ProducesResponseType(typeof(AnalyticsOverviewResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUrlOverview(long shortUrlId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetAnalyticsOverviewQuery(shortUrlId, null, null, from, to), cancellationToken);
+        var result = await sender.Send(new GetAnalyticsOverviewQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -35,7 +35,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(EngagementMetricsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUrlEngagement(long shortUrlId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetEngagementMetricsQuery(shortUrlId, null, null, from, to), cancellationToken);
+        var result = await sender.Send(new GetEngagementMetricsQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -43,7 +43,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(GeographicalStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUrlGeography(long shortUrlId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetGeographicalStatsQuery(shortUrlId, null, null, from, to), cancellationToken);
+        var result = await sender.Send(new GetGeographicalStatsQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -51,7 +51,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(DeviceStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUrlDevices(long shortUrlId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetDeviceStatsQuery(shortUrlId, null, null, from, to), cancellationToken);
+        var result = await sender.Send(new GetDeviceStatsQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -59,7 +59,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(TrafficStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUrlTraffic(long shortUrlId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetTrafficStatsQuery(shortUrlId, null, null, from, to), cancellationToken);
+        var result = await sender.Send(new GetTrafficStatsQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -67,7 +67,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(TimeSeriesStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUrlTimeSeries(long shortUrlId, [FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetTimeSeriesStatsQuery(shortUrlId, null, null, from, to), cancellationToken);
+        var result = await sender.Send(new GetTimeSeriesStatsQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -75,7 +75,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(ShortUrlPortfolioSummaryResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMySummary(CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetShortUrlPortfolioSummaryQuery(userContext.UserId, userContext.OrganizationId), cancellationToken);
+        var result = await sender.Send(new GetShortUrlPortfolioSummaryQuery(), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -83,7 +83,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(AnalyticsOverviewResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyOverview([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetAnalyticsOverviewQuery(null, userContext.UserId, userContext.OrganizationId, from, to), cancellationToken);
+        var result = await sender.Send(new GetAnalyticsOverviewQuery(null, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -91,7 +91,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(EngagementMetricsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyEngagement([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetEngagementMetricsQuery(null, userContext.UserId, userContext.OrganizationId, from, to), cancellationToken);
+        var result = await sender.Send(new GetEngagementMetricsQuery(null, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -99,7 +99,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(GeographicalStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyGeography([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetGeographicalStatsQuery(null, userContext.UserId, userContext.OrganizationId, from, to), cancellationToken);
+        var result = await sender.Send(new GetGeographicalStatsQuery(null, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -107,7 +107,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(DeviceStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyDevices([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetDeviceStatsQuery(null, userContext.UserId, userContext.OrganizationId, from, to), cancellationToken);
+        var result = await sender.Send(new GetDeviceStatsQuery(null, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -115,7 +115,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(TrafficStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyTraffic([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetTrafficStatsQuery(null, userContext.UserId, userContext.OrganizationId, from, to), cancellationToken);
+        var result = await sender.Send(new GetTrafficStatsQuery(null, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -123,7 +123,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     [ProducesResponseType(typeof(TimeSeriesStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyTimeSeries([FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetTimeSeriesStatsQuery(null, userContext.UserId, userContext.OrganizationId, from, to), cancellationToken);
+        var result = await sender.Send(new GetTimeSeriesStatsQuery(null, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
@@ -132,7 +132,7 @@ public class AnalyticsController(ISender sender, IUserContext userContext) : Con
     public async Task<IActionResult> GetMyTopUrls([FromQuery] int topCount = 10, [FromQuery] int? timeframeDays = null, CancellationToken cancellationToken = default)
     {
         var timeframe = timeframeDays.HasValue ? TimeSpan.FromDays(timeframeDays.Value) : (TimeSpan?)null;
-        var result = await sender.Send(new GetTopPerformingShortUrlsQuery(userContext.UserId, userContext.OrganizationId, topCount, timeframe), cancellationToken);
+        var result = await sender.Send(new GetTopPerformingShortUrlsQuery(topCount, timeframe), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 

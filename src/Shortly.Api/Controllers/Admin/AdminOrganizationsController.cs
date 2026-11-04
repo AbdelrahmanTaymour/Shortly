@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.Api.Extensions;
+using Shortly.Core.Admin.ChangeOrganizationPlan;
 using Shortly.Core.Admin.GetOrganizationDetail;
 using Shortly.Core.Admin.ResetAllOrganizationsUsage;
 using Shortly.Core.Admin.ResetOrganizationUsage;
@@ -38,14 +39,24 @@ public class AdminOrganizationsController(ISender sender) : ControllerBase
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    [HttpPatch("{id:guid}/plan", Name = "AdminChangeOrganizationPlan")]
+    [RequiredPermission(enPermissions.SystemAdmin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ChangePlan(Guid id, [FromBody] ChangeOrganizationPlanRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new ChangeOrganizationPlanCommand(id, request.SubscriptionPlanId), cancellationToken);
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
+    }
+
     [HttpPost("{id:guid}/usage/reset", Name = "AdminResetOrganizationUsage")]
     [RequiredPermission(enPermissions.ManageOrgUsage)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ResetUsage(Guid id, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new ResetOrganizationUsageCommand(id), cancellationToken);
-        return result.IsFailure ? result.ToProblemDetails() : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
     [HttpPost("usage/reset-all", Name = "AdminResetAllOrganizationsUsage")]

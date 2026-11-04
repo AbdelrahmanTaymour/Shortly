@@ -145,11 +145,11 @@ public class AdminController(ISender sender) : ControllerBase
     
     [HttpPost("{userId:guid}/usage/reset", Name = "ResetUserUsage")]
     [RequiredPermission(enPermissions.ManageUserUsage)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> ResetUsage(Guid userId, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new ResetUserUsageCommand(userId), cancellationToken);
-        return result.IsFailure ? result.ToProblemDetails() : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
     [HttpPost("usage/reset-all", Name = "ResetAllUsersUsage")]
@@ -163,23 +163,22 @@ public class AdminController(ISender sender) : ControllerBase
 
     [HttpPost("{userId:guid}/lock", Name = "LockUser")]
     [RequiredPermission(enPermissions.ManageUserAccessibility)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Lock(Guid userId, [FromBody] LockUserRequest request,
         CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new LockUserCommand(userId, request.Reason, request.Duration),
-            cancellationToken);
-        return result.IsFailure ? result.ToProblemDetails() : Ok();
+        var result = await sender.Send(new LockUserCommand(userId, request.Reason, request.Duration), cancellationToken);
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
     [HttpPost("{userId:guid}/unlock", Name = "UnlockUser")]
     [RequiredPermission(enPermissions.ManageUserAccessibility)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Unlock(Guid userId, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new UnlockUserCommand(userId), cancellationToken);
-        return result.IsFailure ? result.ToProblemDetails() : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 }

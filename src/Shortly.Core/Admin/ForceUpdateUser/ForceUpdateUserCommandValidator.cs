@@ -22,6 +22,10 @@ internal sealed class ForceUpdateUserCommandValidator : AbstractValidator<ForceU
             .IsInEnum()
             .When(x => x.Role.HasValue);
 
+        RuleFor(x => x.SubscriptionPlanId)
+            .IsInEnum()
+            .When(x => x.SubscriptionPlanId.HasValue);
+
         RuleFor(x => x.ProfileName)
             .MaximumLength(100)
             .When(x => !string.IsNullOrEmpty(x.ProfileName));
