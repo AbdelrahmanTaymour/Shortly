@@ -6,13 +6,12 @@ using Shortly.Domain.Members;
 namespace Shortly.Core.Members.RemoveMember;
 
 internal sealed class RemoveMemberCommandHandler(
-    IUserContext userContext, IOrganizationMemberRepository memberRepository, IUnitOfWork unitOfWork) : ICommandHandler<RemoveMemberCommand>
+    IOrganizationAuthorizationService organizationAuthorization, IOrganizationMemberRepository memberRepository, IUnitOfWork unitOfWork) : ICommandHandler<RemoveMemberCommand>
 {
     public async Task<Result> Handle(RemoveMemberCommand request, CancellationToken cancellationToken)
     {
-        var caller = await memberRepository.GetByOrganizationAndUserAsync(request.OrganizationId, userContext.UserId, cancellationToken);
-        if (caller is null || caller.Role < MemberRole.OrgAdmin)
-            return Result.Failure(OrganizationMemberErrors.InsufficientRole);
+        var caller = await organizationAuthorization.RequireRoleAsync(request.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
+        if (caller.IsFailure) return Result.Failure(caller.Error);
 
         var target = await memberRepository.GetByOrganizationAndUserAsync(request.OrganizationId, request.UserId, cancellationToken);
         if (target is null) return Result.Failure(OrganizationMemberErrors.NotFound);

@@ -8,7 +8,7 @@ using Shortly.Domain.Teams;
 namespace Shortly.Core.Teams.ChangeTeamManager;
 
 internal sealed class ChangeTeamManagerCommandHandler(
-    IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     IOrganizationMemberRepository memberRepository,
     IOrganizationTeamRepository teamRepository,
     IOrganizationTeamMemberRepository teamMemberRepository,
@@ -21,12 +21,11 @@ internal sealed class ChangeTeamManagerCommandHandler(
         if (team is null || team.OrganizationId != request.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.NotFound);
 
-        var caller = await memberRepository.GetByOrganizationAndUserAsync(team.OrganizationId, userContext.UserId, cancellationToken);
-        if (caller is null || caller.Role < MemberRole.OrgAdmin)
-            return Result.Failure(OrganizationTeamErrors.InsufficientRole);
+        var caller = await organizationAuthorization.RequireRoleAsync(team.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
+        if (caller.IsFailure) return Result.Failure(caller.Error);
 
         var newManagerMembership = await memberRepository.GetByIdAsync(request.NewManagerId, cancellationToken);
-        if (newManagerMembership is null || newManagerMembership.OrganizationId != team.OrganizationId)
+        if (newManagerMembership is not { IsActive: true } || newManagerMembership.OrganizationId != team.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.ManagerNotOrgMember);
 
         team.ChangeManager(newManagerMembership.Id);

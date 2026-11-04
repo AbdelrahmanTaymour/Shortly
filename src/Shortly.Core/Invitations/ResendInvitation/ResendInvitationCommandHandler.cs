@@ -13,7 +13,7 @@ namespace Shortly.Core.Invitations.ResendInvitation;
 internal sealed class ResendInvitationCommandHandler(
     IUserContext userContext,
     IOrganizationInvitationRepository invitationRepository,
-    IOrganizationMemberRepository memberRepository,
+    IOrganizationAuthorizationService organizationAuthorization,
     IOrganizationRepository organizationRepository,
     IEmailNotifier notifier,
     IConfiguration configuration,
@@ -27,13 +27,13 @@ internal sealed class ResendInvitationCommandHandler(
         if (invitation is null || invitation.OrganizationId != request.OrganizationId)
             return Result.Failure(OrganizationInvitationErrors.NotFound);
 
+        var membership = await organizationAuthorization.RequireMembershipAsync(invitation.OrganizationId, cancellationToken);
+        if (membership.IsFailure) return Result.Failure(membership.Error);
+
+        // The original inviter or an organization admin; either way they must still be an active member.
         var isInviter = invitation.InvitedBy == userContext.UserId;
-        if (!isInviter)
-        {
-            var caller = await memberRepository.GetByOrganizationAndUserAsync(invitation.OrganizationId, userContext.UserId, cancellationToken);
-            if (caller is null || caller.Role < MemberRole.OrgAdmin)
-                return Result.Failure(OrganizationInvitationErrors.NotInviter);
-        }
+        if (!isInviter && membership.Value.Role < MemberRole.OrgAdmin)
+            return Result.Failure(OrganizationInvitationErrors.NotInviter);
 
         var organization = await organizationRepository.GetByIdAsync(invitation.OrganizationId, cancellationToken);
         if (organization is null) return Result.Failure(OrganizationErrors.NotFound);

@@ -7,7 +7,7 @@ using Shortly.Domain.Teams;
 namespace Shortly.Core.Teams.DeleteTeam;
 
 internal sealed class DeleteTeamCommandHandler(
-    IUserContext userContext, IOrganizationMemberRepository memberRepository, IOrganizationTeamRepository teamRepository, IUnitOfWork unitOfWork)
+    IOrganizationAuthorizationService organizationAuthorization, IOrganizationTeamRepository teamRepository, IUnitOfWork unitOfWork)
     : ICommandHandler<DeleteTeamCommand>
 {
     public async Task<Result> Handle(DeleteTeamCommand request, CancellationToken cancellationToken)
@@ -16,9 +16,8 @@ internal sealed class DeleteTeamCommandHandler(
         if (team is null || team.OrganizationId != request.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.NotFound);
 
-        var caller = await memberRepository.GetByOrganizationAndUserAsync(team.OrganizationId, userContext.UserId, cancellationToken);
-        if (caller is null || caller.Role < MemberRole.OrgAdmin)
-            return Result.Failure(OrganizationTeamErrors.InsufficientRole);
+        var caller = await organizationAuthorization.RequireRoleAsync(team.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
+        if (caller.IsFailure) return Result.Failure(caller.Error);
 
         teamRepository.Remove(team);
         await unitOfWork.SaveChangesAsync(cancellationToken);

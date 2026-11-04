@@ -18,7 +18,7 @@ internal sealed class SwitchOrganizationCommandHandler(
     {
         var userId = userContext.UserId;
         
-        var membership = await memberRepository.GetByOrganizationAndUserAsync(
+        var membership = await memberRepository.GetActiveByOrganizationAndUserAsync(
             request.OrganizationId, userId, cancellationToken);
 
         if (membership is null || !membership.IsActive)

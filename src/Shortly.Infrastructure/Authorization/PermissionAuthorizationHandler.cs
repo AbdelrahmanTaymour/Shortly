@@ -1,9 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
-using Shortly.Domain.Members;
 using Shortly.Domain.Users;
 using Shortly.Infrastructure.Authentication;
-using Shortly.Infrastructure.Authorization;
 
 namespace Shortly.Infrastructure.Authorization;
 
@@ -24,9 +21,6 @@ internal sealed class PermissionAuthorizationHandler : AuthorizationHandler<Perm
 
         if (context.User.GetUserRole() is { } userRole)
             permissions |= UserRolePermissions.For(userRole);
-
-        if (context.User.GetMemberRole() is { } memberRole)
-            permissions |= MemberRolePermissions.For(memberRole);
 
         if ((permissions & requirement.Permission) == requirement.Permission)
             context.Succeed(requirement);

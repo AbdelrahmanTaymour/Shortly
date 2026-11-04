@@ -13,6 +13,7 @@ namespace Shortly.Core.Invitations.CreateInvitation;
 
 internal sealed class CreateInvitationCommandHandler(
     IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     IOrganizationRepository organizationRepository,
     IOrganizationMemberRepository memberRepository,
     IOrganizationInvitationRepository invitationRepository,
@@ -28,9 +29,8 @@ internal sealed class CreateInvitationCommandHandler(
         if (request.Role == MemberRole.OrgOwner)
             return Result.Failure<Guid>(OrganizationInvitationErrors.CannotInviteAsOwner);
 
-        var caller = await memberRepository.GetByOrganizationAndUserAsync(request.OrganizationId, userContext.UserId, cancellationToken);
-        if (caller is null || caller.Role < MemberRole.OrgAdmin)
-            return Result.Failure<Guid>(OrganizationInvitationErrors.InsufficientRole);
+        var caller = await organizationAuthorization.RequireRoleAsync(request.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
+        if (caller.IsFailure) return Result.Failure<Guid>(caller.Error);
 
         var organization = await organizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
         if (organization is null) return Result.Failure<Guid>(OrganizationErrors.NotFound);

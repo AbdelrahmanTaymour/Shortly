@@ -1,4 +1,5 @@
 using Dapper;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
@@ -7,6 +8,7 @@ using Shortly.Domain.Members;
 namespace Shortly.Core.Members.GetOrganizationMembers;
 
 internal sealed class GetOrganizationMembersQueryHandler(
+    IOrganizationAuthorizationService organizationAuthorization,
     ISqlConnectionFactory sqlConnectionFactory)
     : IQueryHandler<GetOrganizationMembersQuery, PagedResponse<OrganizationMemberResponse>>
 {
@@ -26,6 +28,10 @@ internal sealed class GetOrganizationMembersQueryHandler(
     public async Task<Result<PagedResponse<OrganizationMemberResponse>>> Handle(
         GetOrganizationMembersQuery request, CancellationToken cancellationToken)
     {
+        var membership = await organizationAuthorization.RequireMembershipAsync(request.OrganizationId, cancellationToken);
+        if (membership.IsFailure)
+            return Result.Failure<PagedResponse<OrganizationMemberResponse>>(membership.Error);
+
         using var connection = sqlConnectionFactory.CreateConnection();
 
         var parameters = new

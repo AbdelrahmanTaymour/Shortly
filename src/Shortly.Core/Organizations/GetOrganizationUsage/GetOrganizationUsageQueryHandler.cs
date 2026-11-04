@@ -1,12 +1,16 @@
 using Dapper;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Data;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
+using Shortly.Domain.Members;
 using Shortly.Domain.Organizations;
 
 namespace Shortly.Core.Organizations.GetOrganizationUsage;
 
 internal sealed class GetOrganizationUsageQueryHandler(
+    IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     ISqlConnectionFactory sqlConnectionFactory)
     : IQueryHandler<GetOrganizationUsageQuery, OrganizationUsageResponse>
 {
@@ -14,6 +18,15 @@ internal sealed class GetOrganizationUsageQueryHandler(
         GetOrganizationUsageQuery request,
         CancellationToken cancellationToken)
     {
+        // Usage and quotas are restricted to organization owners/administrators and system administrators.
+        if (!userContext.IsAdmin)
+        {
+            var access = await organizationAuthorization.RequireRoleAsync(
+                request.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
+            if (access.IsFailure)
+                return Result.Failure<OrganizationUsageResponse>(access.Error);
+        }
+
         const string sql = """
             SELECT
                 ou.monthly_links_created AS MonthlyLinksCreated,

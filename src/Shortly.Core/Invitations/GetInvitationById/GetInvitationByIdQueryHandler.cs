@@ -10,7 +10,8 @@ using Shortly.Domain.Members;
 namespace Shortly.Core.Invitations.GetInvitationById;
 
 internal sealed class GetInvitationByIdQueryHandler(
-    IUserContext userContext, IOrganizationMemberRepository memberRepository, ISqlConnectionFactory sqlConnectionFactory)
+    IOrganizationAuthorizationService organizationAuthorization, 
+    ISqlConnectionFactory sqlConnectionFactory)
     : IQueryHandler<GetInvitationByIdQuery, OrganizationInvitationResponse>
 {
     private const string Sql = """
@@ -29,9 +30,8 @@ internal sealed class GetInvitationByIdQueryHandler(
         var row = await connection.QuerySingleOrDefaultAsync<OrganizationInvitationRow>(command);
         if (row is null) return Result.Failure<OrganizationInvitationResponse>(OrganizationInvitationErrors.NotFound);
 
-        var caller = await memberRepository.GetByOrganizationAndUserAsync(row.OrganizationId, userContext.UserId, cancellationToken);
-        if (caller is null || caller.Role < MemberRole.OrgAdmin)
-            return Result.Failure<OrganizationInvitationResponse>(OrganizationInvitationErrors.InsufficientRole);
+        var caller = await organizationAuthorization.RequireRoleAsync(row.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
+        if (caller.IsFailure) return Result.Failure<OrganizationInvitationResponse>(caller.Error);
 
         return row.ToResponse();
     }

@@ -10,7 +10,7 @@ using Shortly.Domain.Teams;
 namespace Shortly.Core.Teams.GetTeam;
 
 internal sealed class GetTeamQueryHandler(
-    IUserContext userContext, IOrganizationMemberRepository memberRepository, ISqlConnectionFactory sqlConnectionFactory)
+    IOrganizationAuthorizationService organizationAuthorization, ISqlConnectionFactory sqlConnectionFactory)
     : IQueryHandler<GetTeamQuery, OrganizationTeamResponse>
 {
     private const string Sql = """
@@ -31,8 +31,8 @@ internal sealed class GetTeamQueryHandler(
         if (team is null || team.OrganizationId != request.OrganizationId)
             return Result.Failure<OrganizationTeamResponse>(OrganizationTeamErrors.NotFound);
 
-        if (!await memberRepository.IsMemberOfOrganizationAsync(userContext.UserId, team.OrganizationId, cancellationToken))
-            return Result.Failure<OrganizationTeamResponse>(OrganizationErrors.NotAMember);
+        var membership = await organizationAuthorization.RequireMembershipAsync(team.OrganizationId, cancellationToken);
+        if (membership.IsFailure) return Result.Failure<OrganizationTeamResponse>(membership.Error);
 
         return team;
     }
