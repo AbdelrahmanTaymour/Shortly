@@ -8,6 +8,7 @@ namespace Shortly.Core.ShortUrls.BulkActivateShortUrls;
 public sealed class BulkActivateShortUrlsCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     IUnitOfWork unitOfWork) : ICommandHandler<BulkActivateShortUrlsCommand, BulkOperationResponse>
 {
     public async Task<Result<BulkOperationResponse>> Handle(BulkActivateShortUrlsCommand request, CancellationToken cancellationToken)
@@ -17,7 +18,7 @@ public sealed class BulkActivateShortUrlsCommandHandler(
         var succeeded = 0;
         foreach (var shortUrl in shortUrls)
         {
-            if (!ShortUrlAuthorization.CanManage(shortUrl, userContext)) continue;
+            if (!await ShortUrlAuthorization.CanManageAsync(shortUrl, userContext, organizationAuthorization, cancellationToken)) continue;
             if (shortUrl.Activate().IsSuccess) succeeded++;
         }
 

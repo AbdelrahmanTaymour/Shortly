@@ -9,6 +9,7 @@ namespace Shortly.Core.ShortUrls.BulkUpdateExpiration;
 internal sealed class BulkUpdateExpirationCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<BulkUpdateExpirationCommand, BulkOperationResponse>
 {
@@ -22,7 +23,7 @@ internal sealed class BulkUpdateExpirationCommandHandler(
 
         foreach (var id in request.ShortUrlIds)
         {
-            if (!byId.TryGetValue(id, out var url) || !ShortUrlAuthorization.CanManage(url, userContext))
+            if (!byId.TryGetValue(id, out var url) || !await ShortUrlAuthorization.CanManageAsync(url, userContext, organizationAuthorization, cancellationToken))
             {
                 failure++;
                 continue;

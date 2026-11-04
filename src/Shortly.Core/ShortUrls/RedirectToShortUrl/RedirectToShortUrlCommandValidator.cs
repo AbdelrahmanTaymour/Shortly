@@ -25,7 +25,6 @@ internal sealed class RedirectToShortUrlCommandValidator
             .MaximumLength(256);
 
         RuleFor(x => x.UserAgent)
-            .NotEmpty()
             .MaximumLength(2048);
 
         RuleFor(x => x.Referrer)

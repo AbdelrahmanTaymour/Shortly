@@ -1,11 +1,12 @@
 using FluentValidation;
+using Shortly.Core.Abstractions.Clock;
 
 namespace Shortly.Core.ShortUrls.BulkUpdateExpiration;
 
 internal sealed class BulkUpdateExpirationCommandValidator
     : AbstractValidator<BulkUpdateExpirationCommand>
 {
-    public BulkUpdateExpirationCommandValidator()
+    public BulkUpdateExpirationCommandValidator(IDateTimeProvider clock)
     {
         RuleFor(x => x.ShortUrlIds)
             .NotEmpty()
@@ -19,11 +20,7 @@ internal sealed class BulkUpdateExpirationCommandValidator
             .WithMessage("Duplicate short URL IDs are not allowed.");
 
         RuleFor(x => x.ExpiresAt)
-            .Must(BeInFuture)
-            .When(x => x.ExpiresAt.HasValue)
-            .WithMessage("Expiration date must be in the future.");
+            .MustBeInTheFuture(clock)
+            .When(x => x.ExpiresAt.HasValue);
     }
-
-    private static bool BeInFuture(DateTime? value) =>
-        value > DateTime.UtcNow;
 }

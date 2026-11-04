@@ -10,10 +10,20 @@ namespace Shortly.Core.ShortUrls.GetShortUrlByCode;
 
 internal sealed class GetShortUrlByCodeQueryHandler(
     ISqlConnectionFactory sqlConnectionFactory,
-    IUserContext userContext) : IQueryHandler<GetShortUrlByCodeQuery, ShortUrlResponse>
+    IUserContext userContext,
+    IOrganizationAuthorizationService organizationAuthorization) : IQueryHandler<GetShortUrlByCodeQuery, ShortUrlResponse>
 {
     public async Task<Result<ShortUrlResponse>> Handle(GetShortUrlByCodeQuery request, CancellationToken cancellationToken)
     {
+        // The token's organization claim may be stale: only honor it while the membership is still active.
+        Guid? organizationId = null;
+        if (!userContext.IsAdmin)
+        {
+            var membership = await organizationAuthorization.ResolveClaimedMembershipAsync(cancellationToken);
+            if (membership.IsFailure) return Result.Failure<ShortUrlResponse>(membership.Error);
+            organizationId = membership.Value?.OrganizationId;
+        }
+
         using var connection = sqlConnectionFactory.CreateConnection();
 
         const string sql = """
@@ -30,7 +40,7 @@ internal sealed class GetShortUrlByCodeQueryHandler(
         {
             request.ShortCode,
             userContext.UserId,
-            userContext.OrganizationId,
+            OrganizationId = organizationId,
             userContext.IsAdmin
         });
 

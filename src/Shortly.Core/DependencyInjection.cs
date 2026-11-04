@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Behaviors;
 using Shortly.Core.Common;
+using Shortly.Core.ShortUrls;
 using Shortly.Domain.ShortUrls;
 
 namespace Shortly.Core;
@@ -21,7 +22,8 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
         
-        services.AddTransient<ShortCodeGenerator>();
+        services.AddSingleton<IShortCodeGenerator, ShortCodeGenerator>();
+        services.AddScoped<ShortUrlOwnerResolver>();
         services.AddScoped<IOrganizationAuthorizationService, OrganizationAuthorizationService>();
 
         services.Configure<AppSettings>(configuration.GetSection("AppSettings"));

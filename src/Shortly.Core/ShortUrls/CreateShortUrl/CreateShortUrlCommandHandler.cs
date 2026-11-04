@@ -12,16 +12,15 @@ namespace Shortly.Core.ShortUrls.CreateShortUrl;
 
 internal sealed class CreateShortUrlCommandHandler(
     IShortUrlRepository shortUrlRepository,
-    IUserRepository userRepository,
-    IOrganizationRepository organizationRepository,
-    ISubscriptionPlanLimitsProvider planLimitsProvider,
+    ShortUrlOwnerResolver ownerResolver,
     IUserContext userContext,
-    ShortCodeGenerator shortCodeGenerator,
+    IShortCodeGenerator shortCodeGenerator,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<CreateShortUrlCommand, string>
 {
     private const int MaxShortCodeAttempts = 5;
+    private const string ShortCodeUniqueIndex = "ux_short_urls_short_code";
     private const int UnlimitedClickLimit = -1;
 
     public async Task<Result<string>> Handle(CreateShortUrlCommand request, CancellationToken cancellationToken)
@@ -31,8 +30,13 @@ internal sealed class CreateShortUrlCommandHandler(
 
         var utcNow = dateTimeProvider.UtcNow;
 
-        var ownerResult = await ResolveOwnerAsync(utcNow, cancellationToken);
+        var ownerResult = await ownerResolver.ResolveAsync(
+            linksRequested: 1, requireBulkCreation: false, utcNow, cancellationToken);
         if (ownerResult.IsFailure) return Result.Failure<string>(ownerResult.Error);
+
+        // A custom short code is a plan feature of the link's owner (anonymous callers are Free).
+        if (!string.IsNullOrWhiteSpace(request.CustomShortCode) && !ownerResult.Value.Limits.CustomShortCode)
+            return Result.Failure<string>(ShortUrlErrors.CustomShortCodeNotAllowed);
 
         var shortCodeResult = await ResolveShortCodeAsync(request.CustomShortCode, cancellationToken);
         if (shortCodeResult.IsFailure) return Result.Failure<string>(shortCodeResult.Error);
@@ -42,75 +46,42 @@ internal sealed class CreateShortUrlCommandHandler(
 
         var owner = ownerResult.Value;
 
-        owner.User?.Usage.IncrementLinksCreated(utcNow);
-        owner.Organization?.Usage.IncrementLinksCreated(utcNow);
+        owner.RecordLinksCreated(1, utcNow);
 
         shortUrlRepository.Add(shortUrlResult.Value);
 
-        try
+        var shortUrl = shortUrlResult.Value;
+
+        for (var attempt = 1; ; attempt++)
         {
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (ConcurrencyException)
-        {
-            return Result.Failure<string>(ShortUrlErrors.ConcurrentUpdate);
-        }
-
-        return shortUrlResult.Value.ShortCode.Value;
-    }
-
-    private async Task<Result<OwnerContext>> ResolveOwnerAsync(
-        DateTime utcNow,
-        CancellationToken cancellationToken)
-    {
-        switch (userContext.OwnerType)
-        {
-            case enShortUrlOwnerType.User:
+            try
             {
-                var user = await userRepository.GetByIdAsync(userContext.UserId, cancellationToken);
-                if (user is null) return Result.Failure<OwnerContext>(UserErrors.NotFound);
-
-                var limits = await planLimitsProvider.GetLimitsAsync(user.SubscriptionPlanId, cancellationToken);
-                if (!limits.HasUnlimitedLinks && user.Usage.HasReachedMonthlyLinkLimit(limits.MaxLinksPerMonth, utcNow))
-                    return Result.Failure<OwnerContext>(ShortUrlErrors.MonthlyLinkLimitReached);
-
-                return new OwnerContext(user);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+                return shortUrl.ShortCode.Value;
             }
-
-            case enShortUrlOwnerType.Organization:
+            catch (ConcurrencyException)
             {
-                if (userContext.OrganizationId is not { } organizationId ||
-                    userContext.MemberId is not { } memberId)
-                    return Result.Failure<OwnerContext>(ShortUrlErrors.InvalidOwnerType);
-
-                var organization = await organizationRepository.GetByIdAsync(organizationId, cancellationToken);
-                if (organization is null) return Result.Failure<OwnerContext>(OrganizationErrors.NotFound);
-                if (!organization.IsActive) return Result.Failure<OwnerContext>(OrganizationErrors.Inactive);
-
-                var limits = await planLimitsProvider.GetLimitsAsync(organization.SubscriptionPlanId, cancellationToken);
-
-                if (!limits.HasUnlimitedLinks && organization.Usage.HasReachedMonthlyLinkLimit(limits.MaxLinksPerMonth, utcNow))
-                    return Result.Failure<OwnerContext>(ShortUrlErrors.MonthlyLinkLimitReached);
-
-                return new OwnerContext(Organization: organization, OrganizationId: organizationId, MemberId: memberId);
+                return Result.Failure<string>(ShortUrlErrors.ConcurrentUpdate);
             }
-
-            case enShortUrlOwnerType.Anonymous:
+            catch (UniqueConstraintViolationException ex) when (ex.ConstraintName == ShortCodeUniqueIndex)
             {
-                if (string.IsNullOrWhiteSpace(userContext.AnonymousSessionId))
-                    return Result.Failure<OwnerContext>(ShortUrlErrors.InvalidOwnerType);
+                // The code was free when it was checked but another request inserted it first.
+                // A chosen code is simply taken; a generated one is replaced and the insert retried
+                // (the usage increment above is still pending and is not applied twice).
+                if (request.CustomShortCode is not null)
+                    return Result.Failure<string>(ShortUrlErrors.ShortCodeAlreadyExists);
 
-                return new OwnerContext(AnonymousSessionId: userContext.AnonymousSessionId);
+                if (attempt >= MaxShortCodeAttempts)
+                    return Result.Failure<string>(ShortUrlErrors.ShortCodeGenerationFailed);
+
+                shortUrl.AssignShortCode(shortCodeGenerator.Generate(), utcNow);
             }
-
-            default:
-                return Result.Failure<OwnerContext>(ShortUrlErrors.InvalidOwnerType);
         }
     }
 
     private Result<ShortUrl> CreateShortUrl(
         CreateShortUrlCommand request,
-        OwnerContext owner,
+        ShortUrlOwner owner,
         OriginalUrl originalUrl,
         ShortCode shortCode,
         DateTime utcNow)
@@ -134,8 +105,7 @@ internal sealed class CreateShortUrlCommandHandler(
                 request.Description);
         }
 
-        if (owner.Organization is not null && 
-            owner is { OrganizationId: { } organizationId, MemberId: { } memberId })
+        if (owner is { Organization: not null, OrganizationId: { } organizationId, MemberId: { } memberId })
         {
             return ShortUrl.CreateForOrganization(
                 organizationId,
@@ -189,13 +159,6 @@ internal sealed class CreateShortUrlCommandHandler(
             if (!exists) return candidate;
         }
 
-        return Result.Failure<ShortCode>(ShortUrlErrors.ShortCodeInvalidLength);
+        return Result.Failure<ShortCode>(ShortUrlErrors.ShortCodeGenerationFailed);
     }
-
-    private sealed record OwnerContext(
-        User? User = null,
-        Organization? Organization = null,
-        Guid? OrganizationId = null,
-        Guid? MemberId = null,
-        string? AnonymousSessionId = null);
 }

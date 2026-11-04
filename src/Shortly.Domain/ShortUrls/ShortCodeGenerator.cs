@@ -3,7 +3,8 @@ using Shortly.Domain.Abstractions;
 
 namespace Shortly.Domain.ShortUrls;
 
-public sealed class ShortCodeGenerator
+/// <summary>Cryptographically secure and high-performance short code generator using stack allocation.</summary>
+public sealed class ShortCodeGenerator : IShortCodeGenerator
 {
     private const string Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 

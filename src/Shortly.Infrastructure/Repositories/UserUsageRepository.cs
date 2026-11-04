@@ -1,15 +1,16 @@
+using Shortly.Core.Abstractions.Clock;
 using Microsoft.EntityFrameworkCore;
 using Shortly.Domain.Users;
 
 namespace Shortly.Infrastructure.Repositories;
 
-public class UserUsageRepository(ApplicationDbContext dbContext)
+public class UserUsageRepository(ApplicationDbContext dbContext, IDateTimeProvider dateTimeProvider)
     : IUserUsageRepository
 {
     public async Task<int> ResetAllMonthlyAsync(CancellationToken cancellationToken = default)
         => await dbContext.Set<UserUsage>().ExecuteUpdateAsync(
             s => s.SetProperty(x => x.MonthlyLinksCreated, 0)
                 .SetProperty(x => x.MonthlyQrCodesCreated, 0)
-                .SetProperty(x => x.MonthlyResetDate, DateTime.UtcNow.AddMonths(1)),
+                .SetProperty(x => x.MonthlyResetDate, dateTimeProvider.UtcNow.AddMonths(1)),
             cancellationToken);
 }
