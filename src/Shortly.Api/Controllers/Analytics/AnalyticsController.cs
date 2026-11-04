@@ -2,7 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shortly.Api.Extensions;
-using Shortly.Core.Abstractions.Authentication;
+using Shortly.Api.Routing;
 using Shortly.Core.Analytics.GetAnalyticsOverview;
 using Shortly.Core.Analytics.GetDeviceStats;
 using Shortly.Core.Analytics.GetEngagementMetrics;
@@ -12,65 +12,89 @@ using Shortly.Core.Analytics.GetTimeSeriesStats;
 using Shortly.Core.Analytics.GetTopPerformingShortUrls;
 using Shortly.Core.Analytics.GetTrafficStats;
 using Shortly.Core.Analytics.GetUrlsApproachingClickLimit;
+using Shortly.Core.Exceptions;
 using Shortly.Core.ShortUrls.GetShortUrlById;
 using Shortly.Domain.Abstractions;
 
 namespace Shortly.Api.Controllers.Analytics;
 
 [ApiController]
-[Route("api/analytics")]
-[Produces("application/json")]
 [Authorize]
+[Route("api/analytics")]
+[OrganizationScopedRoutes("analytics")]
+[OrganizationRouteScope]
+[Produces("application/json")]
 public class AnalyticsController(ISender sender) : ControllerBase
 {
+    // ==========================================
+    // Single URL Analytics Endpoints
+    // ==========================================
+    
+    /// <summary>Retrieves an analytics overview for a specific short URL.</summary>
     [HttpGet("urls/{shortUrlId:long}/overview", Name = "GetUrlAnalyticsOverview")]
     [ProducesResponseType(typeof(AnalyticsOverviewResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUrlOverview(long shortUrlId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new GetAnalyticsOverviewQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves engagement metrics for a specific short URL.</summary>
     [HttpGet("urls/{shortUrlId:long}/engagement", Name = "GetUrlEngagement")]
     [ProducesResponseType(typeof(EngagementMetricsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUrlEngagement(long shortUrlId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new GetEngagementMetricsQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves geographical distribution statistics for a specific short URL.</summary>
     [HttpGet("urls/{shortUrlId:long}/geography", Name = "GetUrlGeography")]
     [ProducesResponseType(typeof(GeographicalStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUrlGeography(long shortUrlId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new GetGeographicalStatsQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves device and browser statistics for a specific short URL.</summary>
     [HttpGet("urls/{shortUrlId:long}/devices", Name = "GetUrlDevices")]
     [ProducesResponseType(typeof(DeviceStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUrlDevices(long shortUrlId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new GetDeviceStatsQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves traffic breakdown metrics for a specific short URL.</summary>
     [HttpGet("urls/{shortUrlId:long}/traffic", Name = "GetUrlTraffic")]
     [ProducesResponseType(typeof(TrafficStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUrlTraffic(long shortUrlId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new GetTrafficStatsQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves time-series click trends for a specific short URL.</summary>
     [HttpGet("urls/{shortUrlId:long}/timeseries", Name = "GetUrlTimeSeries")]
     [ProducesResponseType(typeof(TimeSeriesStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUrlTimeSeries(long shortUrlId, [FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new GetTimeSeriesStatsQuery(shortUrlId, from, to), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
+    
+    // ==========================================
+    // Portfolio / User-Level Analytics Endpoints
+    // ==========================================
 
+    /// <summary>Retrieves an overall portfolio summary across all links.</summary>
     [HttpGet("mine/summary", Name = "GetMyPortfolioSummary")]
     [ProducesResponseType(typeof(ShortUrlPortfolioSummaryResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMySummary(CancellationToken cancellationToken = default)
@@ -79,6 +103,7 @@ public class AnalyticsController(ISender sender) : ControllerBase
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves an analytics overview aggregated across the user's entire portfolio.</summary>
     [HttpGet("mine/overview", Name = "GetMyOverview")]
     [ProducesResponseType(typeof(AnalyticsOverviewResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyOverview([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
@@ -87,6 +112,7 @@ public class AnalyticsController(ISender sender) : ControllerBase
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves engagement metrics aggregated across the portfolio.</summary>
     [HttpGet("mine/engagement", Name = "GetMyEngagement")]
     [ProducesResponseType(typeof(EngagementMetricsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyEngagement([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
@@ -95,6 +121,7 @@ public class AnalyticsController(ISender sender) : ControllerBase
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves geographical stats aggregated across the portfolio.</summary>
     [HttpGet("mine/geography", Name = "GetMyGeography")]
     [ProducesResponseType(typeof(GeographicalStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyGeography([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
@@ -103,6 +130,7 @@ public class AnalyticsController(ISender sender) : ControllerBase
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves device and browser stats aggregated across the portfolio.</summary>
     [HttpGet("mine/devices", Name = "GetMyDevices")]
     [ProducesResponseType(typeof(DeviceStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyDevices([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
@@ -111,6 +139,7 @@ public class AnalyticsController(ISender sender) : ControllerBase
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves traffic breakdown metrics aggregated across the portfolio.</summary>
     [HttpGet("mine/traffic", Name = "GetMyTraffic")]
     [ProducesResponseType(typeof(TrafficStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyTraffic([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken cancellationToken = default)
@@ -119,6 +148,7 @@ public class AnalyticsController(ISender sender) : ControllerBase
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves time-series click trends aggregated across the portfolio.</summary>
     [HttpGet("mine/timeseries", Name = "GetMyTimeSeries")]
     [ProducesResponseType(typeof(TimeSeriesStatsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyTimeSeries([FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken cancellationToken = default)
@@ -127,6 +157,7 @@ public class AnalyticsController(ISender sender) : ControllerBase
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves the top-performing short URLs in the portfolio.</summary>
     [HttpGet("mine/top-urls", Name = "GetMyTopUrls")]
     [ProducesResponseType(typeof(IReadOnlyList<TopPerformingUrlResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyTopUrls([FromQuery] int topCount = 10, [FromQuery] int? timeframeDays = null, CancellationToken cancellationToken = default)
@@ -136,6 +167,7 @@ public class AnalyticsController(ISender sender) : ControllerBase
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 
+    /// <summary>Retrieves short URLs that are approaching their click limits.</summary>
     [HttpGet("approaching-limit", Name = "GetUrlsApproachingLimit")]
     [ProducesResponseType(typeof(PagedResponse<ShortUrlResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetApproachingLimit([FromQuery] double warningThreshold = 0.8, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)

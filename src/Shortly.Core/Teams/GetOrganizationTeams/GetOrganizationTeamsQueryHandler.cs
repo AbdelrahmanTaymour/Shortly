@@ -10,15 +10,20 @@ using Shortly.Domain.Organizations;
 namespace Shortly.Core.Teams.GetOrganizationTeams;
 
 internal sealed class GetOrganizationTeamsQueryHandler(
-    IUserContext userContext, IOrganizationMemberRepository memberRepository, ISqlConnectionFactory sqlConnectionFactory)
-    : IQueryHandler<GetOrganizationTeamsQuery, IReadOnlyList<OrganizationTeamResponse>>
+    IOrganizationAuthorizationService organizationAuthorization, ISqlConnectionFactory sqlConnectionFactory)
+    : IQueryHandler<GetOrganizationTeamsQuery, PagedResponse<OrganizationTeamResponse>>
 {
-    public async Task<Result<IReadOnlyList<OrganizationTeamResponse>>> Handle(GetOrganizationTeamsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResponse<OrganizationTeamResponse>>> Handle(GetOrganizationTeamsQuery request, CancellationToken cancellationToken)
     {
-        if (!await memberRepository.IsMemberOfOrganizationAsync(userContext.UserId, request.OrganizationId, cancellationToken))
-            return Result.Failure<IReadOnlyList<OrganizationTeamResponse>>(OrganizationErrors.NotAMember);
+        var membership = await organizationAuthorization.RequireMembershipAsync(request.OrganizationId, cancellationToken);
+        if (membership.IsFailure) return Result.Failure<PagedResponse<OrganizationTeamResponse>>(membership.Error);
+
+        var page = request.Page < 1 ? 1 : request.Page;
+        var pageSize = request.PageSize is < 1 or > 100 ? 20 : request.PageSize;
 
         const string sql = """
+                           SELECT COUNT(*) FROM organization_teams WHERE organization_id = @OrganizationId;
+
                            SELECT ot.id AS Id, ot.organization_id AS OrganizationId, ot.team_manager_id AS TeamManagerId,
                                   u.username AS TeamManagerUsername, ot.name AS Name, ot.description AS Description, ot.created_at AS CreatedAt,
                                   (SELECT COUNT(*) FROM team_members tm WHERE tm.team_id = ot.id) AS MemberCount
@@ -26,10 +31,22 @@ internal sealed class GetOrganizationTeamsQueryHandler(
                            JOIN organization_members om ON om.id = ot.team_manager_id
                            JOIN users u ON u.id = om.user_id
                            WHERE ot.organization_id = @OrganizationId
-                           ORDER BY ot.name
+                           ORDER BY ot.name, ot.id
+                           LIMIT @PageSize OFFSET @Offset;
                            """;
         using var connection = sqlConnectionFactory.CreateConnection();
-        var rows = (await connection.QueryAsync<OrganizationTeamResponse>(sql, new { request.OrganizationId })).ToList();
-        return rows;
+        await using var multi = await connection.QueryMultipleAsync(new CommandDefinition(
+            sql, new { request.OrganizationId, PageSize = pageSize, Offset = (page - 1) * pageSize }, cancellationToken: cancellationToken));
+        var totalCount = await multi.ReadSingleAsync<int>();
+        var rows = (await multi.ReadAsync<OrganizationTeamResponse>()).ToList();
+
+        return new PagedResponse<OrganizationTeamResponse>
+        {
+            Items = rows,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+        };
     }
 }

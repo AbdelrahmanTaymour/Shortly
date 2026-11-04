@@ -41,7 +41,7 @@ public class ProfileController(ISender sender) : ControllerBase
     }
 
     [HttpPut("profile", Name = "UpdateMyProfile")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateProfileRequest request, CancellationToken cancellationToken = default)
     {
@@ -50,15 +50,15 @@ public class ProfileController(ISender sender) : ControllerBase
             request.Company, request.Location, request.Country, request.TimeZone);
 
         var result = await sender.Send(command, cancellationToken);
-        return result.IsFailure ? result.ToProblemDetails() : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
     
     [HttpDelete(Name = "RequestAccountDeletion")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> RequestAccountDeletion(CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new DeleteAccountCommand(), cancellationToken);
-        return result.IsFailure ? result.ToProblemDetails() : Ok();
+        return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 
     [HttpGet("usage", Name = "GetMyQuotaStatus")]

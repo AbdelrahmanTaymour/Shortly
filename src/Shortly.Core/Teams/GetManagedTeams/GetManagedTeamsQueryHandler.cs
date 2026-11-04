@@ -38,8 +38,11 @@ internal sealed class GetMyManagedTeamsQueryHandler(
                                ON om.id = ot.team_manager_id
                               AND om.organization_id = ot.organization_id
                            INNER JOIN users u ON u.id = om.user_id
+                           INNER JOIN organizations o ON o.id = ot.organization_id
                            WHERE om.user_id = @UserId
                              AND om.is_active = TRUE
+                             AND o.is_active = TRUE
+                             AND o.deleted_at IS NULL
                            ORDER BY ot.name
                            """;
 

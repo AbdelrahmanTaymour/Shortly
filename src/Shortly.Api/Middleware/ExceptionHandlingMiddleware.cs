@@ -36,6 +36,29 @@ public class ExceptionHandlingMiddleware(
 
             await context.Response.WriteAsJsonAsync(validationProblemDetails);
         }
+        catch (Shortly.Core.Exceptions.ValidationException coreValidationException)
+        {
+            // Thrown by the MediatR validation behavior: an invalid request is the caller's error, not a server error.
+            logger.LogWarning("Request validation failed: {Errors}",
+                string.Join("; ", coreValidationException.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}")));
+
+            var validationProblemDetails = new ValidationProblemDetails(
+                coreValidationException.Errors
+                    .GroupBy(error => error.PropertyName)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group.Select(error => error.ErrorMessage).ToArray()))
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Validation error",
+                Detail = "One or more validation errors has occurred"
+            };
+
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+            await context.Response.WriteAsJsonAsync(validationProblemDetails);
+        }
         catch (Exception exception)
         {
             logger.LogError(exception, "Exception occurred: {Message}", exception.Message);

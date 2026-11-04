@@ -1,7 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Http;
 using Shortly.Core.Abstractions.Authentication;
-using Shortly.Domain.Members;
 using Shortly.Domain.ShortUrls;
 using Shortly.Domain.Users;
 
@@ -23,11 +22,8 @@ internal sealed class UserContext(IHttpContextAccessor httpContextAccessor) : IU
 
     public UserRole? Role => User?.GetUserRole();
     
-    public Guid? OrganizationId => User?.GetOrganizationId();
-
-    public Guid? MemberId => User?.GetMemberId();
-
-    public MemberRole? MemberRole => User?.GetMemberRole();
+    public Guid? OrganizationId =>
+        RequestOrganizationScope.Get(httpContextAccessor.HttpContext) ?? User?.GetOrganizationId();
 
     public enShortUrlOwnerType OwnerType =>
         !IsAuthenticated ? enShortUrlOwnerType.Anonymous :
