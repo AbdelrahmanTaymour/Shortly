@@ -19,25 +19,14 @@ internal sealed class OrganizationInvitationRepository(ApplicationDbContext dbCo
         return await DbContext.Set<OrganizationInvitation>()
             .AsNoTracking()
             .AnyAsync(i => i.InvitedUserEmail == email && i.OrganizationId == organizationId &&
-                           (i.Status == enInvitationStatus.Pending || i.Status == enInvitationStatus.EmailSent) &&
-                           i.ExpiresAt >= utcNow, cancellationToken);
+                           i.Status == enInvitationStatus.Pending &&
+                           i.ExpiresAt > utcNow, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<OrganizationInvitation>> GetExpiredInvitationsAsync(DateTime utcNow,
-        CancellationToken cancellationToken = default)
+    public async Task<int> MarkOverdueInvitationsExpiredAsync(DateTime utcNow, CancellationToken cancellationToken = default)
     {
         return await DbContext.Set<OrganizationInvitation>()
-            .AsNoTracking()
-            .Where(i => i.ExpiresAt < utcNow &&
-                        (i.Status == enInvitationStatus.Pending || i.Status == enInvitationStatus.EmailSent))
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<int> CleanupExpiredInvitations(DateTime utcNow, CancellationToken cancellationToken = default)
-    {
-        return await DbContext.Set<OrganizationInvitation>()
-            .Where(i => i.ExpiresAt < utcNow &&
-                        (i.Status == enInvitationStatus.Pending || i.Status == enInvitationStatus.EmailSent))
-            .ExecuteDeleteAsync(cancellationToken);
+            .Where(i => i.Status == enInvitationStatus.Pending && i.ExpiresAt <= utcNow)
+            .ExecuteUpdateAsync(set => set.SetProperty(i => i.Status, enInvitationStatus.Expired), cancellationToken);
     }
 }

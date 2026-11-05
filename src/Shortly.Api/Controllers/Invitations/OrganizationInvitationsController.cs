@@ -37,7 +37,7 @@ public class OrganizationInvitationsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(Guid organizationId, [FromBody] CreateInvitationRequest request, CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new CreateInvitationCommand(organizationId, request.Email, request.Role, request.CustomPermissions), cancellationToken);
+        var result = await sender.Send(new CreateInvitationCommand(organizationId, request.Email, request.Role), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : CreatedAtRoute("GetInvitationById", new { organizationId, invitationId = result.Value }, null);
     }
 

@@ -1,4 +1,5 @@
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.Invitations;
@@ -7,7 +8,8 @@ using Shortly.Domain.Members;
 namespace Shortly.Core.Invitations.CancelInvitation;
 
 internal sealed class CancelInvitationCommandHandler(
-    IUserContext userContext, IOrganizationInvitationRepository invitationRepository, IOrganizationAuthorizationService organizationAuthorization, IUnitOfWork unitOfWork)
+    IUserContext userContext, IOrganizationInvitationRepository invitationRepository, IOrganizationAuthorizationService organizationAuthorization, IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider)
     : ICommandHandler<CancelInvitationCommand>
 {
     public async Task<Result> Handle(CancelInvitationCommand request, CancellationToken cancellationToken)
@@ -24,7 +26,9 @@ internal sealed class CancelInvitationCommandHandler(
         if (!isInviter && membership.Value.Role < MemberRole.OrgAdmin)
             return Result.Failure(OrganizationInvitationErrors.NotInviter);
 
-        invitationRepository.Remove(invitation);
+        var cancelResult = invitation.Cancel(dateTimeProvider.UtcNow);
+        if (cancelResult.IsFailure) return cancelResult;
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }

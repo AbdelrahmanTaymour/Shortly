@@ -42,7 +42,8 @@ internal sealed class ResendInvitationCommandHandler(
         var tokenHash = tokenHasher.Hash(plainTextToken);
         var expiryDays = configuration.GetValue("AppSettings:Tokens:InvitationExpiryDays", 7);
 
-        var regenerateResult = invitation.Regenerate(tokenHash, dateTimeProvider.UtcNow.AddDays(expiryDays));
+        var utcNow = dateTimeProvider.UtcNow;
+        var regenerateResult = invitation.Regenerate(tokenHash, utcNow.AddDays(expiryDays), utcNow);
         if (regenerateResult.IsFailure) return regenerateResult;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
