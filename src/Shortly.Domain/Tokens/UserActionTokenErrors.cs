@@ -8,5 +8,7 @@ public static class UserActionTokenErrors
     public static readonly Error WrongType = Error.Validation("UserActionToken.WrongType", "Token type mismatch.");
     public static readonly Error Used = Error.Conflict("UserActionToken.Used", "Token has already been used.");
     public static readonly Error Expired = Error.Forbidden("UserActionToken.Expired", "Token has expired.");
+    public static readonly Error TokenHashRequired = Error.Validation("UserActionToken.TokenHashRequired", "A token hash is required.");
+    public static readonly Error UserRequired = Error.Validation("UserActionToken.UserRequired", "A user is required.");
     public static readonly Error NewEmailRequired = Error.Validation("UserActionToken.NewEmailRequired", "A new email address is required.");
 }
