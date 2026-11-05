@@ -45,6 +45,9 @@ public class Result<TValue> : Domain.Abstractions.Result
     protected internal Result(TValue? value, bool isSuccess, Error error)
         : base(isSuccess, error)
     {
+        if (isSuccess && value is null)
+            throw new InvalidOperationException("A successful result cannot carry a null value.");
+
         _value = value;
     }
 

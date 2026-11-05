@@ -21,7 +21,7 @@ internal sealed class GetShortUrlByCodeQueryHandler(
         {
             var membership = await organizationAuthorization.ResolveClaimedMembershipAsync(cancellationToken);
             if (membership.IsFailure) return Result.Failure<ShortUrlResponse>(membership.Error);
-            organizationId = membership.Value?.OrganizationId;
+            organizationId = membership.Value.Member?.OrganizationId;
         }
 
         using var connection = sqlConnectionFactory.CreateConnection();

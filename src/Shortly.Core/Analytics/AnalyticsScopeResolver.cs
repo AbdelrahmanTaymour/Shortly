@@ -53,7 +53,7 @@ internal sealed class AnalyticsScopeResolver(
             var membership = await organizationAuthorization.ResolveClaimedMembershipAsync(cancellationToken);
             if (membership.IsFailure) return Result.Failure<AnalyticsScope>(membership.Error);
 
-            if (membership.Value is { } member)
+            if (membership.Value.Member is { } member)
             {
                 scope = new AnalyticsScope(null, null, member.OrganizationId, from, to);
                 ownerPlan = feature == AnalyticsFeature.None

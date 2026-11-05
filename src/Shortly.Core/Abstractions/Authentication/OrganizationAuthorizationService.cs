@@ -40,14 +40,14 @@ internal sealed class OrganizationAuthorizationService(
             : membership;
     }
 
-    public async Task<Result<OrganizationMember?>> ResolveClaimedMembershipAsync(CancellationToken cancellationToken)
+    public async Task<Result<ClaimedMembership>> ResolveClaimedMembershipAsync(CancellationToken cancellationToken)
     {
         if (userContext.OrganizationId is not { } organizationId)
-            return Result.Success<OrganizationMember?>(null);
+            return ClaimedMembership.Personal;
 
         var membership = await RequireMembershipAsync(organizationId, cancellationToken);
         return membership.IsFailure
-            ? Result.Failure<OrganizationMember?>(membership.Error)
-            : membership.Value;
+            ? Result.Failure<ClaimedMembership>(membership.Error)
+            : new ClaimedMembership(membership.Value);
     }
 }
