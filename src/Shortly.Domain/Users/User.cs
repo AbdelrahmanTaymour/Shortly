@@ -61,9 +61,14 @@ public sealed class User : Entity<Guid>
             isOAuthUser: false, googleId: null, googleProfilePicture: null, isEmailConfirmed: false, utcNow);
     }
 
-    public static User RegisterOAuth(string email, string googleId, string? googleProfilePicture, DateTime utcNow) =>
-        new(Guid.NewGuid(), email, email, passwordHash: string.Empty, UserRole.User,
+    public static Result<User> RegisterOAuth(string email, string googleId, string? googleProfilePicture, DateTime utcNow)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return Result.Failure<User>(UserErrors.EmailRequired);
+        if (string.IsNullOrWhiteSpace(googleId)) return Result.Failure<User>(UserErrors.GoogleIdRequired);
+
+        return new User(Guid.NewGuid(), email, email, passwordHash: string.Empty, UserRole.User,
             isOAuthUser: true, googleId, googleProfilePicture, isEmailConfirmed: true, utcNow);
+    }
 
     public Result ChangePassword(string newPasswordHash, DateTime utcNow)
     {
@@ -101,7 +106,8 @@ public sealed class User : Entity<Guid>
 
     public Result RecordSuccessfulLogin(DateTime utcNow)
     {
-        if (!CanLogIn(utcNow)) return Result.Failure(UserErrors.AccountLocked);
+        if (!IsActive || IsDeleted) return Result.Failure(UserErrors.AccountDisabled);
+        if (Security.IsLockedOut(utcNow)) return Result.Failure(UserErrors.AccountLocked);
 
         LastLoginAtUtc = utcNow;
         Security.ResetFailedLoginAttempts(utcNow);
@@ -113,6 +119,7 @@ public sealed class User : Entity<Guid>
 
     public Result Activate(DateTime utcNow)
     {
+        if (IsDeleted) return Result.Failure(UserErrors.Deleted);
         if (IsActive) return Result.Failure(UserErrors.AlreadyActive);
         IsActive = true;
         UpdatedAtUtc = utcNow;
@@ -121,6 +128,7 @@ public sealed class User : Entity<Guid>
 
     public Result Deactivate(DateTime utcNow)
     {
+        if (IsDeleted) return Result.Failure(UserErrors.Deleted);
         if (!IsActive) return Result.Failure(UserErrors.AlreadyInactive);
         IsActive = false;
         UpdatedAtUtc = utcNow;
@@ -140,6 +148,7 @@ public sealed class User : Entity<Guid>
 
     public Result ChangeRole(UserRole role, DateTime utcNow)
     {
+        if (!Enum.IsDefined(role)) return Result.Failure(UserErrors.InvalidRole);
         Role = role;
         UpdatedAtUtc = utcNow;
         return Result.Success();

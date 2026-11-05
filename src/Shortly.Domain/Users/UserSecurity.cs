@@ -17,8 +17,15 @@ public sealed class UserSecurity
 
     internal static UserSecurity CreateDefault(Guid userId) => new(userId);
 
+    /// <summary>Counts a failed login. Attempts made while the account is already locked are ignored, so they cannot extend the lockout.</summary>
     public void RecordFailedAttempt(DateTime utcNow, int maxAttempts, TimeSpan lockoutDuration)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxAttempts, 1);
+        if (IsLockedOut(utcNow)) return;
+
+        // A lockout that has run its course gives the user a clean slate instead of re-locking on the next typo.
+        if (LockedUntilUtc is not null) ResetFailedLoginAttempts(utcNow);
+
         FailedLoginAttempts++;
         UpdatedAtUtc = utcNow;
 
@@ -43,6 +50,9 @@ public sealed class UserSecurity
     {
         if (string.IsNullOrWhiteSpace(reason))
             return Result.Failure(UserErrors.LockReasonRequired);
+
+        if (duration <= TimeSpan.Zero)
+            return Result.Failure(UserErrors.InvalidLockDuration);
 
         LockedUntilUtc = utcNow.Add(duration);
         LockoutReason = reason;

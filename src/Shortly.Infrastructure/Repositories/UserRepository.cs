@@ -36,11 +36,14 @@ internal sealed class UserRepository(ApplicationDbContext dbContext) :
 
         // One UPDATE: every right-hand side sees the row as it was before this statement, so concurrent attempts each add one.
         await DbContext.Set<UserSecurity>()
-            .Where(s => s.UserId == userId)
+            .Where(s => s.UserId == userId && (s.LockedUntilUtc == null || s.LockedUntilUtc <= utcNow)) // attempts during a lockout are ignored
             .ExecuteUpdateAsync(set => set
-                .SetProperty(s => s.FailedLoginAttempts, s => s.FailedLoginAttempts + 1)
-                .SetProperty(s => s.LockedUntilUtc, s => s.FailedLoginAttempts + 1 >= maxAttempts ? lockedUntil : s.LockedUntilUtc)
-                .SetProperty(s => s.LockoutReason, s => s.FailedLoginAttempts + 1 >= maxAttempts ? reason : s.LockoutReason)
+                // The WHERE clause already excludes active lockouts, so a non-null LockedUntilUtc here has expired: start counting again.
+                .SetProperty(s => s.FailedLoginAttempts, s => s.LockedUntilUtc != null ? 1 : s.FailedLoginAttempts + 1)
+                .SetProperty(s => s.LockedUntilUtc, s =>
+                    (s.LockedUntilUtc != null ? 1 : s.FailedLoginAttempts + 1) >= maxAttempts ? lockedUntil : null)
+                .SetProperty(s => s.LockoutReason, s =>
+                    (s.LockedUntilUtc != null ? 1 : s.FailedLoginAttempts + 1) >= maxAttempts ? reason : null)
                 .SetProperty(s => s.UpdatedAtUtc, utcNow), cancellationToken);
     }
 
