@@ -1,4 +1,5 @@
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.ShortUrls;
@@ -9,17 +10,19 @@ public sealed class BulkActivateShortUrlsCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
     IOrganizationAuthorizationService organizationAuthorization,
-    IUnitOfWork unitOfWork) : ICommandHandler<BulkActivateShortUrlsCommand, BulkOperationResponse>
+    IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider) : ICommandHandler<BulkActivateShortUrlsCommand, BulkOperationResponse>
 {
     public async Task<Result<BulkOperationResponse>> Handle(BulkActivateShortUrlsCommand request, CancellationToken cancellationToken)
     {
         var shortUrls = await shortUrlRepository.GetByIdsAsync(request.ShortUrlIds, cancellationToken);
 
+        var utcNow = dateTimeProvider.UtcNow;
         var succeeded = 0;
         foreach (var shortUrl in shortUrls)
         {
             if (!await ShortUrlAuthorization.CanManageAsync(shortUrl, userContext, organizationAuthorization, cancellationToken)) continue;
-            if (shortUrl.Activate().IsSuccess) succeeded++;
+            if (shortUrl.Activate(utcNow).IsSuccess) succeeded++;
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -1,4 +1,5 @@
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.ShortUrls;
@@ -9,7 +10,8 @@ internal sealed class DeactivateShortUrlCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
     IOrganizationAuthorizationService organizationAuthorization,
-    IUnitOfWork unitOfWork) : ICommandHandler<DeactivateShortUrlCommand>
+    IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider) : ICommandHandler<DeactivateShortUrlCommand>
 {
     public async Task<Result> Handle(DeactivateShortUrlCommand request, CancellationToken cancellationToken)
     {
@@ -19,7 +21,7 @@ internal sealed class DeactivateShortUrlCommandHandler(
         if (!await ShortUrlAuthorization.CanManageAsync(shortUrl, userContext, organizationAuthorization, cancellationToken))
             return Result.Failure(ShortUrlErrors.NotFound);
 
-        var result = shortUrl.Deactivate();
+        var result = shortUrl.Deactivate(dateTimeProvider.UtcNow);
         if (result.IsFailure) return result;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

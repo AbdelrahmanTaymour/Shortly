@@ -31,6 +31,6 @@ public sealed partial record ShortCode
 
     public override string ToString() => Value;
 
-    [GeneratedRegex("^[a-zA-Z0-9_-]+$")]
+    [GeneratedRegex(@"^[a-zA-Z0-9_-]+\z")]
     private static partial Regex ValidCharacters();
 }
