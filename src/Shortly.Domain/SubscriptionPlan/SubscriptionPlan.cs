@@ -10,6 +10,15 @@ public sealed class SubscriptionPlan : Entity<enSubscriptionPlan>
         bool linkAnalysis, bool bulkCreation, bool linkProtection,
         bool customShortCode, bool campaignTracking, bool geoDeviceTracking) : base(id)
     {
+        // Plans are configuration (seeded at model creation), so an invalid plan is a programming error, not user input.
+        if (!Enum.IsDefined(id)) throw new ArgumentOutOfRangeException(nameof(id), id, "The plan id is not defined.");
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(description);
+        ArgumentOutOfRangeException.ThrowIfNegative(price);
+        ThrowIfInvalidLimit(maxLinksPerMonth, nameof(maxLinksPerMonth));
+        ThrowIfInvalidLimit(maxQrCodesPerMonth, nameof(maxQrCodesPerMonth));
+        ThrowIfInvalidLimit(clickDataRetentionDays, nameof(clickDataRetentionDays));
+
         Name = name;
         Description = description;
         Price = price;
@@ -42,4 +51,11 @@ public sealed class SubscriptionPlan : Entity<enSubscriptionPlan>
     public bool HasUnlimitedLinks => MaxLinksPerMonth < 0;
     public bool HasUnlimitedQrCodes => MaxQrCodesPerMonth < 0;
     public bool HasUnlimitedRetention => ClickDataRetentionDays < 0;
+
+    /// <summary>A limit is either -1 (unlimited) or zero / a positive amount.</summary>
+    private static void ThrowIfInvalidLimit(int value, string parameterName)
+    {
+        if (value < -1)
+            throw new ArgumentOutOfRangeException(parameterName, value, "A limit must be -1 (unlimited), zero or positive.");
+    }
 }
