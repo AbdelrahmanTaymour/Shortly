@@ -114,10 +114,9 @@ public class UserTests
     [Theory]
     [InlineData("not-an-email", "has spaces in it")]
     [InlineData("@@", "x")]
-    [Trait("Finding", "D-13")]
-    public void Register_Should_NotValidateEmailFormatOrUsernameShape_CurrentBehavior(string email, string username)
+    public void Register_Should_OnlyRequireNonBlankValues_BecauseFormatRulesBelongToTheCoreValidators(string email, string username)
     {
-        // Act: the entity only rejects blank values, format rules live in the Core validators
+        // Act: email format and username length are enforced by RegisterCommandValidator before the entity is reached
         var result = User.Register(email, username, "hash", Now);
 
         // Assert
