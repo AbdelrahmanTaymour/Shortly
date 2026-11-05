@@ -1,18 +1,16 @@
 namespace Shortly.Domain.Invitations;
 
 /// <summary>
-/// Pending: The system has queued the invitation email for sending.
-/// Email Sent: The system has successfully delivered the invitation email.
-/// Failure: The email delivery failed because the email address is incorrect or not in use.
-/// User Clicked: The user clicked the registration link in the email message but did not register.
-/// Registered: The user successfully registered, and the system created a user profile.
+/// Pending: the invitation can still be accepted.
+/// Accepted: the invitee accepted it and became a member.
+/// Expired: it was not accepted before its expiration date.
+/// Cancelled: it was withdrawn by the inviter or declined by the invitee.
+/// Invitations are never deleted; the status keeps the history.
 /// </summary>
 public enum enInvitationStatus
 {
     Pending = 1,
-    EmailSent = 2,
-    Failure = 3,
-    UserClicked = 4,
-    Registered = 5,
-    Rejected = 6
+    Accepted = 2,
+    Expired = 3,
+    Cancelled = 4
 }

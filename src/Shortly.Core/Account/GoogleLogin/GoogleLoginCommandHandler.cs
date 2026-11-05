@@ -21,7 +21,10 @@ internal sealed class GoogleLoginCommandHandler(
 
         if (user is null)
         {
-            user = User.RegisterOAuth(request.Email, request.GoogleId, request.Picture, utcNow);
+            var registration = User.RegisterOAuth(request.Email, request.GoogleId, request.Picture, utcNow);
+            if (registration.IsFailure) return Result.Failure<AccessTokenResponse>(registration.Error);
+
+            user = registration.Value;
             user.Profile.UpdateName(request.Name, utcNow);
             userRepository.Add(user);
         }

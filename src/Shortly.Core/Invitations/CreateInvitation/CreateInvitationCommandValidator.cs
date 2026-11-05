@@ -14,7 +14,5 @@ public sealed class CreateInvitationCommandValidator : AbstractValidator<CreateI
             .MaximumLength(254);
 
         RuleFor(x => x.Role).IsInEnum();
-
-        RuleFor(x => x.CustomPermissions).IsInEnum();
     }
 }

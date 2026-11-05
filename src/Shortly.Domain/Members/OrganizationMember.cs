@@ -26,9 +26,12 @@ public sealed class OrganizationMember : Entity<Guid>
     public Guid InvitedBy { get; private set; }
     public DateTime JoinedAt { get; private set; }
 
-    public static OrganizationMember Invite(Guid organizationId, Guid userId, MemberRole role, Guid invitedBy,
+    public static Result<OrganizationMember> Invite(Guid organizationId, Guid userId, MemberRole role, Guid invitedBy,
         DateTime utcNow)
     {
+        if (role == MemberRole.OrgOwner)
+            return Result.Failure<OrganizationMember>(OrganizationMemberErrors.CannotGrantOwnerRoleDirectly);
+
         return new OrganizationMember(Guid.NewGuid(), organizationId, userId, role, invitedBy, utcNow);
     }
 
@@ -39,6 +42,7 @@ public sealed class OrganizationMember : Entity<Guid>
 
     public Result ChangeRole(MemberRole newRole)
     {
+        if (!Enum.IsDefined(newRole)) return Result.Failure(OrganizationMemberErrors.InvalidRole);
         if (Role == MemberRole.OrgOwner) return Result.Failure(OrganizationMemberErrors.CannotChangeOwnerRole);
         if (newRole == MemberRole.OrgOwner)
             return Result.Failure(OrganizationMemberErrors.CannotGrantOwnerRoleDirectly);
@@ -46,7 +50,14 @@ public sealed class OrganizationMember : Entity<Guid>
         return Result.Success();
     }
     
-    public void PromoteToOwner() => Role = MemberRole.OrgOwner;
+    public Result PromoteToOwner()
+    {
+        if (!IsActive) return Result.Failure(OrganizationMemberErrors.NotActive);
+        if (Role == MemberRole.OrgOwner) return Result.Failure(OrganizationMemberErrors.AlreadyOwner);
+
+        Role = MemberRole.OrgOwner;
+        return Result.Success();
+    }
 
     public Result DemoteFromOwner(MemberRole fallbackRole)
     {
@@ -64,10 +75,15 @@ public sealed class OrganizationMember : Entity<Guid>
         return Result.Success();
     }
 
-    public Result Reactivate()
+    /// <summary>Brings a removed member back with the role of their new invitation and a fresh join date.</summary>
+    public Result Reactivate(MemberRole role, DateTime utcNow)
     {
         if (IsActive) return Result.Failure(OrganizationMemberErrors.AlreadyActive);
+        if (role == MemberRole.OrgOwner) return Result.Failure(OrganizationMemberErrors.CannotGrantOwnerRoleDirectly);
+
         IsActive = true;
+        Role = role;
+        JoinedAt = utcNow;
         return Result.Success();
     }
 }

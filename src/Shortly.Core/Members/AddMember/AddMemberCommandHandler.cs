@@ -39,16 +39,16 @@ internal sealed class AddMemberCommandHandler(
 
         if (existing is not null)
         {
-            var reactivated = existing.Reactivate();
+            var reactivated = existing.Reactivate(request.Role, dateTimeProvider.UtcNow);
             if (reactivated.IsFailure) return reactivated;
-
-            var roleChanged = existing.ChangeRole(request.Role);
-            if (roleChanged.IsFailure) return roleChanged;
         }
         else
         {
-            memberRepository.Add(OrganizationMember.Invite(request.OrganizationId, request.UserId, request.Role,
-                userContext.UserId, dateTimeProvider.UtcNow));
+            var invited = OrganizationMember.Invite(request.OrganizationId, request.UserId, request.Role,
+                userContext.UserId, dateTimeProvider.UtcNow);
+            if (invited.IsFailure) return invited;
+
+            memberRepository.Add(invited.Value);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

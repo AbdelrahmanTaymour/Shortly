@@ -26,14 +26,27 @@ public sealed class UserActionToken : Entity<Guid>
     public DateTime? UsedAt { get; private set; }
     public string? NewEmail { get; private set; } // only set when TokenType == EmailChange
 
-    public static UserActionToken IssueEmailVerification(Guid userId, string tokenHash, DateTime utcNow)
-        => new(Guid.NewGuid(), userId, enUserActionTokenType.EmailVerification, tokenHash, utcNow.AddHours(24), null, utcNow);
+    public static Result<UserActionToken> IssueEmailVerification(Guid userId, string tokenHash, DateTime utcNow)
+    {
+        var check = ValidateIssue(userId, tokenHash);
+        if (check.IsFailure) return Result.Failure<UserActionToken>(check.Error);
 
-    public static UserActionToken IssuePasswordReset(Guid userId, string tokenHash, DateTime utcNow)
-        => new(Guid.NewGuid(), userId, enUserActionTokenType.PasswordReset, tokenHash, utcNow.AddHours(1), null, utcNow);
+        return new UserActionToken(Guid.NewGuid(), userId, enUserActionTokenType.EmailVerification, tokenHash, utcNow.AddHours(24), null, utcNow);
+    }
+
+    public static Result<UserActionToken> IssuePasswordReset(Guid userId, string tokenHash, DateTime utcNow)
+    {
+        var check = ValidateIssue(userId, tokenHash);
+        if (check.IsFailure) return Result.Failure<UserActionToken>(check.Error);
+
+        return new UserActionToken(Guid.NewGuid(), userId, enUserActionTokenType.PasswordReset, tokenHash, utcNow.AddHours(1), null, utcNow);
+    }
 
     public static Result<UserActionToken> IssueEmailChange(Guid userId, string tokenHash, string newEmail, DateTime utcNow)
     {
+        var check = ValidateIssue(userId, tokenHash);
+        if (check.IsFailure) return Result.Failure<UserActionToken>(check.Error);
+
         if (string.IsNullOrWhiteSpace(newEmail))
             return Result.Failure<UserActionToken>(UserActionTokenErrors.NewEmailRequired);
 
@@ -49,13 +62,23 @@ public sealed class UserActionToken : Entity<Guid>
     {
         if (TokenType != expectedType) return Result.Failure(UserActionTokenErrors.WrongType);
         if (Used) return Result.Failure(UserActionTokenErrors.Used);
-        if (ExpiresAt < utcNow) return Result.Failure(UserActionTokenErrors.Expired);
+        if (ExpiresAt <= utcNow) return Result.Failure(UserActionTokenErrors.Expired);
         return Result.Success();
     }
 
-    public void MarkUsed(DateTime utcNow)
+    public Result MarkUsed(DateTime utcNow)
     {
+        if (Used) return Result.Failure(UserActionTokenErrors.Used);
+
         Used = true;
         UsedAt = utcNow;
+        return Result.Success();
+    }
+
+    private static Result ValidateIssue(Guid userId, string tokenHash)
+    {
+        if (userId == Guid.Empty) return Result.Failure(UserActionTokenErrors.UserRequired);
+        if (string.IsNullOrWhiteSpace(tokenHash)) return Result.Failure(UserActionTokenErrors.TokenHashRequired);
+        return Result.Success();
     }
 }

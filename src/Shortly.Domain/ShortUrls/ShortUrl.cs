@@ -123,11 +123,14 @@ public sealed class ShortUrl : Entity<long>
 
     public static Result<ShortUrl> CreateForAnonymous(
         string anonymousSessionId,
-        string ipAddress,
+        string? ipAddress,
         OriginalUrl originalUrl,
         ShortCode shortCode,
         DateTime utcNow)
     {
+        if (string.IsNullOrWhiteSpace(anonymousSessionId))
+            throw new ArgumentException("An anonymous short URL needs a session id, otherwise it can never be managed.", nameof(anonymousSessionId));
+
         return new ShortUrl(
             originalUrl, shortCode, enShortUrlOwnerType.Anonymous,
             userId: null, organizationId: null, createdByMemberId: null,
@@ -169,9 +172,10 @@ public sealed class ShortUrl : Entity<long>
         IsActive = isActive;
         IsPrivate = isPrivate;
         IsPasswordProtected = isPasswordProtected;
-        PasswordHash = passwordHash;
+        PasswordHash = isPasswordProtected ? passwordHash : null;
         TrackingEnabled = trackingEnabled;
-        
+        ExpiresAt = expiresAt;
+
         UpdatedAtUtc = utcNow;
         
         return Result.Success();
@@ -184,19 +188,21 @@ public sealed class ShortUrl : Entity<long>
         return Result.Success();
     }
 
-    public Result Activate()
+    public Result Activate(DateTime utcNow)
     {
         if (IsActive) return Result.Failure(ShortUrlErrors.AlreadyActive);
 
         IsActive = true;
+        UpdatedAtUtc = utcNow;
         return Result.Success();
     }
 
-    public Result Deactivate()
+    public Result Deactivate(DateTime utcNow)
     {
         if (!IsActive) return Result.Failure(ShortUrlErrors.AlreadyInactive);
 
         IsActive = false;
+        UpdatedAtUtc = utcNow;
         return Result.Success();
     }
 
@@ -206,25 +212,28 @@ public sealed class ShortUrl : Entity<long>
         if (check.IsFailure) return check;
 
         ExpiresAt = expiresAt;
+        UpdatedAtUtc = utcNow;
         return Result.Success();
     }
 
-    public Result ProtectWithPassword(string passwordHash)
+    public Result ProtectWithPassword(string passwordHash, DateTime utcNow)
     {
         if (string.IsNullOrWhiteSpace(passwordHash))
             return Result.Failure(ShortUrlErrors.PasswordRequired);
 
         IsPasswordProtected = true;
         PasswordHash = passwordHash;
+        UpdatedAtUtc = utcNow;
         return Result.Success();
     }
 
-    public Result RemovePassword()
+    public Result RemovePassword(DateTime utcNow)
     {
         if (!IsPasswordProtected) return Result.Failure(ShortUrlErrors.NotPasswordProtected);
 
         IsPasswordProtected = false;
         PasswordHash = null;
+        UpdatedAtUtc = utcNow;
         return Result.Success();
     }
 

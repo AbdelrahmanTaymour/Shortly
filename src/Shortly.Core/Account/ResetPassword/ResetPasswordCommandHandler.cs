@@ -32,7 +32,8 @@ internal sealed class ResetPasswordCommandHandler(
         var changeResult = user.ChangePassword(passwordHasher.Hash(request.NewPassword), utcNow);
         if (changeResult.IsFailure) return changeResult;
 
-        token.MarkUsed(utcNow);
+        var used = token.MarkUsed(utcNow);
+        if (used.IsFailure) return used;
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         await jwtService.RevokeAllForUserAsync(user.Id, cancellationToken);

@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using Shortly.Domain.Abstractions;
 
 namespace Shortly.Domain.ShortUrls;
 
@@ -10,6 +9,10 @@ public sealed class ShortCodeGenerator : IShortCodeGenerator
 
     public ShortCode Generate(int length = 7)
     {
+        if (length is < ShortCode.MinLength or > ShortCode.MaxLength)
+            throw new ArgumentOutOfRangeException(nameof(length), length,
+                $"Short code length must be between {ShortCode.MinLength} and {ShortCode.MaxLength}.");
+
         Span<byte> buffer = stackalloc byte[length];
         RandomNumberGenerator.Fill(buffer);
 

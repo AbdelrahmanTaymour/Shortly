@@ -25,9 +25,10 @@ internal sealed class ForgotPasswordCommandHandler(
         await tokenRepository.InvalidateActiveTokensAsync(user.Id, enUserActionTokenType.PasswordReset, utcNow, cancellationToken);
 
         var plainToken = tokenHasher.GenerateToken();
-        var token = UserActionToken.IssuePasswordReset(user.Id, tokenHasher.Hash(plainToken), utcNow);
+        var issued = UserActionToken.IssuePasswordReset(user.Id, tokenHasher.Hash(plainToken), utcNow);
+        if (issued.IsFailure) return Result.Failure(issued.Error);
 
-        tokenRepository.Add(token);
+        tokenRepository.Add(issued.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         emailNotifier.EnqueuePasswordResetAsync(user.Email, user.Username, plainToken);

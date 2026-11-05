@@ -74,7 +74,7 @@ internal sealed class ShortUrlOwnerResolver(
     {
         var membershipResult = await organizationAuthorization.ResolveClaimedMembershipAsync(cancellationToken);
         if (membershipResult.IsFailure) return Result.Failure<ShortUrlOwner>(membershipResult.Error);
-        if (membershipResult.Value is not { } membership) return Result.Failure<ShortUrlOwner>(ShortUrlErrors.InvalidOwnerType);
+        if (membershipResult.Value.Member is not { } membership) return Result.Failure<ShortUrlOwner>(ShortUrlErrors.InvalidOwnerType);
 
         // Viewers are read-only and cannot create organization resources
         if (membership.Role < MemberRole.Member)

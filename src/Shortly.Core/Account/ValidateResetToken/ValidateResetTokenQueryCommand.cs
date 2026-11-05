@@ -20,7 +20,7 @@ internal sealed class ValidateResetTokenQueryCommand(
         var isValid = token is not null
                       && token.TokenType == enUserActionTokenType.PasswordReset
                       && !token.Used
-                      && token.ExpiresAt >= dateTimeProvider.UtcNow;
+                      && token.ExpiresAt > dateTimeProvider.UtcNow;
 
         return Result.Success(isValid);
     }

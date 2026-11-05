@@ -31,7 +31,8 @@ internal sealed class VerifyEmailCommandHandler(
         var confirmResult = user.ConfirmEmail(utcNow);
         if (confirmResult.IsFailure) return Result.Failure<AccessTokenResponse>(confirmResult.Error);
 
-        token.MarkUsed(utcNow);
+        var used = token.MarkUsed(utcNow);
+        if (used.IsFailure) return Result.Failure<AccessTokenResponse>(used.Error);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await jwtService.IssueTokensAsync(user, cancellationToken);

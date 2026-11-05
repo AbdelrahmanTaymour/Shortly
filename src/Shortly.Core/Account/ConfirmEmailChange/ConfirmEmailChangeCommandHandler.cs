@@ -33,7 +33,8 @@ internal sealed class ConfirmEmailChangeCommandHandler(
         var changeResult = user.ChangeEmail(token.NewEmail, utcNow);
         if (changeResult.IsFailure) return changeResult;
 
-        token.MarkUsed(utcNow);
+        var used = token.MarkUsed(utcNow);
+        if (used.IsFailure) return used;
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

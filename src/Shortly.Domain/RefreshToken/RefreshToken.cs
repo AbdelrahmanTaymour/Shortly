@@ -31,19 +31,32 @@ public sealed class RefreshToken : Entity<Guid>
     public bool IsActive(DateTime utcNow) => !IsRevoked && !IsExpired(utcNow);
 
     public static RefreshToken Issue(Guid userId, string tokenHash, TimeSpan lifetime, Guid? organizationId, DateTime utcNow)
-        => new(Guid.NewGuid(), userId, tokenHash, utcNow.Add(lifetime), organizationId, utcNow);
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(lifetime, TimeSpan.Zero);
 
+        return new RefreshToken(Guid.NewGuid(), userId, tokenHash, utcNow.Add(lifetime), organizationId, utcNow);
+    }
+
+    /// <summary>Revokes the token. Revoking an already revoked token changes nothing, so the first revocation time is kept.</summary>
     public void Revoke(DateTime utcNow)
     {
+        if (IsRevoked) return;
+
         IsRevoked = true;
         RevokedAt = utcNow;
         UpdatedAt = utcNow;
     }
 
-    public void Rotate(string newTokenHash, TimeSpan lifetime, DateTime utcNow)
+    /// <summary>Replaces the token hash and extends the expiry. A revoked or expired token cannot be rotated.</summary>
+    public Result Rotate(string newTokenHash, TimeSpan lifetime, DateTime utcNow)
     {
+        if (!IsActive(utcNow)) return Result.Failure(UserErrors.InvalidRefreshToken);
+
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(lifetime, TimeSpan.Zero);
+
         TokenHash = newTokenHash;
         ExpiresAt = utcNow.Add(lifetime);
         UpdatedAt = utcNow;
+        return Result.Success();
     }
 }

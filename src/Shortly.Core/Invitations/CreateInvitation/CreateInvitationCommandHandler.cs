@@ -52,10 +52,12 @@ internal sealed class CreateInvitationCommandHandler(
         var plainTextToken = tokenHasher.GenerateToken();
         var tokenHash = tokenHasher.Hash(plainTextToken);
 
-        var invitation = OrganizationInvitation.Create(
-            request.OrganizationId, request.Email, request.Role, request.CustomPermissions,
+        var created = OrganizationInvitation.Create(
+            request.OrganizationId, request.Email, request.Role,
             userContext.UserId, tokenHash, utcNow.AddDays(expiryDays), utcNow);
+        if (created.IsFailure) return Result.Failure<Guid>(created.Error);
 
+        var invitation = created.Value;
         invitationRepository.Add(invitation);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

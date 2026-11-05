@@ -25,7 +25,7 @@ internal sealed class GetMyShortUrlsQueryHandler(
         // The token's organization claim may be stale: only honor it while the membership is still active.
         var membership = await organizationAuthorization.ResolveClaimedMembershipAsync(cancellationToken);
         if (membership.IsFailure) return Result.Failure<PagedResponse<ShortUrlResponse>>(membership.Error);
-        var organizationId = membership.Value?.OrganizationId;
+        var organizationId = membership.Value.Member?.OrganizationId;
 
         using var connection = sqlConnectionFactory.CreateConnection();
 

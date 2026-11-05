@@ -18,16 +18,18 @@ public sealed record OriginalUrl
         if (string.IsNullOrWhiteSpace(value))
             return Result.Failure<OriginalUrl>(ShortUrlErrors.OriginalUrlEmpty);
 
-        if (value.Length > MaxLength)
-            return Result.Failure<OriginalUrl>(ShortUrlErrors.OriginalUrlTooLong);
-
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) ||
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
             return Result.Failure<OriginalUrl>(ShortUrlErrors.OriginalUrlInvalid);
         }
 
-        return new OriginalUrl(uri.ToString());
+        // The normalized form is what gets stored and compared, so that is what the length limit applies to.
+        var normalized = uri.ToString();
+        if (normalized.Length > MaxLength)
+            return Result.Failure<OriginalUrl>(ShortUrlErrors.OriginalUrlTooLong);
+
+        return new OriginalUrl(normalized);
     }
 
     public override string ToString() => Value;

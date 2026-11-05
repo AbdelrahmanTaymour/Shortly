@@ -1,4 +1,5 @@
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
 using Shortly.Domain.ShortUrls;
@@ -11,7 +12,8 @@ internal sealed class SetShortUrlPasswordCommandHandler(
     IOrganizationAuthorizationService organizationAuthorization,
     ShortUrlOwnerResolver ownerResolver,
     IPasswordHasher passwordHasher,
-    IUnitOfWork unitOfWork) : ICommandHandler<SetShortUrlPasswordCommand>
+    IUnitOfWork unitOfWork,
+    IDateTimeProvider dateTimeProvider) : ICommandHandler<SetShortUrlPasswordCommand>
 {
     public async Task<Result> Handle(SetShortUrlPasswordCommand request, CancellationToken cancellationToken)
     {
@@ -22,7 +24,7 @@ internal sealed class SetShortUrlPasswordCommandHandler(
         var limits = await ownerResolver.GetLimitsForLinkAsync(shortUrl, cancellationToken);
         if (!limits.LinkProtection) return Result.Failure(ShortUrlErrors.LinkProtectionNotAllowed);
 
-        var result = shortUrl.ProtectWithPassword(passwordHasher.Hash(request.Password));
+        var result = shortUrl.ProtectWithPassword(passwordHasher.Hash(request.Password), dateTimeProvider.UtcNow);
         if (result.IsFailure) return result;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

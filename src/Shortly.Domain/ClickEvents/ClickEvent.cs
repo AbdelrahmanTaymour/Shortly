@@ -57,12 +57,15 @@ public sealed class ClickEvent : Entity<Guid>
     public string Device { get; private set; } = null!;
     public string? DeviceType { get; private set; }
 
-    public static ClickEvent Record(
+    public static Result<ClickEvent> Record(
         long shortUrlId, DateTime clickedAtUtc, string ipAddress, string sessionId, string userAgent,
         string? referrer, string? referrerDomain, string? trafficSource,
         string? utmSource, string? utmMedium, string? utmCampaign, string? utmTerm, string? utmContent,
         string country, string city, string browser, string operatingSystem, string device, string? deviceType)
     {
+        if (shortUrlId <= 0) return Result.Failure<ClickEvent>(ClickEventErrors.InvalidShortUrl);
+        if (string.IsNullOrWhiteSpace(sessionId)) return Result.Failure<ClickEvent>(ClickEventErrors.SessionRequired);
+
         return new ClickEvent(Guid.NewGuid(), shortUrlId, clickedAtUtc, ipAddress, sessionId, userAgent,
             referrer, referrerDomain, trafficSource, utmSource, utmMedium, utmCampaign, utmTerm, utmContent,
             country, city, browser, operatingSystem, device, deviceType);

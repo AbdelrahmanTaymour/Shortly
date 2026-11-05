@@ -28,7 +28,10 @@ internal sealed class CreateTeamCommandHandler(
             return Result.Failure<Guid>(OrganizationTeamErrors.NameTaken);
 
         var utcNow = dateTimeProvider.UtcNow;
-        var team = OrganizationTeam.Create(request.OrganizationId, managerMembership.Id, request.Name, request.Description, utcNow);
+        var created = OrganizationTeam.Create(request.OrganizationId, managerMembership.Id, request.Name, request.Description, utcNow);
+        if (created.IsFailure) return Result.Failure<Guid>(created.Error);
+
+        var team = created.Value;
         teamRepository.Add(team);
 
         teamMemberRepository.Add(OrganizationTeamMember.Create(team.Id, managerMembership.Id, utcNow));

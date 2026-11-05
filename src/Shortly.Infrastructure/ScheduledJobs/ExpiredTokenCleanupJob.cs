@@ -25,12 +25,12 @@ public sealed class ExpiredTokenCleanupJob(
             var deletedActionTokens =
                 await userActionTokenRepository.DeleteExpiredOrUsedAsync(utcNow, cancellationToken);
             var deletedRefreshTokens = await refreshTokenRepository.CleanupExpiredAsync(utcNow, cancellationToken);
-            var deletedInvitationTokens =
-                await invitationRepository.CleanupExpiredInvitations(utcNow, cancellationToken);
+            var expiredInvitations =
+                await invitationRepository.MarkOverdueInvitationsExpiredAsync(utcNow, cancellationToken);
 
             logger.LogInformation(
-                "Token cleanup removed {ActionTokens} user action tokens, {RefreshTokens} refresh tokens, and {deletedInvitationTokens} invitation tokens.",
-                deletedActionTokens, deletedRefreshTokens, deletedInvitationTokens);
+                "Token cleanup removed {ActionTokens} user action tokens, {RefreshTokens} refresh tokens, and marked {ExpiredInvitations} overdue invitations as expired.",
+                deletedActionTokens, deletedRefreshTokens, expiredInvitations);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

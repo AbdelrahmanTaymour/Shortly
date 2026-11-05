@@ -21,7 +21,12 @@ internal sealed class UpdateTeamCommandHandler(
         var authority = await TeamAuthorization.RequireAuthorityAsync(organizationAuthorization, team, cancellationToken);
         if (authority.IsFailure) return Result.Failure(authority.Error);
 
-        if (request.Name is not null) team.Rename(request.Name);
+        if (request.Name is not null)
+        {
+            var renamed = team.Rename(request.Name);
+            if (renamed.IsFailure) return renamed;
+        }
+
         if (request.Description is not null) team.UpdateDescription(request.Description);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

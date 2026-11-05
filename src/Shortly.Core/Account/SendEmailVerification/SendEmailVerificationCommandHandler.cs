@@ -29,9 +29,10 @@ internal sealed class SendEmailVerificationCommandHandler(
         await tokenRepository.InvalidateActiveTokensAsync(user.Id, enUserActionTokenType.EmailVerification, utcNow, cancellationToken);
 
         var plainToken = tokenHasher.GenerateToken();
-        var token = UserActionToken.IssueEmailVerification(user.Id, tokenHasher.Hash(plainToken), utcNow);
+        var issued = UserActionToken.IssueEmailVerification(user.Id, tokenHasher.Hash(plainToken), utcNow);
+        if (issued.IsFailure) return Result.Failure(issued.Error);
 
-        tokenRepository.Add(token);
+        tokenRepository.Add(issued.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         emailNotifier.EnqueueSendEmailVerificationAsync(user.Email, user.Username, plainToken);

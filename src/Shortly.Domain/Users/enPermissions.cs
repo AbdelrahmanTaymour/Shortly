@@ -93,7 +93,7 @@ public enum enPermissions : long
                 ReadOwnAnalytics | ManageOwnAccount,
 
     // Team Member Permissions
-    TeamMember = BasicUser | ReadTeamAnalytics | ViewTeamMembers,
+    TeamMember = BasicUser | ReadTeamAnalytics | ViewTeamMembers | ReadOrgLinks | ReadOrgAnalytics,
 
     // Team Manager Permissions
     TeamManager = TeamMember | ReadOrgLinks | CreateCustomAlias | CreateBrandedLinks |
@@ -105,7 +105,7 @@ public enum enPermissions : long
                ViewOrganization | UpdateOrganization | ManageOrganization |
                ViewInvitations | CreateInvitations | ManageInvitations |
                ViewMembers | RemoveMembers | ViewTeams | CreateTeam |
-               UpdateTeam | DeleteTeam,
+               UpdateTeam | DeleteTeam | UpdateOrgLinks | DeleteOrgLinks | ManageOrgBilling,
 
     // Organization Owner Permissions
     OrgOwner = OrgAdmin | DeleteOrganization | TransferOrgOwnership |
