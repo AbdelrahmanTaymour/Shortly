@@ -47,11 +47,19 @@ internal sealed class ClickTrackingBackgroundService(
         var trafficSource = ClassifyTrafficSource(capture.Referrer, capture.UtmSource, referrerDomain);
 
         // Instantiate the click event aggregate via domain factory method
-        var clickEvent = ClickEvent.Record(
+        var recorded = ClickEvent.Record(
             capture.ShortUrlId, capture.ClickedAtUtc, capture.IpAddress, capture.SessionId, capture.UserAgent,
             capture.Referrer, referrerDomain, trafficSource,
             capture.UtmSource, capture.UtmMedium, capture.UtmCampaign, capture.UtmTerm, capture.UtmContent,
             geoInfo.Country, geoInfo.City, uaInfo.Browser, uaInfo.OperatingSystem, uaInfo.Device, uaInfo.DeviceType);
+
+        if (recorded.IsFailure)
+        {
+            logger.LogWarning("Dropped an invalid click for short URL {ShortUrlId}: {Error}", capture.ShortUrlId, recorded.Error.Code);
+            return;
+        }
+
+        var clickEvent = recorded.Value;
 
         // Create a discrete dependency injection scope for scoped database persistence
         using var scope = scopeFactory.CreateScope();
