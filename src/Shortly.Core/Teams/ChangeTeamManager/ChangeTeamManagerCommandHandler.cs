@@ -28,7 +28,8 @@ internal sealed class ChangeTeamManagerCommandHandler(
         if (newManagerMembership is not { IsActive: true } || newManagerMembership.OrganizationId != team.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.ManagerNotOrgMember);
 
-        team.ChangeManager(newManagerMembership.Id);
+        var changed = team.ChangeManager(newManagerMembership.Id);
+        if (changed.IsFailure) return changed;
 
         if (!await teamMemberRepository.IsMemberOfTeamAsync(newManagerMembership.Id, request.TeamId, cancellationToken))
             teamMemberRepository.Add(OrganizationTeamMember.Create(request.TeamId, newManagerMembership.Id, dateTimeProvider.UtcNow));

@@ -21,12 +21,29 @@ public sealed class OrganizationTeam : Entity<Guid>
     public string? Description { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    public static OrganizationTeam Create(Guid organizationId, Guid teamManagerId, string name, string? description, DateTime utcNow)
-        => new(Guid.NewGuid(), organizationId, teamManagerId, name, description, utcNow);
+    public static Result<OrganizationTeam> Create(Guid organizationId, Guid teamManagerId, string name, string? description, DateTime utcNow)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return Result.Failure<OrganizationTeam>(OrganizationTeamErrors.NameRequired);
+        if (teamManagerId == Guid.Empty) return Result.Failure<OrganizationTeam>(OrganizationTeamErrors.ManagerRequired);
 
-    public void Rename(string name) => Name = name;
+        return new OrganizationTeam(Guid.NewGuid(), organizationId, teamManagerId, name, description, utcNow);
+    }
+
+    public Result Rename(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return Result.Failure(OrganizationTeamErrors.NameRequired);
+
+        Name = name;
+        return Result.Success();
+    }
 
     public void UpdateDescription(string? description) => Description = description;
 
-    public void ChangeManager(Guid newManagerId) => TeamManagerId = newManagerId;
+    public Result ChangeManager(Guid newManagerId)
+    {
+        if (newManagerId == Guid.Empty) return Result.Failure(OrganizationTeamErrors.ManagerRequired);
+
+        TeamManagerId = newManagerId;
+        return Result.Success();
+    }
 }

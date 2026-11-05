@@ -39,10 +39,11 @@ internal sealed class TransferOwnershipCommandHandler(
         var transferResult = organization.TransferOwnership(request.NewOwnerId, dateTimeProvider.UtcNow);
         if (transferResult.IsFailure) return transferResult;
 
-        var demoteResult = oldOwnerMembership.DemoteFromOwner(MemberRole.OrgAdmin);
+        var demoteResult = oldOwnerMembership.DemoteFromOwner(MemberRole.Member);
         if (demoteResult.IsFailure) return demoteResult;
 
-        newOwnerMembership.PromoteToOwner();
+        var promoteResult = newOwnerMembership.PromoteToOwner();
+        if (promoteResult.IsFailure) return promoteResult;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();

@@ -26,9 +26,12 @@ internal sealed class CreateOrganizationCommandHandler(
             return Result.Failure<AccessTokenResponse>(AuthenticationErrors.NotAuthenticated);
 
         var utcNow = dateTimeProvider.UtcNow;
-        var organization = Organization.Create(
+        var created = Organization.Create(
             request.Name, request.Description, request.Website, request.LogoUrl,
             request.MemberLimit ?? 10, userContext.UserId, enSubscriptionPlan.Free, utcNow);
+        if (created.IsFailure) return Result.Failure<AccessTokenResponse>(created.Error);
+
+        var organization = created.Value;
         organizationRepository.Add(organization);
 
         var membership = OrganizationMember.CreateOwner(organization.Id, userContext.UserId, utcNow);

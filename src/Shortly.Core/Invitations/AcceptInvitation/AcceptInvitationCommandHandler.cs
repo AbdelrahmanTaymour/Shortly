@@ -51,16 +51,16 @@ internal sealed class AcceptInvitationCommandHandler(
         if (existing is not null)
         {
             // A previously removed member keeps their (inactive) row; it is reactivated instead of inserting a duplicate.
-            var reactivated = existing.Reactivate();
+            var reactivated = existing.Reactivate(invitation.InvitedUserRole, utcNow);
             if (reactivated.IsFailure) return reactivated;
-
-            var roleChanged = existing.ChangeRole(invitation.InvitedUserRole);
-            if (roleChanged.IsFailure) return roleChanged;
         }
         else
         {
-            memberRepository.Add(OrganizationMember.Invite(
-                invitation.OrganizationId, userContext.UserId, invitation.InvitedUserRole, invitation.InvitedBy, utcNow));
+            var invited = OrganizationMember.Invite(
+                invitation.OrganizationId, userContext.UserId, invitation.InvitedUserRole, invitation.InvitedBy, utcNow);
+            if (invited.IsFailure) return invited;
+
+            memberRepository.Add(invited.Value);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken); 

@@ -11,6 +11,9 @@ public static class OrganizationMemberErrors
     public static readonly Error CannotChangeOwnerRole = Error.Validation("OrganizationMember.CannotChangeOwnerRole", "The organization owner's role cannot be changed directly.");
     public static readonly Error CannotGrantOwnerRoleDirectly = Error.Validation("OrganizationMember.CannotGrantOwnerRoleDirectly", "Ownership can only change via organization transfer.");
     public static readonly Error InsufficientRole = Error.Forbidden("OrganizationMember.InsufficientRole", "You don't have sufficient permissions within this organization.");
+    public static readonly Error AlreadyOwner = Error.Conflict("OrganizationMember.AlreadyOwner", "Member already holds the owner role.");
+    public static readonly Error NotActive = Error.Validation("OrganizationMember.NotActive", "Only an active member can hold this role.");
+    public static readonly Error InvalidRole = Error.Validation("OrganizationMember.InvalidRole", "The specified role is not valid.");
     public static readonly Error AlreadyActive = Error.Conflict("OrganizationMember.AlreadyActive", "Member is already active.");
     public static readonly Error AlreadyInactive = Error.Conflict("OrganizationMember.AlreadyInactive", "Member is already inactive.");
 }

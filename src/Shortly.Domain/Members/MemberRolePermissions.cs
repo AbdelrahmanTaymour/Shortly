@@ -11,7 +11,8 @@ public static class MemberRolePermissions
     private static readonly Dictionary<MemberRole, enPermissions> Map = new()
     {
         [MemberRole.Viewer] =
-            enPermissions.ReadOwnAnalytics | enPermissions.ReadOrgAnalytics | enPermissions.ReadTeamAnalytics,
+            enPermissions.ReadOwnAnalytics | enPermissions.ReadOrgAnalytics | enPermissions.ReadTeamAnalytics |
+            enPermissions.ReadOrgLinks,
         [MemberRole.Member] = enPermissions.TeamMember,
         [MemberRole.TeamManager] = enPermissions.TeamManager,
         [MemberRole.OrgAdmin] = enPermissions.OrgAdmin,
