@@ -232,6 +232,28 @@ public sealed class Seeder(IServiceProvider services)
         return result;
     }
 
+    public async Task<int> CountAuditLogsAsync(Guid userId, string action)
+    {
+        var count = 0;
+        await WithDb(db =>
+        {
+            count = db.Set<UserAuditLog>().Count(l => l.UserId == userId && l.Action == action);
+            return Task.CompletedTask;
+        });
+        return count;
+    }
+
+    public async Task<int> GetOrganizationMemberLimitAsync(Guid organizationId)
+    {
+        var limit = 0;
+        await WithDb(db =>
+        {
+            limit = db.Set<Organization>().Single(o => o.Id == organizationId).MemberLimit;
+            return Task.CompletedTask;
+        });
+        return limit;
+    }
+
     public async Task<enSubscriptionPlan> GetUserPlanAsync(Guid userId)
     {
         var plan = enSubscriptionPlan.Free;

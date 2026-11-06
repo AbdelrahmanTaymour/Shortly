@@ -241,7 +241,7 @@ public class MembershipConsistencyTests(ApiFixture api) : ApiTestBase(api)
     public async Task CreateTeam_WithActiveManager_Succeeds()
     {
         var (org, admin) = await OrgWithAdminAsync();
-        var (_, memberId) = await org.AddMemberAsync(MemberRole.Member);
+        var (_, memberId) = await org.AddMemberAsync(MemberRole.TeamManager);
 
         var response = await admin.PostAsJsonAsync(
             $"/api/organizations/{org.OrganizationId}/teams", new { teamManagerId = memberId, name = $"T{Guid.NewGuid():N}" });
