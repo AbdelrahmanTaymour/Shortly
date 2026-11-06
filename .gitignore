@@ -13,6 +13,8 @@
 _UpgradeReport_Files/
 [Pp]ackages/
 
+**/Shortly.Api/data
+docs/
 Thumbs.db
 Desktop.ini
 .DS_Store
