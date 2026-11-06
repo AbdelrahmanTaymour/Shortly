@@ -6,7 +6,7 @@ namespace Shortly.Domain.UnitTests.SubscriptionPlan;
 public class SubscriptionPlanTests
 {
     private static PlanEntity Plan(int maxLinks = 100, int maxQrCodes = 10, int retentionDays = 30) =>
-        new(enSubscriptionPlan.Starter, "Starter", "For individuals", 9.99m, maxLinks, maxQrCodes, retentionDays,
+        new(enSubscriptionPlan.Starter, "Starter", "For individuals", 9.99m, maxLinks, maxQrCodes, retentionDays, 10, 3,
             linkAnalysis: true, bulkCreation: false, linkProtection: true,
             customShortCode: false, campaignTracking: true, geoDeviceTracking: false);
 
@@ -92,7 +92,7 @@ public class SubscriptionPlanTests
     public void Constructor_Should_Throw_When_TheNameIsBlank(string? name)
     {
         // Act
-        var act = () => new PlanEntity(enSubscriptionPlan.Free, name!, "desc", 0m, 1, 1, 1, false, false, false, false, false, false);
+        var act = () => new PlanEntity(enSubscriptionPlan.Free, name!, "desc", 0m, 1, 1, 1, 1, 1, false, false, false, false, false, false);
 
         // Assert
         act.Should().Throw<ArgumentException>().WithParameterName("name");
@@ -102,7 +102,7 @@ public class SubscriptionPlanTests
     public void Constructor_Should_Throw_When_TheDescriptionIsNull()
     {
         // Act
-        var act = () => new PlanEntity(enSubscriptionPlan.Free, "Free", null!, 0m, 1, 1, 1, false, false, false, false, false, false);
+        var act = () => new PlanEntity(enSubscriptionPlan.Free, "Free", null!, 0m, 1, 1, 1, 1, 1, false, false, false, false, false, false);
 
         // Assert
         act.Should().Throw<ArgumentNullException>().WithParameterName("description");
@@ -112,7 +112,7 @@ public class SubscriptionPlanTests
     public void Constructor_Should_Throw_When_ThePriceIsNegative()
     {
         // Act
-        var act = () => new PlanEntity(enSubscriptionPlan.Free, "Free", "desc", -0.01m, 1, 1, 1, false, false, false, false, false, false);
+        var act = () => new PlanEntity(enSubscriptionPlan.Free, "Free", "desc", -0.01m, 1, 1, 1, 1, 1, false, false, false, false, false, false);
 
         // Assert
         act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("price");
@@ -122,7 +122,7 @@ public class SubscriptionPlanTests
     public void Constructor_Should_Accept_AFreePlanWithZeroLimits()
     {
         // Act
-        var plan = new PlanEntity(enSubscriptionPlan.Free, "Free", "", 0m, 0, 0, 0, false, false, false, false, false, false);
+        var plan = new PlanEntity(enSubscriptionPlan.Free, "Free", "", 0m, 0, 0, 0, 1, 1, false, false, false, false, false, false);
 
         // Assert
         plan.Price.Should().Be(0m);
@@ -153,9 +153,48 @@ public class SubscriptionPlanTests
     public void Constructor_Should_Throw_When_ThePlanIdIsNotDefined()
     {
         // Act
-        var act = () => new PlanEntity((enSubscriptionPlan)99, "Plan", "desc", 1m, 1, 1, 1, false, false, false, false, false, false);
+        var act = () => new PlanEntity((enSubscriptionPlan)99, "Plan", "desc", 1m, 1, 1, 1, 1, 1, false, false, false, false, false, false);
 
         // Assert
         act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("id");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-2)]
+    public void Constructor_Should_Throw_When_TheMemberCapIsNeitherUnlimitedNorPositive(int cap)
+    {
+        // Act
+        var act = () => new PlanEntity(enSubscriptionPlan.Free, "Free", "desc", 0m, 1, 1, 1, cap, 1, false, false, false, false, false, false);
+
+        // Assert
+        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("maxMembersPerOrganization");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-2)]
+    public void Constructor_Should_Throw_When_TheOrganizationCapIsNeitherUnlimitedNorPositive(int cap)
+    {
+        // Act
+        var act = () => new PlanEntity(enSubscriptionPlan.Free, "Free", "desc", 0m, 1, 1, 1, 1, cap, false, false, false, false, false, false);
+
+        // Assert
+        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("maxOrganizations");
+    }
+
+    [Fact]
+    public void Constructor_Should_TreatMinusOneAsUnlimited_ForMembersAndOrganizations()
+    {
+        // Act
+        var plan = new PlanEntity(enSubscriptionPlan.Enterprise, "Ent", "desc", 1m, 1, 1, 1, -1, -1, false, false, false, false, false, false);
+        var limited = Plan();
+
+        // Assert
+        plan.HasUnlimitedMembers.Should().BeTrue();
+        plan.HasUnlimitedOrganizations.Should().BeTrue();
+        limited.HasUnlimitedMembers.Should().BeFalse();
+        limited.MaxMembersPerOrganization.Should().Be(10);
+        limited.MaxOrganizations.Should().Be(3);
     }
 }

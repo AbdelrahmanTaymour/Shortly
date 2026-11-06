@@ -134,7 +134,7 @@ public class RefreshTokenTests
         var result = token.Rotate("new-hash", Lifetime, Now.AddMinutes(1));
 
         // Assert
-        result.Error.Should().Be(UserErrors.InvalidRefreshToken);
+        result.Error.Should().Be(AuthenticationErrors.InvalidRefreshToken);
         token.TokenHash.Should().Be("hash");
         token.ExpiresAt.Should().Be(expiresAt);
     }
@@ -149,7 +149,7 @@ public class RefreshTokenTests
         var result = token.Rotate("new-hash", Lifetime, token.ExpiresAt);
 
         // Assert
-        result.Error.Should().Be(UserErrors.InvalidRefreshToken);
+        result.Error.Should().Be(AuthenticationErrors.InvalidRefreshToken);
         token.TokenHash.Should().Be("hash");
     }
 

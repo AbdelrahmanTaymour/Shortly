@@ -111,4 +111,27 @@ public class UserProfileTests
         profile.ProfilePictureUrl.Should().BeNull();
         profile.UpdatedAtUtc.Should().Be(Later);
     }
+
+    [Fact]
+    public void Patch_Should_KeepNullFields_ClearBlankOnes_AndTrimTheRest()
+    {
+        // Arrange
+        var profile = UserData.CreateUser().Profile;
+        profile.Update("Jane", "Bio", "123", "https://jane.dev", "Acme", "Berlin", "Germany", "UTC", TestClock.Now);
+
+        // Act
+        var result = profile.Patch("  Jane Doe ", "  ", null, "", null, "Cairo", null, null, Later);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        profile.Name.Should().Be("Jane Doe");
+        profile.Bio.Should().BeNull();
+        profile.PhoneNumber.Should().Be("123");
+        profile.Website.Should().BeNull();
+        profile.Company.Should().Be("Acme");
+        profile.Location.Should().Be("Cairo");
+        profile.Country.Should().Be("Germany");
+        profile.TimeZone.Should().Be("UTC");
+        profile.UpdatedAtUtc.Should().Be(Later);
+    }
 }
