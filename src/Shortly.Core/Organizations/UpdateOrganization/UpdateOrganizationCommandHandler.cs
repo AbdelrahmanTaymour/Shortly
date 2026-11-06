@@ -1,3 +1,4 @@
+using Shortly.Core.Exceptions;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
@@ -12,6 +13,8 @@ internal sealed class UpdateOrganizationCommandHandler(
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<UpdateOrganizationCommand>
 {
+    private const string OrganizationNameIndex = "ux_organizations_owner_id_name";
+
     public async Task<Result> Handle(UpdateOrganizationCommand request, CancellationToken cancellationToken)
     {
         var organization = await organizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
@@ -23,7 +26,15 @@ internal sealed class UpdateOrganizationCommandHandler(
         var result = organization.UpdateDetails(request.Name, request.Description, request.Website, request.LogoUrl, dateTimeProvider.UtcNow);
         if (result.IsFailure) return result;
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (UniqueConstraintViolationException ex) when (ex.ConstraintName == OrganizationNameIndex)
+        {
+            return Result.Failure(OrganizationErrors.NameTaken);
+        }
+
         return Result.Success();
     }
 }

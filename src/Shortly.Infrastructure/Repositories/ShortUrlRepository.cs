@@ -56,8 +56,4 @@ internal sealed class ShortUrlRepository(ApplicationDbContext dbContext)
 
     public async Task<int> DeleteAllForOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
         => await DbContext.Set<ShortUrl>().Where(s => s.OrganizationId == organizationId).ExecuteDeleteAsync(cancellationToken);
-
-    public async Task<int> DetachAllFromUserAsync(Guid userId, CancellationToken cancellationToken = default)
-        => await DbContext.Set<ShortUrl>().Where(s => s.UserId == userId).ExecuteUpdateAsync(
-            s => s.SetProperty(x => x.UserId, (Guid?)null), cancellationToken);
 }

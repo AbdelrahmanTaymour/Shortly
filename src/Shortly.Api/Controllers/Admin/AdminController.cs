@@ -106,10 +106,10 @@ public class AdminController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> HardDelete(Guid userId, [FromQuery] bool deleteOwnedShortUrls = false,
+    public async Task<IActionResult> HardDelete(Guid userId,
         CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new HardDeleteUserCommand(userId, deleteOwnedShortUrls), cancellationToken);
+        var result = await sender.Send(new HardDeleteUserCommand(userId), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }
 

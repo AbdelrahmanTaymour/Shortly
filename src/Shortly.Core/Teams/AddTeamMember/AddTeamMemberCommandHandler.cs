@@ -1,3 +1,4 @@
+using Shortly.Core.Exceptions;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
@@ -15,6 +16,8 @@ internal sealed class AddTeamMemberCommandHandler(
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<AddTeamMemberCommand>
 {
+    private const string TeamMemberIndex = "ux_team_members_team_id_member_id";
+
     public async Task<Result> Handle(AddTeamMemberCommand request, CancellationToken cancellationToken)
     {
         var team = await teamRepository.GetByIdAsync(request.TeamId, cancellationToken);
@@ -32,7 +35,16 @@ internal sealed class AddTeamMemberCommandHandler(
             return Result.Failure(OrganizationTeamErrors.AlreadyTeamMember);
 
         teamMemberRepository.Add(OrganizationTeamMember.Create(request.TeamId, targetMembership.Id, dateTimeProvider.UtcNow));
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (UniqueConstraintViolationException ex) when (ex.ConstraintName == TeamMemberIndex)
+        {
+            // Another request added the same member between the check and the insert.
+            return Result.Failure(OrganizationTeamErrors.AlreadyTeamMember);
+        }
+
         return Result.Success();
     }
 }

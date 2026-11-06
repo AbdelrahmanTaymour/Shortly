@@ -39,7 +39,7 @@ internal sealed class GetMyShortUrlsQueryHandler(
             FROM short_urls
             WHERE (@OrganizationId IS NULL AND user_id = @UserId)
                OR (@OrganizationId IS NOT NULL AND organization_id = @OrganizationId)
-            ORDER BY created_at_utc DESC
+            ORDER BY created_at_utc DESC, id DESC
             OFFSET @Offset ROWS
             FETCH NEXT @PageSize ROWS ONLY
             """;
