@@ -82,6 +82,7 @@ public static class DependencyInjection
         // User Management
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserUsageRepository, UserUsageRepository>();
+        services.AddScoped<IUserAuditLogRepository, UserAuditLogRepository>();
  
         // Tokens
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();

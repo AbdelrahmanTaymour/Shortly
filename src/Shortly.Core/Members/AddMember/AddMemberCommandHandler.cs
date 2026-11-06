@@ -1,3 +1,4 @@
+using Shortly.Domain.Users;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
@@ -10,6 +11,7 @@ namespace Shortly.Core.Members.AddMember;
 internal sealed class AddMemberCommandHandler(
     IUserContext userContext,
     IOrganizationRepository organizationRepository,
+    IUserRepository userRepository,
     IOrganizationAuthorizationService organizationAuthorization,
     IOrganizationMemberRepository memberRepository,
     IUnitOfWork unitOfWork,
@@ -17,16 +19,18 @@ internal sealed class AddMemberCommandHandler(
 {
     public async Task<Result> Handle(AddMemberCommand request, CancellationToken cancellationToken)
     {
-        var organization = await organizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
-        if (organization is null) return Result.Failure(OrganizationErrors.NotFound);
-
         var caller = await organizationAuthorization.RequireRoleAsync(request.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
         if (caller.IsFailure) return Result.Failure(caller.Error);
+
+        var organization = await organizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
+        if (organization is null) return Result.Failure(OrganizationErrors.NotFound);
 
         if (request.Role == MemberRole.OrgOwner)
             return Result.Failure(OrganizationMemberErrors.CannotGrantOwnerRoleDirectly);
 
-        // A previously removed member keeps their (inactive) row; it is reactivated instead of inserting a duplicate.
+        if (!await userRepository.ExistsAsync(request.UserId, cancellationToken))
+            return Result.Failure(UserErrors.NotFound);
+
         var existing = await memberRepository.GetByOrganizationAndUserAsync(request.OrganizationId, request.UserId,
             cancellationToken);
         if (existing is { IsActive: true })

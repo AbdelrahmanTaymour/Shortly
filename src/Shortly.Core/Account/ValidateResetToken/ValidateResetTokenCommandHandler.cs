@@ -6,7 +6,7 @@ using Shortly.Domain.Tokens;
 
 namespace Shortly.Core.Account.ValidateResetToken;
 
-internal sealed class ValidateResetTokenQueryCommand(
+internal sealed class ValidateResetTokenCommandHandler(
     IUserActionTokenRepository tokenRepository, 
     ITokenHasher tokenHasher, 
     IDateTimeProvider dateTimeProvider)

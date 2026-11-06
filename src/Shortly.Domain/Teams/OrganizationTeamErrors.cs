@@ -7,6 +7,8 @@ public static class OrganizationTeamErrors
     public static readonly Error NotFound = Error.NotFound("OrganizationTeam.NotFound", "Team not found.");
     public static readonly Error NameRequired = Error.Validation("OrganizationTeam.NameRequired", "Team name is required.");
     public static readonly Error ManagerRequired = Error.Validation("OrganizationTeam.ManagerRequired", "A team manager is required.");
+    public static readonly Error ManagerRoleTooLow = Error.Validation("OrganizationTeam.ManagerRoleTooLow", "The team manager must hold the Team Manager role or higher.");
+    public static readonly Error MemberManagesTeams = Error.Conflict("OrganizationTeam.MemberManagesTeams", "This member manages one or more teams. Assign another manager first.");
     public static readonly Error NameTaken = Error.Conflict("OrganizationTeam.NameTaken", "A team with this name already exists in the organization.");
     public static readonly Error ManagerNotOrgMember = Error.Validation("OrganizationTeam.ManagerNotOrgMember", "The team manager must be a member of the organization.");
     public static readonly Error MemberNotOrgMember = Error.Validation("OrganizationTeam.MemberNotOrgMember", "The user must be a member of the organization before joining a team.");

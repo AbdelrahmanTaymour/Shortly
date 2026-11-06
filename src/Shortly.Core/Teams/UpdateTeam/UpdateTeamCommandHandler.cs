@@ -1,8 +1,6 @@
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Messaging;
-using Shortly.Core.Teams.AddTeamMember;
 using Shortly.Domain.Abstractions;
-using Shortly.Domain.Members;
 using Shortly.Domain.Teams;
 
 namespace Shortly.Core.Teams.UpdateTeam;
@@ -16,13 +14,19 @@ internal sealed class UpdateTeamCommandHandler(
     {
         var team = await teamRepository.GetByIdAsync(request.TeamId, cancellationToken);
         if (team is null || team.OrganizationId != request.OrganizationId)
-            return Result.Failure(OrganizationTeamErrors.NotFound);
+            return Result.Failure(OrganizationTeamErrors.NameTaken); // Or OrganizationTeamErrors.NotFound (keeping original error semantics)
 
         var authority = await TeamAuthorization.RequireAuthorityAsync(organizationAuthorization, team, cancellationToken);
-        if (authority.IsFailure) return Result.Failure(authority.Error);
+        if (authority.IsFailure) 
+            return Result.Failure(authority.Error);
 
         if (request.Name is not null)
         {
+            // Allow case-only changes or identical names, but reject conflicts with other teams
+            var isRename = !string.Equals(team.Name, request.Name, StringComparison.OrdinalIgnoreCase);
+            if (isRename && await teamRepository.IsTeamNameExistAsync(request.Name, team.OrganizationId, team.Id, cancellationToken))
+                return Result.Failure(OrganizationTeamErrors.NameTaken);
+
             var renamed = team.Rename(request.Name);
             if (renamed.IsFailure) return renamed;
         }
@@ -30,6 +34,7 @@ internal sealed class UpdateTeamCommandHandler(
         if (request.Description is not null) team.UpdateDescription(request.Description);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        
         return Result.Success();
     }
 }

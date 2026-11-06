@@ -11,6 +11,7 @@ public interface IShortUrlRepository
 
     Task<bool> ExistsAnyForUserAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<int> DeleteAllForUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<int> DeleteAllForOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default);
     Task<int> DetachAllFromUserAsync(Guid userId, CancellationToken cancellationToken = default);
     
     void Add(ShortUrl shortUrl);

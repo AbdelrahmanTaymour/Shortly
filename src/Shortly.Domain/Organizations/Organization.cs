@@ -52,11 +52,7 @@ public sealed class Organization : Entity<Guid>
             subscriptionPlanId, utcNow);
     }
 
-    /// <summary>
-    /// Updates the organization profile. <c>null</c> leaves a field unchanged; for the optional fields an empty
-    /// (or whitespace-only) string clears the field. The name is trimmed and its inner whitespace collapsed.
-    /// </summary>
-    public Result UpdateDetails(string? name, string? description, string? website, string? logoUrl, int? memberLimit, DateTime utcNow)
+    public Result UpdateDetails(string? name, string? description, string? website, string? logoUrl, DateTime utcNow)
     {
         string? normalizedName = null;
         if (name is not null)
@@ -65,14 +61,19 @@ public sealed class Organization : Entity<Guid>
             if (normalizedName.Length == 0) return Result.Failure(OrganizationErrors.NameRequired);
         }
 
-        if (memberLimit is < 1) return Result.Failure(OrganizationErrors.InvalidMemberLimit);
-
         if (normalizedName is not null) Name = normalizedName;
         if (description is not null) Description = NullIfBlank(description);
         if (website is not null) Website = NullIfBlank(website);
         if (logoUrl is not null) LogoUrl = NullIfBlank(logoUrl);
-        if (memberLimit.HasValue) MemberLimit = memberLimit.Value;
+        UpdatedAt = utcNow;
+        return Result.Success();
+    }
 
+    public Result SetMemberLimit(int memberLimit, DateTime utcNow)
+    {
+        if (memberLimit < 1) return Result.Failure(OrganizationErrors.InvalidMemberLimit);
+
+        MemberLimit = memberLimit;
         UpdatedAt = utcNow;
         return Result.Success();
     }

@@ -8,6 +8,7 @@ namespace Shortly.Core.Admin.UnlockUser;
 
 internal sealed class UnlockUserCommandHandler(
     IUserRepository userRepository,
+    IUserAuditLogRepository auditLogRepository,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IUserContext userContext)
@@ -20,7 +21,7 @@ internal sealed class UnlockUserCommandHandler(
 
         var utcNow = dateTimeProvider.UtcNow;
         user.Security.ResetFailedLoginAttempts(utcNow);
-        UserAuditLog.Record(user.Id, "AdminUnlock", $"Unlocked by {userContext.UserId}", null, null, utcNow);
+        auditLogRepository.Add(UserAuditLog.Record(user.Id, "AdminUnlock", $"Unlocked by {userContext.UserId}", null, null, utcNow));
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();

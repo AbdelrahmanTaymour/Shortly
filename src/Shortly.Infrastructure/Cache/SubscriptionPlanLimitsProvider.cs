@@ -14,7 +14,9 @@ internal sealed class SubscriptionPlanLimitsProvider(
 
     private const string Sql = """
                                SELECT max_links_per_month AS MaxLinksPerMonth, max_qr_codes_per_month AS MaxQrCodesPerMonth,
-                                      click_data_retention_days AS ClickDataRetentionDays, link_analysis AS LinkAnalysis,
+                                      click_data_retention_days AS ClickDataRetentionDays,
+                                      max_members_per_organization AS MaxMembersPerOrganization, max_organizations AS MaxOrganizations,
+                                      link_analysis AS LinkAnalysis,
                                       bulk_creation AS BulkCreation, link_protection AS LinkProtection,
                                       custom_short_code AS CustomShortCode, campaign_tracking AS CampaignTracking,
                                       geo_device_tracking AS GeoDeviceTracking

@@ -19,7 +19,7 @@ internal sealed class UpdateProfileCommandHandler(
         if (user is null) 
             return Result.Failure(UserErrors.NotFound);
 
-        user.Profile.Update(request.Name, request.Bio, request.PhoneNumber, request.Website,
+        user.Profile.Patch(request.Name, request.Bio, request.PhoneNumber, request.Website,
             request.Company, request.Location, request.Country, request.TimeZone, dateTimeProvider.UtcNow);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

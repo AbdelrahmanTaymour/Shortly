@@ -1,4 +1,5 @@
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Core.Abstractions.Cache;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
@@ -15,6 +16,7 @@ internal sealed class CreateOrganizationCommandHandler(
     IOrganizationRepository organizationRepository,
     IOrganizationMemberRepository memberRepository,
     IJwtService jwtService,
+    ISubscriptionPlanLimitsProvider planLimitsProvider,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<CreateOrganizationCommand, AccessTokenResponse>
@@ -25,10 +27,19 @@ internal sealed class CreateOrganizationCommandHandler(
         if (user is null)
             return Result.Failure<AccessTokenResponse>(AuthenticationErrors.NotAuthenticated);
 
+        // How many organizations a user may own depends on the user's own plan.
+        var userLimits = await planLimitsProvider.GetLimitsAsync(user.SubscriptionPlanId, cancellationToken);
+        if (!userLimits.HasUnlimitedOrganizations &&
+            await organizationRepository.CountOwnedByAsync(user.Id, cancellationToken) >= userLimits.MaxOrganizations)
+            return Result.Failure<AccessTokenResponse>(OrganizationErrors.OrganizationLimitReached);
+
+        // A new organization starts on the Free plan, and its member limit follows that plan.
+        var organizationLimits = await planLimitsProvider.GetLimitsAsync(enSubscriptionPlan.Free, cancellationToken);
+
         var utcNow = dateTimeProvider.UtcNow;
         var created = Organization.Create(
             request.Name, request.Description, request.Website, request.LogoUrl,
-            request.MemberLimit ?? 10, userContext.UserId, enSubscriptionPlan.Free, utcNow);
+            organizationLimits.OrganizationMemberLimit, userContext.UserId, enSubscriptionPlan.Free, utcNow);
         if (created.IsFailure) return Result.Failure<AccessTokenResponse>(created.Error);
 
         var organization = created.Value;

@@ -1,3 +1,4 @@
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Admin.BulkActivateUsers;
@@ -8,6 +9,7 @@ namespace Shortly.Core.Admin.BulkDeactivateUsers;
 
 internal sealed class BulkDeactivateUsersCommandHandler(
     IUserRepository userRepository, 
+    IUserContext userContext,
     IUnitOfWork unitOfWork, 
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<BulkDeactivateUsersCommand, BulkOperationResponse>
@@ -21,7 +23,8 @@ internal sealed class BulkDeactivateUsersCommandHandler(
 
         foreach (var id in request.UserIds)
         {
-            if (!byId.TryGetValue(id, out var user) || user.Deactivate(utcNow).IsFailure)
+            // Administrators cannot deactivate themselves.
+            if (id == userContext.UserId || !byId.TryGetValue(id, out var user) || user.Deactivate(utcNow).IsFailure)
             {
                 failure++; 
                 continue;

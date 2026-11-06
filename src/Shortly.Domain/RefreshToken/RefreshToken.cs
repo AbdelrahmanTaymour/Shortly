@@ -50,7 +50,7 @@ public sealed class RefreshToken : Entity<Guid>
     /// <summary>Replaces the token hash and extends the expiry. A revoked or expired token cannot be rotated.</summary>
     public Result Rotate(string newTokenHash, TimeSpan lifetime, DateTime utcNow)
     {
-        if (!IsActive(utcNow)) return Result.Failure(UserErrors.InvalidRefreshToken);
+        if (!IsActive(utcNow)) return Result.Failure(AuthenticationErrors.InvalidRefreshToken);
 
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(lifetime, TimeSpan.Zero);
 

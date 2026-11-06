@@ -28,10 +28,6 @@ internal sealed class UpdateOrganizationCommandValidator
             .Must(BeValidUrl)
             .When(x => !string.IsNullOrWhiteSpace(x.LogoUrl))
             .WithMessage("Logo URL must be a valid URL.");
-
-        RuleFor(x => x.MemberLimit)
-            .GreaterThan(0)
-            .When(x => x.MemberLimit.HasValue);
     }
 
     private static bool BeValidUrl(string? value) =>

@@ -15,12 +15,15 @@ public static class UserErrors
     public static readonly Error AlreadyActive = Error.Conflict("User.AlreadyActive", "User is already active.");
     public static readonly Error AlreadyInactive = Error.Conflict("User.AlreadyInactive", "User is already inactive.");
     public static readonly Error AlreadyDeleted = Error.Conflict("User.AlreadyDeleted", "User is already deleted.");
-    public static readonly Error InvalidRefreshToken = Error.Unauthorized("User.InvalidRefreshToken", "Refresh token is missing or invalid.");
     public static readonly Error TwoFactorSecretRequired = Error.Validation("User.TwoFactorSecretRequired", "A two-factor secret is required.");
     public static readonly Error AccountDisabled = Error.Unauthorized("User.AccountDisabled", "This account has been disabled.");
     public static readonly Error Deleted = Error.Conflict("User.Deleted", "This user has been deleted and can no longer be modified.");
     public static readonly Error GoogleIdRequired = Error.Validation("User.GoogleIdRequired", "A Google account id is required.");
     public static readonly Error InvalidRole = Error.Validation("User.InvalidRole", "The specified role is not valid.");
     public static readonly Error InvalidLockDuration = Error.Validation("User.InvalidLockDuration", "The lock duration must be greater than zero.");
+    public static readonly Error GoogleAccountAlreadyLinked = Error.Conflict("User.GoogleAccountAlreadyLinked", "This account is already linked to a different Google account.");
+    public static readonly Error GoogleLinkRequiresConfirmedEmail = Error.Forbidden("User.GoogleLinkRequiresConfirmedEmail", "Confirm your email address first, then sign in with Google to link it to this account.");
+    public static readonly Error OwnsOrganizations = Error.Conflict("User.OwnsOrganizations", "This user still owns one or more organizations. Transfer ownership or delete them first.");
+    public static readonly Error CannotTargetSelf = Error.Forbidden("User.CannotTargetSelf", "An administrator cannot do this to their own account.");
     public static readonly Error LockReasonRequired = Error.Validation("User.LockReasonRequired", "A lock reason is required.");
 }

@@ -40,7 +40,8 @@ internal sealed class CreateInvitationCommandHandler(
             return Result.Failure<Guid>(OrganizationInvitationErrors.MemberLimitReached);
 
         var utcNow = dateTimeProvider.UtcNow;
-        if (await invitationRepository.HasPendingInvitationAsync(request.Email, request.OrganizationId, utcNow, cancellationToken))
+        var email = OrganizationInvitation.NormalizeEmail(request.Email);
+        if (await invitationRepository.HasPendingInvitationAsync(email, request.OrganizationId, utcNow, cancellationToken))
             return Result.Failure<Guid>(OrganizationInvitationErrors.AlreadyPending);
 
         var existingUser = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
@@ -53,7 +54,7 @@ internal sealed class CreateInvitationCommandHandler(
         var tokenHash = tokenHasher.Hash(plainTextToken);
 
         var created = OrganizationInvitation.Create(
-            request.OrganizationId, request.Email, request.Role,
+            request.OrganizationId, email, request.Role,
             userContext.UserId, tokenHash, utcNow.AddDays(expiryDays), utcNow);
         if (created.IsFailure) return Result.Failure<Guid>(created.Error);
 
@@ -61,8 +62,8 @@ internal sealed class CreateInvitationCommandHandler(
         invitationRepository.Add(invitation);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var inviteeName = request.Email.Split('@')[0];
-        notifier.EnqueueSendUserInvitation(request.Email, inviteeName, inviteeName, plainTextToken, organization.Name);
+        var inviteeName = email.Split('@')[0];
+        notifier.EnqueueSendUserInvitation(email, inviteeName, inviteeName, plainTextToken, organization.Name);
         return invitation.Id;
     }
 }

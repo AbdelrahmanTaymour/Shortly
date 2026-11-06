@@ -26,8 +26,10 @@ internal sealed class UpdateShortUrlCommandValidator
         RuleFor(x => x.Description)
             .MaximumLength(1000);
 
+        // -1 means unlimited everywhere else (domain, redirect, creation), so it must stay a valid value here.
         RuleFor(x => x.ClickLimit)
-            .GreaterThan(0);
+            .Must(limit => limit == -1 || limit > 0)
+            .WithMessage("Click limit must be greater than zero, or -1 for unlimited.");
 
         RuleFor(x => x.ExpiresAt)
             .MustBeInTheFuture(clock)

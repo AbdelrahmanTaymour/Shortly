@@ -1,3 +1,4 @@
+using Shortly.Domain.ShortUrls;
 using FluentValidation;
 using Shortly.Core.Abstractions.Clock;
 
@@ -12,11 +13,14 @@ internal static class ShortUrlRules
                            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             .WithMessage("Original URL must be a valid HTTP or HTTPS URL.");
 
-    /// <summary>Validates standard short code formatting (alphanumeric, hyphens, and underscores).</summary>
+    /// <summary>
+    /// Validates short code formatting (alphanumeric, hyphens and underscores). The length limits are the ones the
+    /// <see cref="ShortCode"/> value object enforces, so validation and the domain cannot drift apart.
+    /// </summary>
     public static IRuleBuilderOptions<T, string?> MustBeShortCodeFormat<T>(this IRuleBuilder<T, string?> rule) =>
-        rule.MinimumLength(3)
-            .MaximumLength(50)
-            .Matches("^[a-zA-Z0-9_-]+$")
+        rule.MinimumLength(ShortCode.MinLength)
+            .MaximumLength(ShortCode.MaxLength)
+            .Matches(@"^[a-zA-Z0-9_-]+\z")
             .WithMessage("Short code can only contain letters, numbers, hyphens, and underscores.");
 
     /// <summary>Validates that an optional date falls strictly in the future using the application clock.</summary>

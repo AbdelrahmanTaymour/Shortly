@@ -7,6 +7,7 @@ public sealed class SubscriptionPlan : Entity<enSubscriptionPlan>
     public SubscriptionPlan(
         enSubscriptionPlan id, string name, string description, decimal price,
         int maxLinksPerMonth, int maxQrCodesPerMonth, int clickDataRetentionDays,
+        int maxMembersPerOrganization, int maxOrganizations,
         bool linkAnalysis, bool bulkCreation, bool linkProtection,
         bool customShortCode, bool campaignTracking, bool geoDeviceTracking) : base(id)
     {
@@ -18,6 +19,8 @@ public sealed class SubscriptionPlan : Entity<enSubscriptionPlan>
         ThrowIfInvalidLimit(maxLinksPerMonth, nameof(maxLinksPerMonth));
         ThrowIfInvalidLimit(maxQrCodesPerMonth, nameof(maxQrCodesPerMonth));
         ThrowIfInvalidLimit(clickDataRetentionDays, nameof(clickDataRetentionDays));
+        ThrowIfInvalidCap(maxMembersPerOrganization, nameof(maxMembersPerOrganization));
+        ThrowIfInvalidCap(maxOrganizations, nameof(maxOrganizations));
 
         Name = name;
         Description = description;
@@ -25,6 +28,8 @@ public sealed class SubscriptionPlan : Entity<enSubscriptionPlan>
         MaxLinksPerMonth = maxLinksPerMonth;
         MaxQrCodesPerMonth = maxQrCodesPerMonth;
         ClickDataRetentionDays = clickDataRetentionDays;
+        MaxMembersPerOrganization = maxMembersPerOrganization;
+        MaxOrganizations = maxOrganizations;
         LinkAnalysis = linkAnalysis;
         BulkCreation = bulkCreation;
         LinkProtection = linkProtection;
@@ -41,6 +46,8 @@ public sealed class SubscriptionPlan : Entity<enSubscriptionPlan>
     public int MaxLinksPerMonth { get; private set; }
     public int MaxQrCodesPerMonth { get; private set; }
     public int ClickDataRetentionDays { get; private set; }
+    public int MaxMembersPerOrganization { get; private set; }
+    public int MaxOrganizations { get; private set; }
     public bool LinkAnalysis { get; private set; }
     public bool BulkCreation { get; private set; }
     public bool LinkProtection { get; private set; }
@@ -51,6 +58,15 @@ public sealed class SubscriptionPlan : Entity<enSubscriptionPlan>
     public bool HasUnlimitedLinks => MaxLinksPerMonth < 0;
     public bool HasUnlimitedQrCodes => MaxQrCodesPerMonth < 0;
     public bool HasUnlimitedRetention => ClickDataRetentionDays < 0;
+    public bool HasUnlimitedMembers => MaxMembersPerOrganization < 0;
+    public bool HasUnlimitedOrganizations => MaxOrganizations < 0;
+
+    /// <summary>A cap on members or organizations is either -1 (unlimited) or at least 1.</summary>
+    private static void ThrowIfInvalidCap(int value, string parameterName)
+    {
+        if (value is not -1 and < 1)
+            throw new ArgumentOutOfRangeException(parameterName, value, "A cap must be -1 (unlimited) or at least 1.");
+    }
 
     /// <summary>A limit is either -1 (unlimited) or zero / a positive amount.</summary>
     private static void ThrowIfInvalidLimit(int value, string parameterName)

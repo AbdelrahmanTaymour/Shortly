@@ -14,6 +14,7 @@ public static class OrganizationMemberErrors
     public static readonly Error AlreadyOwner = Error.Conflict("OrganizationMember.AlreadyOwner", "Member already holds the owner role.");
     public static readonly Error NotActive = Error.Validation("OrganizationMember.NotActive", "Only an active member can hold this role.");
     public static readonly Error InvalidRole = Error.Validation("OrganizationMember.InvalidRole", "The specified role is not valid.");
+    public static readonly Error OwnerCannotLeave = Error.Validation("OrganizationMember.OwnerCannotLeave", "The owner cannot leave the organization. Transfer ownership first.");
     public static readonly Error AlreadyActive = Error.Conflict("OrganizationMember.AlreadyActive", "Member is already active.");
     public static readonly Error AlreadyInactive = Error.Conflict("OrganizationMember.AlreadyInactive", "Member is already inactive.");
 }
