@@ -29,7 +29,7 @@ public class HardDeleteUserCommandHandlerTests
     public async Task Handle_Should_ReturnNotFound_AndOpenNoTransaction_When_TheUserDoesNotExist()
     {
         // Act
-        var result = await _sut.Handle(new HardDeleteUserCommand(Guid.NewGuid(), false), default);
+        var result = await _sut.Handle(new HardDeleteUserCommand(Guid.NewGuid()), default);
 
         // Assert
         result.Error.Should().Be(UserErrors.NotFound);
@@ -37,15 +37,14 @@ public class HardDeleteUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_Should_DeleteTheUsersLinks_RemoveTheUser_AndCommit_When_DeleteOwnedShortUrlsIsSet()
+    public async Task Handle_Should_DeleteTheUsersLinks_RemoveTheUser_AndCommit_()
     {
         // Act
-        var result = await _sut.Handle(new HardDeleteUserCommand(_user.Id, DeleteOwnedShortUrls: true), default);
+        var result = await _sut.Handle(new HardDeleteUserCommand(_user.Id), default);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
         await _shortUrls.Received(1).DeleteAllForUserAsync(_user.Id, Arg.Any<CancellationToken>());
-        await _shortUrls.DidNotReceiveWithAnyArgs().DetachAllFromUserAsync(default, default);
         _users.Received(1).Remove(_user);
         Received.InOrder(() =>
         {
@@ -55,26 +54,13 @@ public class HardDeleteUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_Should_DetachTheUsersLinks_InsteadOfDeletingThem_When_DeleteOwnedShortUrlsIsNotSet()
-    {
-        // Act
-        var result = await _sut.Handle(new HardDeleteUserCommand(_user.Id, DeleteOwnedShortUrls: false), default);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        await _shortUrls.Received(1).DetachAllFromUserAsync(_user.Id, Arg.Any<CancellationToken>());
-        await _shortUrls.DidNotReceiveWithAnyArgs().DeleteAllForUserAsync(default, default);
-        _users.Received(1).Remove(_user);
-    }
-
-    [Fact]
     public async Task Handle_Should_RollBack_AndRethrow_When_SavingFails()
     {
         // Arrange
         _unitOfWork.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns<Task<int>>(_ => throw new InvalidOperationException("db"));
 
         // Act
-        var act = () => _sut.Handle(new HardDeleteUserCommand(_user.Id, true), default);
+        var act = () => _sut.Handle(new HardDeleteUserCommand(_user.Id), default);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>();
@@ -89,7 +75,7 @@ public class HardDeleteUserCommandHandlerTests
         _organizations.CountOwnedByAsync(_user.Id, Arg.Any<CancellationToken>()).Returns(1);
 
         // Act
-        var result = await _sut.Handle(new HardDeleteUserCommand(_user.Id, true), default);
+        var result = await _sut.Handle(new HardDeleteUserCommand(_user.Id), default);
 
         // Assert
         result.Error.Should().Be(UserErrors.OwnsOrganizations);
@@ -101,7 +87,7 @@ public class HardDeleteUserCommandHandlerTests
     public async Task Handle_Should_ReturnCannotTargetSelf_When_TheAdministratorDeletesThemselves()
     {
         // Act
-        var result = await _sut.Handle(new HardDeleteUserCommand(_adminId, true), default);
+        var result = await _sut.Handle(new HardDeleteUserCommand(_adminId), default);
 
         // Assert
         result.Error.Should().Be(UserErrors.CannotTargetSelf);
