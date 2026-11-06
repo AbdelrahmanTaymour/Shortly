@@ -37,6 +37,28 @@ public sealed class UserProfile
         return Result.Success();
     }
 
+    /// <summary>
+    /// Partial update: a null argument keeps the current value, a blank one clears it, anything else replaces it.
+    /// </summary>
+    public Result Patch(
+        string? name, string? bio, string? phoneNumber, string? website,
+        string? company, string? location, string? country, string? timeZone, DateTime utcNow)
+    {
+        Name = Resolve(name, Name);
+        Bio = Resolve(bio, Bio);
+        PhoneNumber = Resolve(phoneNumber, PhoneNumber);
+        Website = Resolve(website, Website);
+        Company = Resolve(company, Company);
+        Location = Resolve(location, Location);
+        Country = Resolve(country, Country);
+        TimeZone = Resolve(timeZone, TimeZone);
+        UpdatedAtUtc = utcNow;
+        return Result.Success();
+    }
+
+    private static string? Resolve(string? requested, string? current) =>
+        requested is null ? current : string.IsNullOrWhiteSpace(requested) ? null : requested.Trim();
+
     public Result UpdateName(string? name, DateTime utcNow)
     {
         Name = name;

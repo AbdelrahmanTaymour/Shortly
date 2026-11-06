@@ -28,6 +28,9 @@ internal sealed class ChangeTeamManagerCommandHandler(
         if (newManagerMembership is not { IsActive: true } || newManagerMembership.OrganizationId != team.OrganizationId)
             return Result.Failure(OrganizationTeamErrors.ManagerNotOrgMember);
 
+        if (newManagerMembership.Role < MemberRole.TeamManager)
+            return Result.Failure(OrganizationTeamErrors.ManagerRoleTooLow);
+
         var changed = team.ChangeManager(newManagerMembership.Id);
         if (changed.IsFailure) return changed;
 

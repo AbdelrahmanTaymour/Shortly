@@ -70,6 +70,17 @@ public sealed class User : Entity<Guid>
             isOAuthUser: true, googleId, googleProfilePicture, isEmailConfirmed: true, utcNow);
     }
 
+    public Result LinkGoogleAccount(string googleId, string? googleProfilePicture, DateTime utcNow)
+    {
+        if (string.IsNullOrWhiteSpace(googleId)) return Result.Failure(UserErrors.GoogleIdRequired);
+        if (GoogleId is not null && GoogleId != googleId) return Result.Failure(UserErrors.GoogleAccountAlreadyLinked);
+
+        GoogleId = googleId;
+        GoogleProfilePicture = googleProfilePicture ?? GoogleProfilePicture;
+        UpdatedAtUtc = utcNow;
+        return Result.Success();
+    }
+
     public Result ChangePassword(string newPasswordHash, DateTime utcNow)
     {
         if (string.IsNullOrWhiteSpace(newPasswordHash)) return Result.Failure(UserErrors.PasswordRequired);
@@ -84,6 +95,16 @@ public sealed class User : Entity<Guid>
         if (string.IsNullOrWhiteSpace(newEmail)) return Result.Failure(UserErrors.EmailRequired);
         Email = newEmail;
         IsEmailConfirmed = true; // reaching this point means the change was already verified via token
+        UpdatedAtUtc = utcNow;
+        return Result.Success();
+    }
+
+    /// <summary>Changes the address without trusting it: the user has to confirm the new address again.</summary>
+    public Result ChangeEmailUnverified(string newEmail, DateTime utcNow)
+    {
+        if (string.IsNullOrWhiteSpace(newEmail)) return Result.Failure(UserErrors.EmailRequired);
+        Email = newEmail;
+        IsEmailConfirmed = false;
         UpdatedAtUtc = utcNow;
         return Result.Success();
     }

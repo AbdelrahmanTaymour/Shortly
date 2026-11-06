@@ -23,8 +23,9 @@ internal static class TeamAuthorization
         if (membership.IsFailure) 
             return membership;
 
-        // Allow if the caller is the assigned team manager or an organization admin/owner
-        return membership.Value.Id == team.TeamManagerId || membership.Value.Role >= MemberRole.OrgAdmin
+        // Allow an organization admin/owner, or the assigned team manager as long as they still hold the Team Manager role.
+        var isManagerOfThisTeam = membership.Value.Id == team.TeamManagerId && membership.Value.Role >= MemberRole.TeamManager;
+        return isManagerOfThisTeam || membership.Value.Role >= MemberRole.OrgAdmin
             ? membership
             : Result.Failure<OrganizationMember>(OrganizationMemberErrors.InsufficientRole);
     }

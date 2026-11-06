@@ -181,6 +181,83 @@ public class UserTests
         result.Value.GoogleProfilePicture.Should().BeNull();
     }
 
+    // ---- linking a Google account ------------------------------------------------------------------------------------
+
+    [Fact]
+    public void LinkGoogleAccount_Should_StoreTheGoogleIdAndPicture_ForAPasswordAccount()
+    {
+        // Arrange
+        var user = UserData.CreateUser();
+
+        // Act
+        var result = user.LinkGoogleAccount("google-123", "https://example.com/pic.png", Later);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        user.GoogleId.Should().Be("google-123");
+        user.GoogleProfilePicture.Should().Be("https://example.com/pic.png");
+        user.IsOAuthUser.Should().BeFalse();
+        user.PasswordHash.Should().Be(UserData.PasswordHash);
+        user.UpdatedAtUtc.Should().Be(Later);
+    }
+
+    [Fact]
+    public void LinkGoogleAccount_Should_KeepTheExistingPicture_When_NoneIsProvided()
+    {
+        // Arrange
+        var user = UserData.CreateOAuthUser();
+
+        // Act
+        user.LinkGoogleAccount("google-123", null, Later);
+
+        // Assert
+        user.GoogleProfilePicture.Should().Be("https://example.com/pic.png");
+    }
+
+    [Fact]
+    public void LinkGoogleAccount_Should_Succeed_WhenTheSameGoogleIdIsLinkedAgain()
+    {
+        // Arrange
+        var user = UserData.CreateOAuthUser(googleId: "google-123");
+
+        // Act
+        var result = user.LinkGoogleAccount("google-123", null, Later);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void LinkGoogleAccount_Should_Fail_AndKeepTheLink_When_ADifferentGoogleAccountIsAlreadyLinked()
+    {
+        // Arrange
+        var user = UserData.CreateOAuthUser(googleId: "google-123");
+
+        // Act
+        var result = user.LinkGoogleAccount("another-google-id", null, Later);
+
+        // Assert
+        result.Error.Should().Be(UserErrors.GoogleAccountAlreadyLinked);
+        user.GoogleId.Should().Be("google-123");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void LinkGoogleAccount_Should_Fail_When_TheGoogleIdIsBlank(string? googleId)
+    {
+        // Arrange
+        var user = UserData.CreateUser();
+
+        // Act
+        var result = user.LinkGoogleAccount(googleId!, null, Later);
+
+        // Assert
+        result.Error.Should().Be(UserErrors.GoogleIdRequired);
+        user.GoogleId.Should().BeNull();
+    }
+
     // ---- credentials and profile data ---------------------------------------------------------------------------------
 
     [Fact]
@@ -247,6 +324,41 @@ public class UserTests
         user.Email.Should().Be("new@example.com");
         user.IsEmailConfirmed.Should().BeTrue();
         user.UpdatedAtUtc.Should().Be(Later);
+    }
+
+    [Fact]
+    public void ChangeEmailUnverified_Should_ReplaceTheEmail_AndRequireItToBeConfirmedAgain()
+    {
+        // Arrange
+        var user = UserData.CreateUser();
+        user.ConfirmEmail(Now);
+
+        // Act
+        var result = user.ChangeEmailUnverified("new@example.com", Later);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        user.Email.Should().Be("new@example.com");
+        user.IsEmailConfirmed.Should().BeFalse();
+        user.UpdatedAtUtc.Should().Be(Later);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("  ")]
+    public void ChangeEmailUnverified_Should_Fail_AndKeepTheOldEmail_When_EmailIsMissing(string? email)
+    {
+        // Arrange
+        var user = UserData.CreateUser();
+        user.ConfirmEmail(Now);
+
+        // Act
+        var result = user.ChangeEmailUnverified(email!, Later);
+
+        // Assert
+        result.Error.Should().Be(UserErrors.EmailRequired);
+        user.Email.Should().Be(UserData.Email);
+        user.IsEmailConfirmed.Should().BeTrue();
     }
 
     [Theory]

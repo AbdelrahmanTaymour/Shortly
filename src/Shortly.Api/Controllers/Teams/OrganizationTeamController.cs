@@ -7,6 +7,7 @@ using Shortly.Core.Exceptions;
 using Shortly.Domain.Abstractions;
 using Shortly.Core.Teams.AddTeamMember;
 using Shortly.Core.Teams.ChangeTeamManager;
+using Shortly.Core.Teams.CheckTeamNameAvailability;
 using Shortly.Core.Teams.CreateTeam;
 using Shortly.Core.Teams.DeleteTeam;
 using Shortly.Core.Teams.GetOrganizationTeams;
@@ -50,6 +51,20 @@ public class OrganizationTeamsController(ISender sender) : ControllerBase
     public async Task<IActionResult> GetTeamMembers(Guid organizationId, Guid teamId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new GetTeamMembersQuery(teamId, page, pageSize), cancellationToken);
+        return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Checks whether a team name is free in the organization.
+    /// </summary>
+    [HttpGet("name-available", Name = "CheckTeamNameAvailability")]
+    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> CheckNameAvailability(
+        Guid organizationId, [FromQuery] string name, [FromQuery] Guid? excludeTeamId = null, CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new CheckTeamNameAvailabilityCommand(organizationId, name, excludeTeamId), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 

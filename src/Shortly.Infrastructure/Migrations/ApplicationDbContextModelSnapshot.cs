@@ -658,6 +658,14 @@ namespace Shortly.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("max_links_per_month");
 
+                    b.Property<int>("MaxMembersPerOrganization")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_members_per_organization");
+
+                    b.Property<int>("MaxOrganizations")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_organizations");
+
                     b.Property<int>("MaxQrCodesPerMonth")
                         .HasColumnType("integer")
                         .HasColumnName("max_qr_codes_per_month");
@@ -694,6 +702,8 @@ namespace Shortly.Infrastructure.Migrations
                             LinkAnalysis = false,
                             LinkProtection = false,
                             MaxLinksPerMonth = 5,
+                            MaxMembersPerOrganization = 3,
+                            MaxOrganizations = 1,
                             MaxQrCodesPerMonth = 2,
                             Name = "Free",
                             Price = 0m
@@ -710,6 +720,8 @@ namespace Shortly.Infrastructure.Migrations
                             LinkAnalysis = true,
                             LinkProtection = false,
                             MaxLinksPerMonth = 100,
+                            MaxMembersPerOrganization = 10,
+                            MaxOrganizations = 3,
                             MaxQrCodesPerMonth = 5,
                             Name = "Starter",
                             Price = 10m
@@ -726,6 +738,8 @@ namespace Shortly.Infrastructure.Migrations
                             LinkAnalysis = true,
                             LinkProtection = true,
                             MaxLinksPerMonth = 500,
+                            MaxMembersPerOrganization = 50,
+                            MaxOrganizations = 10,
                             MaxQrCodesPerMonth = 10,
                             Name = "Professional",
                             Price = 50m
@@ -742,6 +756,8 @@ namespace Shortly.Infrastructure.Migrations
                             LinkAnalysis = true,
                             LinkProtection = true,
                             MaxLinksPerMonth = -1,
+                            MaxMembersPerOrganization = -1,
+                            MaxOrganizations = -1,
                             MaxQrCodesPerMonth = -1,
                             Name = "Enterprise",
                             Price = 200m

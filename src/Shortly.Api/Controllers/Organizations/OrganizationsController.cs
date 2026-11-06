@@ -36,7 +36,7 @@ public class OrganizationsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateOrganizationRequest request, CancellationToken cancellationToken = default)
     {
-        var command = new CreateOrganizationCommand(request.Name, request.Description, request.Website, request.LogoUrl, request.MemberLimit);
+        var command = new CreateOrganizationCommand(request.Name, request.Description, request.Website, request.LogoUrl);
         var result = await sender.Send(command, cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
@@ -47,7 +47,7 @@ public class OrganizationsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOrganizationRequest request, CancellationToken cancellationToken = default)
     {
-        var command = new UpdateOrganizationCommand(id, request.Name, request.Description, request.Website, request.LogoUrl, request.MemberLimit);
+        var command = new UpdateOrganizationCommand(id, request.Name, request.Description, request.Website, request.LogoUrl);
         var result = await sender.Send(command, cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : NoContent();
     }

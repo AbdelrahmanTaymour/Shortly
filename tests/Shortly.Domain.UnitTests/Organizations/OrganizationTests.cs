@@ -115,7 +115,7 @@ public class OrganizationTests
 
         // Act
         var result = organization.UpdateDetails("New name", "New description", "https://new.dev",
-            "https://new.dev/logo.png", 50, Later);
+            "https://new.dev/logo.png", Later);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -123,7 +123,6 @@ public class OrganizationTests
         organization.Description.Should().Be("New description");
         organization.Website.Should().Be("https://new.dev");
         organization.LogoUrl.Should().Be("https://new.dev/logo.png");
-        organization.MemberLimit.Should().Be(50);
         organization.UpdatedAt.Should().Be(Later);
     }
 
@@ -135,7 +134,7 @@ public class OrganizationTests
             Guid.NewGuid(), enSubscriptionPlan.Free, Now).Value;
 
         // Act
-        var result = organization.UpdateDetails(null, null, null, null, null, Later);
+        var result = organization.UpdateDetails(null, null, null, null, Later);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -156,7 +155,7 @@ public class OrganizationTests
         var organization = OrganizationData.CreateOrganization();
 
         // Act
-        var result = organization.UpdateDetails(name, "Changed", null, null, 99, Later);
+        var result = organization.UpdateDetails(name, "Changed", null, null, Later);
 
         // Assert
         result.Error.Should().Be(OrganizationErrors.NameRequired);
@@ -175,7 +174,7 @@ public class OrganizationTests
         var organization = OrganizationData.CreateOrganization();
 
         // Act
-        var result = organization.UpdateDetails(name, null, null, null, null, Later);
+        var result = organization.UpdateDetails(name, null, null, null, Later);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -192,7 +191,7 @@ public class OrganizationTests
             Guid.NewGuid(), enSubscriptionPlan.Free, Now).Value;
 
         // Act
-        var result = organization.UpdateDetails(null, blank, blank, blank, null, Later);
+        var result = organization.UpdateDetails(null, blank, blank, blank, Later);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -210,7 +209,7 @@ public class OrganizationTests
             Guid.NewGuid(), enSubscriptionPlan.Free, Now).Value;
 
         // Act
-        organization.UpdateDetails(null, "", null, null, null, Later);
+        organization.UpdateDetails(null, "", null, null, Later);
 
         // Assert
         organization.Description.Should().BeNull();
@@ -221,34 +220,33 @@ public class OrganizationTests
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
-    public void UpdateDetails_Should_Fail_AndChangeNothing_When_MemberLimitIsBelowOne(int memberLimit)
+    public void SetMemberLimit_Should_Fail_AndChangeNothing_When_LimitIsBelowOne(int memberLimit)
     {
         // Arrange
         var organization = OrganizationData.CreateOrganization();
 
         // Act
-        var result = organization.UpdateDetails("Renamed", "Changed", null, null, memberLimit, Later);
+        var result = organization.SetMemberLimit(memberLimit, Later);
 
         // Assert
         result.Error.Should().Be(OrganizationErrors.InvalidMemberLimit);
-        organization.Name.Should().Be("Acme");
-        organization.Description.Should().BeNull();
         organization.MemberLimit.Should().Be(10);
         organization.UpdatedAt.Should().Be(Now);
     }
 
     [Fact]
-    public void UpdateDetails_Should_AcceptAMemberLimitOfOne()
+    public void SetMemberLimit_Should_ReplaceTheLimit_AndTouchTheTimestamp()
     {
         // Arrange
         var organization = OrganizationData.CreateOrganization();
 
         // Act
-        var result = organization.UpdateDetails(null, null, null, null, 1, Later);
+        var result = organization.SetMemberLimit(1, Later);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
         organization.MemberLimit.Should().Be(1);
+        organization.UpdatedAt.Should().Be(Later);
     }
 
     // ---- activation and deletion ---------------------------------------------------------------------------------------

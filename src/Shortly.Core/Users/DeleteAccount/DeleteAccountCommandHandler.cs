@@ -2,6 +2,7 @@ using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Domain.Abstractions;
+using Shortly.Domain.Organizations;
 using Shortly.Domain.Users;
 
 namespace Shortly.Core.Users.DeleteAccount;
@@ -9,6 +10,7 @@ namespace Shortly.Core.Users.DeleteAccount;
 internal sealed class DeleteAccountCommandHandler(
     IUserContext userContext,
     IUserRepository userRepository,
+    IOrganizationRepository organizationRepository,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IJwtService jwtService)
@@ -18,6 +20,10 @@ internal sealed class DeleteAccountCommandHandler(
     {
         var user = await userRepository.GetByIdAsync(userContext.UserId, cancellationToken);
         if (user is null) return Result.Failure(UserErrors.NotFound);
+
+        // An organization must never be left without an owner.
+        if (await organizationRepository.CountOwnedByAsync(user.Id, cancellationToken) > 0)
+            return Result.Failure(UserErrors.OwnsOrganizations);
 
         var result = user.SoftDelete(userContext.UserId, dateTimeProvider.UtcNow);
         if (result.IsFailure) return result;

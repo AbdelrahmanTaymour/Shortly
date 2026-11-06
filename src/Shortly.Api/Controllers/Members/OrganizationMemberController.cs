@@ -7,6 +7,8 @@ using Shortly.Core.Exceptions;
 using Shortly.Core.Members.AddMember;
 using Shortly.Core.Members.GetMembership;
 using Shortly.Core.Members.GetOrganizationMembers;
+using Shortly.Core.Members.LeaveOrganization;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Members.RemoveMember;
 using Shortly.Core.Members.UpdateMemberRole;
 using Shortly.Domain.Abstractions;
@@ -27,6 +29,17 @@ public class OrganizationMembersController(ISender sender) : ControllerBase
     public async Task<IActionResult> GetMembers(Guid organizationId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         var result = await sender.Send(new GetOrganizationMembersQuery(organizationId, page, pageSize), cancellationToken);
+        return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
+    }
+
+    /// <summary>Leaves the organization. Returns tokens for the personal workspace; the owner must transfer ownership first.</summary>
+    [HttpPost("leave", Name = "LeaveOrganization")]
+    [ProducesResponseType(typeof(AccessTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ExceptionResponseDto), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Leave(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new LeaveOrganizationCommand(organizationId), cancellationToken);
         return result.IsFailure ? result.ToProblemDetails() : Ok(result.Value);
     }
 

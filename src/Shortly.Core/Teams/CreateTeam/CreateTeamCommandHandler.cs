@@ -24,7 +24,10 @@ internal sealed class CreateTeamCommandHandler(
         if (managerMembership is not { IsActive: true } || managerMembership.OrganizationId != request.OrganizationId)
             return Result.Failure<Guid>(OrganizationTeamErrors.ManagerNotOrgMember);
 
-        if (await teamRepository.IsTeamNameExistAsync(request.Name, request.OrganizationId, cancellationToken))
+        if (managerMembership.Role < MemberRole.TeamManager)
+            return Result.Failure<Guid>(OrganizationTeamErrors.ManagerRoleTooLow);
+
+        if (await teamRepository.IsTeamNameExistAsync(request.Name, request.OrganizationId, cancellationToken: cancellationToken))
             return Result.Failure<Guid>(OrganizationTeamErrors.NameTaken);
 
         var utcNow = dateTimeProvider.UtcNow;

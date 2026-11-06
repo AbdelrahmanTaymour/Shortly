@@ -15,7 +15,7 @@ internal sealed class RefreshAccessTokenCommandHandler(
     {
         var refreshToken = cookieService.GetRefreshToken();
         if (string.IsNullOrEmpty(refreshToken))
-            return Result.Failure<AccessTokenResponse>(UserErrors.InvalidRefreshToken);
+            return Result.Failure<AccessTokenResponse>(AuthenticationErrors.InvalidRefreshToken);
 
         var result = await jwtService.RefreshAccessTokenAsync(refreshToken, cancellationToken);
         if (result.IsFailure) return result;

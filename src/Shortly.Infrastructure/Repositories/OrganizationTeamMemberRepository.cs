@@ -10,6 +10,11 @@ internal sealed class OrganizationTeamMemberRepository(ApplicationDbContext dbCo
         => await DbContext.Set<OrganizationTeamMember>()
             .FirstOrDefaultAsync(tm => tm.TeamId == teamId && tm.MemberId == memberId, cancellationToken);
 
+    public async Task<IReadOnlyList<OrganizationTeamMember>> GetByMemberAsync(Guid memberId, CancellationToken cancellationToken = default)
+        => await DbContext.Set<OrganizationTeamMember>()
+            .Where(tm => tm.MemberId == memberId)
+            .ToListAsync(cancellationToken);
+
     public async Task<bool> IsMemberOfTeamAsync(Guid memberId, Guid teamId, CancellationToken cancellationToken = default)
         => await DbContext.Set<OrganizationTeamMember>()
             .AsNoTracking()

@@ -3,12 +3,14 @@ using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
 using Shortly.Core.Admin.BulkActivateUsers;
 using Shortly.Domain.Abstractions;
+using Shortly.Domain.Organizations;
 using Shortly.Domain.Users;
 
 namespace Shortly.Core.Admin.BulkDeleteUsers;
 
 public class BulkDeleteUsersCommandHandler(
     IUserRepository userRepository, 
+    IOrganizationRepository organizationRepository,
     IUserContext userContext,
     IUnitOfWork unitOfWork, 
     IDateTimeProvider dateTimeProvider)
@@ -23,7 +25,11 @@ public async Task<Result<BulkOperationResponse>> Handle(BulkDeleteUsersCommand r
 
     foreach (var id in request.UserIds)
     {
-        if (!byId.TryGetValue(id, out var user) || user.SoftDelete(userContext.UserId, utcNow).IsFailure)
+        // Administrators cannot delete themselves, and a user who still owns an organization cannot be deleted.
+        if (id == userContext.UserId
+            || !byId.TryGetValue(id, out var user)
+            || await organizationRepository.CountOwnedByAsync(id, cancellationToken) > 0
+            || user.SoftDelete(userContext.UserId, utcNow).IsFailure)
         {
             failure++; 
             continue;

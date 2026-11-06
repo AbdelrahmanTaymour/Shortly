@@ -20,7 +20,7 @@ internal sealed class UpdateOrganizationCommandHandler(
         if (organization.OwnerId != userContext.UserId)
             return Result.Failure(OrganizationErrors.NotOwner);
 
-        var result = organization.UpdateDetails(request.Name, request.Description, request.Website, request.LogoUrl, request.MemberLimit, dateTimeProvider.UtcNow);
+        var result = organization.UpdateDetails(request.Name, request.Description, request.Website, request.LogoUrl, dateTimeProvider.UtcNow);
         if (result.IsFailure) return result;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

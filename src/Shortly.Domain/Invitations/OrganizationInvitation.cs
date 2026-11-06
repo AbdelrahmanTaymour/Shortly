@@ -61,9 +61,12 @@ public sealed class OrganizationInvitation : Entity<Guid>
         if (expiresAt <= utcNow)
             return Result.Failure<OrganizationInvitation>(OrganizationInvitationErrors.InvalidExpiration);
 
-        return new OrganizationInvitation(Guid.NewGuid(), organizationId, email, role, invitedBy, tokenHash,
+        return new OrganizationInvitation(Guid.NewGuid(), organizationId, NormalizeEmail(email), role, invitedBy, tokenHash,
             expiresAt, utcNow);
     }
+
+    /// <summary>Emails are stored trimmed and in lower case, so the same address always matches the same invitation.</summary>
+    public static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
 
     public Result Accept(DateTime utcNow)
     {

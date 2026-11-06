@@ -8,6 +8,7 @@ namespace Shortly.Core.Admin.LockUser;
 
 internal sealed class LockUserCommandHandler(
     IUserRepository userRepository,
+    IUserAuditLogRepository auditLogRepository,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IUserContext userContext)
@@ -15,6 +16,8 @@ internal sealed class LockUserCommandHandler(
 {
     public async Task<Result> Handle(LockUserCommand request, CancellationToken cancellationToken)
     {
+        if (request.UserId == userContext.UserId) return Result.Failure(UserErrors.CannotTargetSelf);
+
         var user = await userRepository.GetByIdAsync(request.UserId, cancellationToken);
         if (user is null) return Result.Failure(UserErrors.NotFound);
 
@@ -22,13 +25,13 @@ internal sealed class LockUserCommandHandler(
         var result = user.Security.LockManually(request.Reason, request.Duration, utcNow);
         if (result.IsFailure) return result;
 
-        UserAuditLog.Record(
+        auditLogRepository.Add(UserAuditLog.Record(
             user.Id, 
             "AdminLock", 
             $"Locked by {userContext.UserId}: {request.Reason}",
             null, 
             null, 
-            utcNow);
+            utcNow));
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();

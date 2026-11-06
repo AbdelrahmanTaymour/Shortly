@@ -21,9 +21,9 @@ internal sealed class SendEmailVerificationCommandHandler(
     {
         var email = request.Email ?? userContext.Email;
         var user = await userRepository.GetByEmailAsync(email, cancellationToken);
-        if (user is null) return Result.Success();
 
-        if (user.IsEmailConfirmed) return Result.Failure(UserErrors.EmailAlreadyConfirmed);
+        // Unknown and already-confirmed addresses get the same silent success, so the response reveals nothing.
+        if (user is null || user.IsEmailConfirmed) return Result.Success();
 
         var utcNow = dateTimeProvider.UtcNow;
         await tokenRepository.InvalidateActiveTokensAsync(user.Id, enUserActionTokenType.EmailVerification, utcNow, cancellationToken);

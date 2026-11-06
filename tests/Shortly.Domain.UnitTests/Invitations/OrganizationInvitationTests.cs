@@ -48,6 +48,20 @@ public class OrganizationInvitationTests
     }
 
     [Theory]
+    [InlineData("  Invitee@Example.COM ", "invitee@example.com")]
+    [InlineData("invitee@example.com", "invitee@example.com")]
+    public void Create_Should_StoreTheEmailTrimmedAndInLowerCase(string email, string expected)
+    {
+        // Act
+        var result = OrganizationInvitation.Create(Guid.NewGuid(), email, MemberRole.Member,
+            Guid.NewGuid(), "token-hash", ExpiresAt, Now);
+
+        // Assert
+        result.Value.InvitedUserEmail.Should().Be(expected);
+        OrganizationInvitation.NormalizeEmail(email).Should().Be(expected);
+    }
+
+    [Theory]
     [InlineData(MemberRole.Viewer)]
     [InlineData(MemberRole.Member)]
     [InlineData(MemberRole.TeamManager)]

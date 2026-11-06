@@ -20,6 +20,8 @@ public sealed class SubscriptionPlanConfiguration : IEntityTypeConfiguration<Sub
         builder.Ignore(sp => sp.HasUnlimitedLinks);
         builder.Ignore(sp => sp.HasUnlimitedQrCodes);
         builder.Ignore(sp => sp.HasUnlimitedRetention);
+        builder.Ignore(sp => sp.HasUnlimitedMembers);
+        builder.Ignore(sp => sp.HasUnlimitedOrganizations);
 
         builder.HasIndex(sp => sp.Name)
             .IsUnique()
@@ -28,21 +30,25 @@ public sealed class SubscriptionPlanConfiguration : IEntityTypeConfiguration<Sub
         builder.HasData(
             new SubscriptionPlan(enSubscriptionPlan.Free, "Free", "Try it out for free", price: 0,
                 maxLinksPerMonth: 5, maxQrCodesPerMonth: 2, clickDataRetentionDays: 0,
+                maxMembersPerOrganization: 3, maxOrganizations: 1,
                 linkAnalysis: false, bulkCreation: false, linkProtection: false,
                 customShortCode: false, campaignTracking: false, geoDeviceTracking: false),
 
             new SubscriptionPlan(enSubscriptionPlan.Starter, "Starter", "Unlock powerful data", price: 10,
                 maxLinksPerMonth: 100, maxQrCodesPerMonth: 5, clickDataRetentionDays: 30,
+                maxMembersPerOrganization: 10, maxOrganizations: 3,
                 linkAnalysis: true, bulkCreation: false, linkProtection: false,
                 customShortCode: true, campaignTracking: false, geoDeviceTracking: false),
 
             new SubscriptionPlan(enSubscriptionPlan.Professional, "Professional", "For growing teams", price: 50,
                 maxLinksPerMonth: 500, maxQrCodesPerMonth: 10, clickDataRetentionDays: 90,
+                maxMembersPerOrganization: 50, maxOrganizations: 10,
                 linkAnalysis: true, bulkCreation: true, linkProtection: true,
                 customShortCode: true, campaignTracking: true, geoDeviceTracking: false),
 
             new SubscriptionPlan(enSubscriptionPlan.Enterprise, "Enterprise", "Unlimited everything", price: 200,
                 maxLinksPerMonth: -1, maxQrCodesPerMonth: -1, clickDataRetentionDays: -1,
+                maxMembersPerOrganization: -1, maxOrganizations: -1,
                 linkAnalysis: true, bulkCreation: true, linkProtection: true,
                 customShortCode: true, campaignTracking: true, geoDeviceTracking: true)
         );

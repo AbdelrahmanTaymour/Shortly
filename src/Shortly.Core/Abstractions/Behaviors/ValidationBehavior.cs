@@ -17,10 +17,9 @@ public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TReq
     {
         if (!validators.Any()) return await next(cancellationToken);
 
-        var context = new ValidationContext<TRequest>(request);
-
+        // One context per validator: a shared context would carry earlier validators' failures into later results.
         var validationErrors = validators
-            .Select(validator => validator.Validate(context))
+            .Select(validator => validator.Validate(new ValidationContext<TRequest>(request)))
             .Where(validationResult => validationResult.Errors.Any())
             .SelectMany(validationResult => validationResult.Errors)
             .Select(validationFailure => new ValidationError(
