@@ -29,6 +29,10 @@ internal sealed class AcceptInvitationCommandHandler(
         if (callerUser is null || !string.Equals(callerUser.Email, invitation.InvitedUserEmail, StringComparison.OrdinalIgnoreCase))
             return Result.Failure(OrganizationInvitationErrors.EmailMismatch);
 
+        // Requests for the same organization wait for each other, so the member limit cannot be passed by two at once.
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        await unitOfWork.LockAsync($"organization-members:{invitation.OrganizationId}", cancellationToken);
+
         // An inactive or deleted organization cannot take new members. Checked before the invitation is consumed.
         var organization = await organizationRepository.GetByIdAsync(invitation.OrganizationId, cancellationToken);
         if (organization is null) return Result.Failure(OrganizationErrors.NotFound);
@@ -63,7 +67,8 @@ internal sealed class AcceptInvitationCommandHandler(
             memberRepository.Add(invited.Value);
         }
 
-        await unitOfWork.SaveChangesAsync(cancellationToken); 
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return Result.Success();
     }
 }

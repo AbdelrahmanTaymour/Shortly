@@ -1,3 +1,4 @@
+using Shortly.Core.Exceptions;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Cache;
 using Shortly.Core.Abstractions.Clock;
@@ -21,11 +22,17 @@ internal sealed class CreateOrganizationCommandHandler(
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<CreateOrganizationCommand, AccessTokenResponse>
 {
+    private const string OrganizationNameIndex = "ux_organizations_owner_id_name";
+
     public async Task<Result<AccessTokenResponse>> Handle(CreateOrganizationCommand request, CancellationToken cancellationToken)
     {
         var user = await userRepository.GetByIdAsync(userContext.UserId, cancellationToken: cancellationToken);
         if (user is null)
             return Result.Failure<AccessTokenResponse>(AuthenticationErrors.NotAuthenticated);
+
+        // Requests of the same user wait for each other, so the count below cannot be passed by two requests at once.
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        await unitOfWork.LockAsync($"organization-create:{user.Id}", cancellationToken);
 
         // How many organizations a user may own depends on the user's own plan.
         var userLimits = await planLimitsProvider.GetLimitsAsync(user.SubscriptionPlanId, cancellationToken);
@@ -48,7 +55,16 @@ internal sealed class CreateOrganizationCommandHandler(
         var membership = OrganizationMember.CreateOwner(organization.Id, userContext.UserId, utcNow);
         memberRepository.Add(membership);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (UniqueConstraintViolationException ex) when (ex.ConstraintName == OrganizationNameIndex)
+        {
+            return Result.Failure<AccessTokenResponse>(OrganizationErrors.NameTaken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
 
         return await jwtService.IssueTokensAsync(user, membership, cancellationToken);
     }

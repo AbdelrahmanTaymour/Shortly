@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.Api", "src\Shortly.Api\Shortly.API.csproj", "{F54ED4C1-D525-4A78-B5A2-1FB92BE00215}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.API", "src\Shortly.Api\Shortly.API.csproj", "{F54ED4C1-D525-4A78-B5A2-1FB92BE00215}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.Core", "src\Shortly.Core\Shortly.Core.csproj", "{92D6E787-AEEB-4753-8197-78C33F2B867B}"
 EndProject
@@ -17,6 +17,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.Core.UnitTests", "tests\Shortly.Core.UnitTests\Shortly.Core.UnitTests.csproj", "{B760A68A-0A79-4F95-91C5-DBDC63D6E399}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.Api.FunctionalTests", "tests\Shortly.Api.FunctionalTests\Shortly.Api.FunctionalTests.csproj", "{C13BA65A-E22A-416C-89F6-77B8866D5A04}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shortly.IntegrationTests", "tests\Shortly.IntegrationTests\Shortly.IntegrationTests.csproj", "{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -112,6 +114,18 @@ Global
 		{C13BA65A-E22A-416C-89F6-77B8866D5A04}.Release|x64.Build.0 = Release|Any CPU
 		{C13BA65A-E22A-416C-89F6-77B8866D5A04}.Release|x86.ActiveCfg = Release|Any CPU
 		{C13BA65A-E22A-416C-89F6-77B8866D5A04}.Release|x86.Build.0 = Release|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Debug|x64.Build.0 = Debug|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Debug|x86.Build.0 = Debug|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Release|x64.ActiveCfg = Release|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Release|x64.Build.0 = Release|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Release|x86.ActiveCfg = Release|Any CPU
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -124,5 +138,6 @@ Global
 		{633E93D9-A4A1-417F-A3DB-BE280131DA6D} = {F254472A-8E07-4AF2-BEDB-0C9982F52FBB}
 		{B760A68A-0A79-4F95-91C5-DBDC63D6E399} = {F254472A-8E07-4AF2-BEDB-0C9982F52FBB}
 		{C13BA65A-E22A-416C-89F6-77B8866D5A04} = {F254472A-8E07-4AF2-BEDB-0C9982F52FBB}
+		{AAB83B4F-C93B-4819-8D9E-050FAC13B3B6} = {F254472A-8E07-4AF2-BEDB-0C9982F52FBB}
 	EndGlobalSection
 EndGlobal

@@ -14,7 +14,7 @@ internal sealed class UpdateTeamCommandHandler(
     {
         var team = await teamRepository.GetByIdAsync(request.TeamId, cancellationToken);
         if (team is null || team.OrganizationId != request.OrganizationId)
-            return Result.Failure(OrganizationTeamErrors.NameTaken); // Or OrganizationTeamErrors.NotFound (keeping original error semantics)
+            return Result.Failure(OrganizationTeamErrors.NotFound);
 
         var authority = await TeamAuthorization.RequireAuthorityAsync(organizationAuthorization, team, cancellationToken);
         if (authority.IsFailure) 

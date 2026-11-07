@@ -52,12 +52,15 @@ internal sealed class RedirectToShortUrlCommandHandler(
                 return Result.Failure<string>(ShortUrlErrors.InvalidPassword);
         }
 
+        // The limit is enforced again inside the UPDATE: the check above can be stale when visitors arrive together,
+        // and this single statement is what keeps the counter from passing the limit.
         const string incrementSql = """
             UPDATE short_urls 
             SET total_clicks = total_clicks + 1, updated_at_utc = @Now
-            WHERE id = @Id
+            WHERE id = @Id AND (click_limit <= 0 OR total_clicks < click_limit)
             """;
-        await connection.ExecuteAsync(incrementSql, new { row.Id, Now = utcNow });
+        var counted = await connection.ExecuteAsync(incrementSql, new { row.Id, Now = utcNow });
+        if (counted == 0) return Result.Failure<string>(ShortUrlErrors.ClickLimitReached);
 
         if (row.TrackingEnabled)
         {

@@ -1,3 +1,4 @@
+using Shortly.Core.Exceptions;
 using Shortly.Core.Abstractions.Authentication;
 using Shortly.Core.Abstractions.Clock;
 using Shortly.Core.Abstractions.Messaging;
@@ -15,6 +16,8 @@ internal sealed class CreateTeamCommandHandler(
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider) : ICommandHandler<CreateTeamCommand, Guid>
 {
+    private const string TeamNameIndex = "ux_organization_teams_organization_id_name";
+
     public async Task<Result<Guid>> Handle(CreateTeamCommand request, CancellationToken cancellationToken)
     {
         var caller = await organizationAuthorization.RequireRoleAsync(request.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
@@ -39,7 +42,16 @@ internal sealed class CreateTeamCommandHandler(
 
         teamMemberRepository.Add(OrganizationTeamMember.Create(team.Id, managerMembership.Id, utcNow));
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (UniqueConstraintViolationException ex) when (ex.ConstraintName == TeamNameIndex)
+        {
+            // Another request took the name between the check and the insert.
+            return Result.Failure<Guid>(OrganizationTeamErrors.NameTaken);
+        }
+
         return team.Id;
     }
 }

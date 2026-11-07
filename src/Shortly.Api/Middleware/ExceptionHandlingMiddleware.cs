@@ -89,6 +89,19 @@ public class ExceptionHandlingMiddleware(
                 "Concurrency conflict",
                 "The record was modified by someone else. Please reload and try again."),
 
+            // Safety net: a "check, then insert" race that no handler turned into a proper error is a conflict, not a crash.
+            Shortly.Core.Exceptions.UniqueConstraintViolationException => new ExceptionDetails(
+                StatusCodes.Status409Conflict,
+                "https://tools.ietf.org/html/rfc7231#section-6.5.8",
+                "Conflict",
+                "The record already exists or was just created by another request."),
+
+            Shortly.Core.Exceptions.ConcurrencyException => new ExceptionDetails(
+                StatusCodes.Status409Conflict,
+                "https://tools.ietf.org/html/rfc7231#section-6.5.8",
+                "Concurrency conflict",
+                "The record was modified by someone else. Please reload and try again."),
+
             ApplicationException applicationException => new ExceptionDetails(
                 StatusCodes.Status400BadRequest,
                 "https://tools.ietf.org/html/rfc7231#section-6.5.1",

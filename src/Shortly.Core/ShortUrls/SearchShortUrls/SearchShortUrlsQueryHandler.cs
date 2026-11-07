@@ -38,8 +38,8 @@ internal sealed class SearchShortUrlsQueryHandler(
                 title AS Title, description AS Description, created_at_utc AS CreatedAtUtc,
                 COUNT(*) OVER() AS TotalCount
             FROM short_urls
-            WHERE (@OrganizationId IS NULL AND user_id = @UserId)
-               OR (@OrganizationId IS NOT NULL AND organization_id = @OrganizationId)
+            WHERE ((@OrganizationId IS NULL AND user_id = @UserId)
+               OR (@OrganizationId IS NOT NULL AND organization_id = @OrganizationId))
             """);
 
         if (!string.IsNullOrWhiteSpace(request.Search))
@@ -108,15 +108,15 @@ internal sealed class SearchShortUrlsQueryHandler(
         {
             ShortUrlSort.Oldest => """
 
-                                    ORDER BY created_at_utc ASC
+                                    ORDER BY created_at_utc ASC, id ASC
                                     """,
             ShortUrlSort.MostClicked => """
 
-                                         ORDER BY total_clicks DESC
+                                         ORDER BY total_clicks DESC, id DESC
                                          """,
             _ => """
 
-                 ORDER BY created_at_utc DESC
+                 ORDER BY created_at_utc DESC, id DESC
                  """
         });
 
@@ -132,7 +132,7 @@ internal sealed class SearchShortUrlsQueryHandler(
             {
                 userContext.UserId,
                 OrganizationId = organizationId,
-                Search = request.Search is null ? null : $"%{request.Search}%",
+                Search = request.Search is null ? null : $"%{EscapeLike(request.Search)}%",
                 request.DateFrom,
                 request.DateTo,
                 Offset = (page - 1) * pageSize,
@@ -164,4 +164,8 @@ internal sealed class SearchShortUrlsQueryHandler(
             TotalPages = totalPages
         };
     }
+
+    /// <summary>Makes the text literal: <c>%</c> and <c>_</c> typed by the user must not act as wildcards.</summary>
+    private static string EscapeLike(string text) =>
+        text.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 }

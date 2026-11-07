@@ -70,7 +70,7 @@ internal sealed class GetGeographicalStatsQueryHandler(ISqlConnectionFactory sql
             SELECT
                 COUNT(DISTINCT country) AS countries,
                 COUNT(DISTINCT city) AS cities,
-                COUNT(*) AS total_clicks
+                COUNT(*) AS "TotalClicks"
             FROM scoped;
             """;
 

@@ -28,14 +28,8 @@ internal sealed class HardDeleteUserCommandHandler(
 
         try
         {
-            if (request.DeleteOwnedShortUrls)
-            {
-                await shortUrlRepository.DeleteAllForUserAsync(request.UserId, cancellationToken);
-            }
-            else
-            {
-                await shortUrlRepository.DetachAllFromUserAsync(request.UserId, cancellationToken);
-            }
+            // A personal link cannot exist without its user, so the links go with the account.
+            await shortUrlRepository.DeleteAllForUserAsync(request.UserId, cancellationToken);
 
             userRepository.Remove(user);
             await unitOfWork.SaveChangesAsync(cancellationToken);

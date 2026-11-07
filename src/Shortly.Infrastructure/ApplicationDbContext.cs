@@ -30,6 +30,9 @@ public sealed class ApplicationDbContext(DbContextOptions options) : DbContext(o
         return new DbContextTransactionAdapter(dbTransaction);
     }
 
+    public async Task LockAsync(string key, CancellationToken cancellationToken = default) =>
+        await Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))", cancellationToken);
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
