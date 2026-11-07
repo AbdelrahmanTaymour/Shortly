@@ -66,8 +66,10 @@ public sealed class User : Entity<Guid>
         if (string.IsNullOrWhiteSpace(email)) return Result.Failure<User>(UserErrors.EmailRequired);
         if (string.IsNullOrWhiteSpace(googleId)) return Result.Failure<User>(UserErrors.GoogleIdRequired);
 
-        return new User(Guid.NewGuid(), email, email, passwordHash: string.Empty, UserRole.User,
+        var user = new User(Guid.NewGuid(), email, email, passwordHash: string.Empty, UserRole.User,
             isOAuthUser: true, googleId, googleProfilePicture, isEmailConfirmed: true, utcNow);
+
+        return user;
     }
 
     public Result LinkGoogleAccount(string googleId, string? googleProfilePicture, DateTime utcNow)

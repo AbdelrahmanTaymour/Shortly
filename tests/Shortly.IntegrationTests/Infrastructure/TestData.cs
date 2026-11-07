@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Shortly.Core.Abstractions.Authentication;
 using Shortly.Domain.ClickEvents;
 using Shortly.Domain.Invitations;
 using Shortly.Domain.Members;
@@ -34,6 +35,21 @@ public sealed class TestData(IntegrationTestWebAppFactory factory)
         var user = User.Register(email ?? $"{unique}@example.com", username ?? $"user{unique}", "not-a-real-hash", Now).Value;
         if (emailConfirmed) user.ConfirmEmail(Now);
         if (plan != enSubscriptionPlan.Free) user.ChangeSubscriptionPlan(plan, Now);
+        if (!isActive) user.Deactivate(Now);
+        await SaveAsync(user);
+        return user;
+    }
+
+    /// <summary>A user whose password is hashed with the real <see cref="IPasswordHasher"/>, so it can be verified or changed.</summary>
+    public async Task<User> UserWithPasswordAsync(
+        string password, bool isActive = true, bool emailConfirmed = true, string? email = null, string? username = null)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var hash = scope.ServiceProvider.GetRequiredService<IPasswordHasher>().Hash(password);
+
+        var unique = Guid.NewGuid().ToString("N");
+        var user = User.Register(email ?? $"{unique}@example.com", username ?? $"user{unique}", hash, Now).Value;
+        if (emailConfirmed) user.ConfirmEmail(Now);
         if (!isActive) user.Deactivate(Now);
         await SaveAsync(user);
         return user;
