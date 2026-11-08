@@ -22,6 +22,10 @@ internal sealed class AddMemberCommandHandler(
         var caller = await organizationAuthorization.RequireRoleAsync(request.OrganizationId, MemberRole.OrgAdmin, cancellationToken);
         if (caller.IsFailure) return Result.Failure(caller.Error);
 
+        // Requests for the same organization wait for each other, so the member limit cannot be passed by two at once.
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        await unitOfWork.LockAsync($"organization-members:{request.OrganizationId}", cancellationToken);
+
         var organization = await organizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
         if (organization is null) return Result.Failure(OrganizationErrors.NotFound);
 
@@ -56,6 +60,7 @@ internal sealed class AddMemberCommandHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return Result.Success();
     }
 }

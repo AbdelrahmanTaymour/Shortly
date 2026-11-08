@@ -23,9 +23,15 @@ internal sealed class GetTopPerformingShortUrlsQueryHandler(
 
         var topCount = Math.Clamp(request.TopCount, 1, 100);
 
-        DateTime? createdAfter = request.Timeframe is null
-            ? null
-            : dateTimeProvider.UtcNow.Subtract(request.Timeframe.Value);
+        // With a timeframe, links are ranked by the clicks they received inside it (never earlier than the plan's retention
+        // allows). Without one, the lifetime click counter is used.
+        var useWindow = request.Timeframe is not null;
+        var from = scope.From;
+        if (request.Timeframe is { } timeframe)
+        {
+            var windowStart = dateTimeProvider.UtcNow.Subtract(timeframe);
+            from = from is { } retained && retained > windowStart ? retained : windowStart;
+        }
 
         using var connection = sqlConnectionFactory.CreateConnection();
 
@@ -34,7 +40,7 @@ internal sealed class GetTopPerformingShortUrlsQueryHandler(
                 s.id AS "ShortUrlId",
                 s.short_code AS "ShortCode",
                 s.original_url AS "OriginalUrl",
-                s.total_clicks AS "TotalClicks",
+                CASE WHEN @UseWindow THEN w.clicks ELSE s.total_clicks END AS "TotalClicks",
                 s.created_at_utc AS "CreatedAtUtc",
                 (
                     SELECT MAX(ce.clicked_at_utc)
@@ -53,15 +59,18 @@ internal sealed class GetTopPerformingShortUrlsQueryHandler(
                     LIMIT 1
                 ) END AS "TopCountry"
             FROM short_urls s
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*) AS clicks
+                FROM click_events ce
+                WHERE ce.short_url_id = s.id
+                  AND (@From::timestamptz IS NULL OR ce.clicked_at_utc >= @From::timestamptz)
+            ) w ON @UseWindow
             WHERE s.is_active
               AND (@UserId IS NULL OR s.user_id = @UserId)
               AND (@OrganizationId IS NULL OR s.organization_id = @OrganizationId)
-              AND (
-                  @CreatedAfter::timestamptz IS NULL
-                  OR s.created_at_utc >= @CreatedAfter::timestamptz
-              )
+              AND (NOT @UseWindow OR w.clicks > 0)
             ORDER BY
-                s.total_clicks DESC,
+                CASE WHEN @UseWindow THEN w.clicks ELSE s.total_clicks END DESC,
                 s.created_at_utc DESC,
                 s.id
             LIMIT @TopCount;
@@ -73,8 +82,8 @@ internal sealed class GetTopPerformingShortUrlsQueryHandler(
             {
                 scope.UserId,
                 scope.OrganizationId,
-                CreatedAfter = createdAfter,
-                scope.From,
+                From = from,
+                UseWindow = useWindow,
                 IncludeGeo = scope.IncludeGeo,
                 TopCount = topCount
             },

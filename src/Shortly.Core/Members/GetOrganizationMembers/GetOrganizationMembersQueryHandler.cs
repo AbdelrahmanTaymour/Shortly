@@ -32,13 +32,17 @@ internal sealed class GetOrganizationMembersQueryHandler(
         if (membership.IsFailure)
             return Result.Failure<PagedResponse<OrganizationMemberResponse>>(membership.Error);
 
+        // Same paging rules as every other list: out-of-range values are replaced, never passed to the database.
+        var page = request.Page < 1 ? 1 : request.Page;
+        var pageSize = request.PageSize is < 1 or > 100 ? 20 : request.PageSize;
+
         using var connection = sqlConnectionFactory.CreateConnection();
 
         var parameters = new
         {
             request.OrganizationId,
-            request.PageSize,
-            Offset = (request.Page - 1) * request.PageSize
+            PageSize = pageSize,
+            Offset = (page - 1) * pageSize
         };
 
         await using var multi = await connection.QueryMultipleAsync(
@@ -49,10 +53,10 @@ internal sealed class GetOrganizationMembersQueryHandler(
         return new PagedResponse<OrganizationMemberResponse>
         {
             Items = items,
-            Page = request.Page,
-            PageSize = request.PageSize,
+            Page = page,
+            PageSize = pageSize,
             TotalCount = totalCount,
-            TotalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize)
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
         };
     }
 

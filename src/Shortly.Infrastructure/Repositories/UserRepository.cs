@@ -48,7 +48,7 @@ internal sealed class UserRepository(ApplicationDbContext dbContext) :
     }
 
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
-        ActiveUsers().FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        ActiveUsers().FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower(), cancellationToken);
 
     public Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default) =>
         ActiveUsers().FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
