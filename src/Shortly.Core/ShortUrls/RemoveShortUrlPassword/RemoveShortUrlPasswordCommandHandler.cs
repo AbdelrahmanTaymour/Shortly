@@ -6,7 +6,7 @@ using Shortly.Domain.ShortUrls;
 
 namespace Shortly.Core.ShortUrls.RemoveShortUrlPassword;
 
-public class RemoveShortUrlPasswordCommandHandler(
+internal sealed class RemoveShortUrlPasswordCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
     IOrganizationAuthorizationService organizationAuthorization,

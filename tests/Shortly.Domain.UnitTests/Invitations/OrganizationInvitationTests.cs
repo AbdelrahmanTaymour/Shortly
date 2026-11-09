@@ -12,10 +12,10 @@ public class OrganizationInvitationTests
     // ---- statuses ----------------------------------------------------------------------------------------------------
 
     [Fact]
-    public void Status_Should_BeTheFourBusinessStatuses()
+    public void Status_Should_BeTheFiveBusinessStatuses()
     {
         // Assert
-        Enum.GetNames<enInvitationStatus>().Should().BeEquivalentTo("Pending", "Accepted", "Expired", "Cancelled");
+        Enum.GetNames<enInvitationStatus>().Should().BeEquivalentTo("Pending", "Accepted", "Expired", "Cancelled", "Rejected");
     }
 
     // ---- creation ----------------------------------------------------------------------------------------------------
@@ -322,7 +322,7 @@ public class OrganizationInvitationTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        invitation.Status.Should().Be(enInvitationStatus.Cancelled);
+        invitation.Status.Should().Be(enInvitationStatus.Rejected);
     }
 
     [Fact]

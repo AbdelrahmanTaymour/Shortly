@@ -9,6 +9,8 @@ public sealed class CapturingEmailNotifier : IEmailNotifier
     private readonly ConcurrentQueue<SentEmail> _sent = new();
 
     public IReadOnlyCollection<SentEmail> Sent => _sent.ToArray();
+    
+    public void Clear() => _sent.Clear();
 
     public void EnqueueSendEmailVerificationAsync(string email, string userName, string verificationToken) =>
         _sent.Enqueue(new SentEmail("EmailVerification", email, verificationToken));

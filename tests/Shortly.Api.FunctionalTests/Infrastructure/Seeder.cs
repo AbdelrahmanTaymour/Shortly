@@ -1,26 +1,29 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shortly.Core.Abstractions.Authentication;
+using Shortly.Domain.Abstractions;
 using Shortly.Domain.Invitations;
 using Shortly.Domain.Members;
 using Shortly.Domain.Users;
 using Shortly.Domain.Organizations;
 using Shortly.Domain.ShortUrls;
 using Shortly.Domain.SubscriptionPlan;
+using Shortly.Domain.Tokens;
 using Shortly.Infrastructure;
 
 namespace Shortly.Api.FunctionalTests.Infrastructure;
 
 /// <summary>Inserts test data directly through EF Core, bypassing the API.</summary>
+/// <summary>Inserts test data directly through EF Core, bypassing the API.</summary>
 public sealed class Seeder(IServiceProvider services)
 {
     private static readonly DateTime UtcNow = DateTime.UtcNow;
-
+ 
     public async Task<Guid> CreateUserAsync()
     {
         var unique = Guid.NewGuid().ToString("N");
         var user = User.Register($"{unique}@example.com", $"user{unique}", "not-a-real-hash", UtcNow).Value;
-
+ 
         await WithDb(async db =>
         {
             db.Add(user);
@@ -28,7 +31,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return user.Id;
     }
-
+ 
     /// <summary>Creates a user that can log in with the given password.</summary>
     public async Task<(Guid UserId, string Email)> CreateUserWithPasswordAsync(string password)
     {
@@ -36,7 +39,7 @@ public sealed class Seeder(IServiceProvider services)
         var hash = services.GetRequiredService<IPasswordHasher>().Hash(password);
         var user = User.Register($"{unique}@example.com", $"user{unique}", hash, UtcNow).Value;
         user.ConfirmEmail(UtcNow);
-
+ 
         await WithDb(async db =>
         {
             db.Add(user);
@@ -44,7 +47,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return (user.Id, user.Email);
     }
-
+ 
     public async Task<(int FailedAttempts, DateTime? LockedUntil)> GetLoginSecurityAsync(Guid userId)
     {
         var state = (0, (DateTime?)null);
@@ -55,20 +58,20 @@ public sealed class Seeder(IServiceProvider services)
         });
         return state;
     }
-
+ 
     public Task DeactivateUserAsync(Guid userId) => WithDb(async db =>
     {
         var user = await db.Set<User>().SingleAsync(u => u.Id == userId);
         user.Deactivate(UtcNow).IsSuccess.Should().BeTrue();
         await db.SaveChangesAsync();
     });
-
+ 
     /// <summary>Creates an active organization whose owner is an active OrgOwner member.</summary>
-    public async Task<Guid> CreateOrganizationAsync(Guid ownerId, int memberLimit = 25)
+    public async Task<Guid> CreateOrganizationAsync(Guid ownerId, int memberLimit = 25, string? name = null)
     {
         var organization = Organization.Create(
-            $"Org {Guid.NewGuid():N}", null, null, null, memberLimit, ownerId, enSubscriptionPlan.Free, UtcNow).Value;
-
+            name ?? $"Org {Guid.NewGuid():N}", null, null, null, memberLimit, ownerId, enSubscriptionPlan.Free, UtcNow).Value;
+ 
         await WithDb(async db =>
         {
             db.Add(organization);
@@ -77,12 +80,12 @@ public sealed class Seeder(IServiceProvider services)
         });
         return organization.Id;
     }
-
+ 
     public async Task<Guid> AddMemberAsync(Guid organizationId, Guid userId, MemberRole role, bool isActive = true)
     {
         var member = OrganizationMember.Invite(organizationId, userId, role, userId, UtcNow).Value;
         if (!isActive) member.Deactivate();
-
+ 
         await WithDb(async db =>
         {
             db.Add(member);
@@ -90,7 +93,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return member.Id;
     }
-
+ 
     /// <summary>Soft-removes a member the way the RemoveMember endpoint does (the row stays, IsActive = false).</summary>
     public Task RemoveMemberAsync(Guid organizationId, Guid userId) => WithDb(async db =>
     {
@@ -99,7 +102,7 @@ public sealed class Seeder(IServiceProvider services)
         member.Deactivate();
         await db.SaveChangesAsync();
     });
-
+ 
     public async Task<long> CreateUserLinkAsync(Guid userId, int clickLimit = -1, string? shortCode = null)
     {
         var link = ShortUrl.CreateForUser(userId, Url(), shortCode is null ? Code() : ShortCode.Create(shortCode).Value, UtcNow, clickLimit).Value;
@@ -110,7 +113,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return link.Id;
     }
-
+ 
     public async Task<long> CreateOrganizationLinkAsync(Guid organizationId, Guid memberId, int clickLimit = -1, string? shortCode = null)
     {
         var link = ShortUrl.CreateForOrganization(organizationId, memberId, Url(), shortCode is null ? Code() : ShortCode.Create(shortCode).Value, UtcNow, clickLimit).Value;
@@ -121,7 +124,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return link.Id;
     }
-
+ 
     public async Task<Guid> GetMemberIdAsync(Guid organizationId, Guid userId)
     {
         var id = Guid.Empty;
@@ -132,7 +135,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return id;
     }
-
+ 
     /// <summary>A link created by an anonymous visitor (no user, no organization).</summary>
     public async Task<long> CreateAnonymousLinkAsync()
     {
@@ -144,7 +147,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return link.Id;
     }
-
+ 
     public async Task<bool> LinkExistsAsync(long shortUrlId)
     {
         var exists = false;
@@ -155,7 +158,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return exists;
     }
-
+ 
     public async Task<bool> OrganizationIsActiveAsync(Guid organizationId)
     {
         var active = false;
@@ -166,10 +169,10 @@ public sealed class Seeder(IServiceProvider services)
         });
         return active;
     }
-
+ 
     public sealed record LinkState(
         long Id, string ShortCode, string OriginalUrl, bool IsActive, DateTime? ExpiresAt, bool IsPasswordProtected);
-
+ 
     public async Task<LinkState?> GetLinkAsync(long shortUrlId)
     {
         LinkState? state = null;
@@ -183,7 +186,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return state;
     }
-
+ 
     public async Task<int> CountOrganizationLinksAsync(Guid organizationId)
     {
         var count = 0;
@@ -194,7 +197,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return count;
     }
-
+ 
     public async Task<int> CountUserLinksAsync(Guid userId)
     {
         var count = 0;
@@ -205,21 +208,21 @@ public sealed class Seeder(IServiceProvider services)
         });
         return count;
     }
-
+ 
     // ---- plans and usage ----------------------------------------------------------------------
-
+ 
     public Task SetUserPlanAsync(Guid userId, enSubscriptionPlan plan) => WithDb(async db =>
     {
         db.Set<User>().Single(u => u.Id == userId).ChangeSubscriptionPlan(plan, UtcNow);
         await db.SaveChangesAsync();
     });
-
+ 
     public Task SetOrganizationPlanAsync(Guid organizationId, enSubscriptionPlan plan) => WithDb(async db =>
     {
         db.Set<Organization>().Single(o => o.Id == organizationId).ChangeSubscriptionPlan(plan, UtcNow);
         await db.SaveChangesAsync();
     });
-
+ 
     public async Task<(enSubscriptionPlan Plan, bool IsSubscribed)> GetOrganizationPlanAsync(Guid organizationId)
     {
         (enSubscriptionPlan, bool) result = default;
@@ -231,7 +234,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return result;
     }
-
+ 
     public async Task<int> CountAuditLogsAsync(Guid userId, string action)
     {
         var count = 0;
@@ -242,7 +245,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return count;
     }
-
+ 
     public async Task<int> GetOrganizationMemberLimitAsync(Guid organizationId)
     {
         var limit = 0;
@@ -253,7 +256,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return limit;
     }
-
+ 
     public async Task<enSubscriptionPlan> GetUserPlanAsync(Guid userId)
     {
         var plan = enSubscriptionPlan.Free;
@@ -264,7 +267,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return plan;
     }
-
+ 
     /// <summary>Sets the user's "links created this month" counter to <paramref name="count"/>.</summary>
     public Task SetUserMonthlyLinksAsync(Guid userId, int count) => WithDb(async db =>
     {
@@ -272,14 +275,23 @@ public sealed class Seeder(IServiceProvider services)
         for (var i = 0; i < count; i++) user.Usage.IncrementLinksCreated(UtcNow);
         await db.SaveChangesAsync();
     });
-
+ 
     public Task SetOrganizationMonthlyLinksAsync(Guid organizationId, int count) => WithDb(async db =>
     {
         var organization = db.Set<Organization>().Include(o => o.Usage).Single(o => o.Id == organizationId);
         for (var i = 0; i < count; i++) organization.Usage.IncrementLinksCreated(UtcNow);
         await db.SaveChangesAsync();
     });
-
+ 
+    /// <summary>
+    /// Moves an organization's monthly usage reset date (the domain never allows setting one that is already
+    /// due). ResetAllOrganizationsUsage only resets organizations whose reset date has passed, unlike the
+    /// per-user equivalent, which is unconditional.
+    /// </summary>
+    public Task SetOrganizationUsageResetDateAsync(Guid organizationId, DateTime resetDate) => WithDb(db =>
+        db.Set<OrganizationUsage>().Where(ou => ou.OrganizationId == organizationId)
+            .ExecuteUpdateAsync(set => set.SetProperty(ou => ou.MonthlyResetDate, resetDate)));
+ 
     public async Task<int> GetUserMonthlyLinksAsync(Guid userId)
     {
         var count = 0;
@@ -290,7 +302,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return count;
     }
-
+ 
     public async Task<int> GetOrganizationMonthlyLinksAsync(Guid organizationId)
     {
         var count = 0;
@@ -301,11 +313,11 @@ public sealed class Seeder(IServiceProvider services)
         });
         return count;
     }
-
+ 
     // ---- membership state and invitations ------------------------------------------------------
-
+ 
     public sealed record MemberState(Guid Id, bool IsActive, MemberRole Role, DateTime JoinedAt, Guid InvitedBy);
-
+ 
     public async Task<MemberState?> GetMemberStateAsync(Guid organizationId, Guid userId)
     {
         MemberState? state = null;
@@ -319,7 +331,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return state;
     }
-
+ 
     /// <summary>Changes a member's role directly in the database (no token is reissued).</summary>
     public Task SetMemberRoleAsync(Guid organizationId, Guid userId, MemberRole role) => WithDb(async db =>
     {
@@ -327,7 +339,7 @@ public sealed class Seeder(IServiceProvider services)
         member.ChangeRole(role);
         await db.SaveChangesAsync();
     });
-
+ 
     public async Task<int> CountMembershipRowsAsync(Guid organizationId, Guid userId)
     {
         var count = 0;
@@ -338,7 +350,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return count;
     }
-
+ 
     public async Task<string> GetUserEmailAsync(Guid userId)
     {
         var email = "";
@@ -349,7 +361,18 @@ public sealed class Seeder(IServiceProvider services)
         });
         return email;
     }
-
+ 
+    public async Task<bool> IsEmailConfirmedAsync(Guid userId)
+    {
+        var confirmed = false;
+        await WithDb(db =>
+        {
+            confirmed = db.Set<User>().Single(u => u.Id == userId).IsEmailConfirmed;
+            return Task.CompletedTask;
+        });
+        return confirmed;
+    }
+ 
     /// <summary>Creates a pending invitation and returns the plain token the invitee would receive by email.</summary>
     public async Task<string> CreateInvitationAsync(Guid organizationId, string email, MemberRole role, Guid invitedBy)
     {
@@ -357,7 +380,7 @@ public sealed class Seeder(IServiceProvider services)
         var token = hasher.GenerateToken();
         var invitation = OrganizationInvitation.Create(
             organizationId, email, role, invitedBy, hasher.Hash(token), UtcNow.AddDays(7), UtcNow).Value;
-
+ 
         await WithDb(async db =>
         {
             db.Add(invitation);
@@ -365,9 +388,9 @@ public sealed class Seeder(IServiceProvider services)
         });
         return token;
     }
-
+ 
     public sealed record InvitationState(Guid Id, enInvitationStatus Status, DateTime ExpiresAt);
-
+ 
     public async Task<InvitationState?> GetInvitationAsync(Guid organizationId, string email)
     {
         InvitationState? state = null;
@@ -382,19 +405,19 @@ public sealed class Seeder(IServiceProvider services)
         });
         return state;
     }
-
+ 
     /// <summary>Moves an invitation's expiry (the domain never allows creating one that is already expired).</summary>
     public Task SetInvitationExpiryAsync(Guid invitationId, DateTime expiresAt) => WithDb(async db =>
         await db.Set<OrganizationInvitation>().Where(i => i.Id == invitationId)
             .ExecuteUpdateAsync(set => set.SetProperty(i => i.ExpiresAt, expiresAt)));
-
+ 
     public Task AcceptInvitationAsync(Guid invitationId) => WithDb(async db =>
     {
         var invitation = await db.Set<OrganizationInvitation>().SingleAsync(i => i.Id == invitationId);
         invitation.Accept(UtcNow).IsSuccess.Should().BeTrue();
         await db.SaveChangesAsync();
     });
-
+ 
     public async Task<bool> InvitationIsPendingAsync(Guid organizationId, string email)
     {
         var pending = false;
@@ -407,7 +430,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return pending;
     }
-
+ 
     public async Task<Guid> CreateTeamAsync(Guid organizationId, Guid managerMemberId)
     {
         var team = Shortly.Domain.Teams.OrganizationTeam.Create(
@@ -420,7 +443,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return team.Id;
     }
-
+ 
     public async Task<bool> IsTeamMemberAsync(Guid teamId, Guid memberId)
     {
         var exists = false;
@@ -431,7 +454,7 @@ public sealed class Seeder(IServiceProvider services)
         });
         return exists;
     }
-
+ 
     public async Task<Guid> GetTeamManagerAsync(Guid teamId)
     {
         var manager = Guid.Empty;
@@ -442,9 +465,9 @@ public sealed class Seeder(IServiceProvider services)
         });
         return manager;
     }
-
+ 
     // ---- click events, counters and plan rows ---------------------------------------------------
-
+ 
     /// <summary>Inserts a recorded click directly (the background pipeline is bypassed).</summary>
     public async Task AddClickAsync(long shortUrlId, DateTime clickedAtUtc, string? sessionId = null,
         string country = "Egypt", string deviceType = "Desktop", string? utmCampaign = null)
@@ -454,14 +477,14 @@ public sealed class Seeder(IServiceProvider services)
             null, null, utmCampaign is null ? "Direct" : "Campaign",
             utmCampaign is null ? null : "newsletter", utmCampaign is null ? null : "email", utmCampaign, null, null,
             country, "Cairo", "Chrome", "Windows", "Other", deviceType).Value;
-
+ 
         await WithDb(async db =>
         {
             db.Add(click);
             await db.SaveChangesAsync();
         });
     }
-
+ 
     public async Task<int> CountClickEventsAsync(long shortUrlId)
     {
         var count = 0;
@@ -472,11 +495,11 @@ public sealed class Seeder(IServiceProvider services)
         });
         return count;
     }
-
+ 
     public sealed record ClickState(
         string SessionId, string UserAgent, string? Referrer, string? ReferrerDomain,
         string? UtmSource, string? UtmMedium, string? UtmCampaign, string? UtmTerm, string? UtmContent);
-
+ 
     /// <summary>Waits for the background click pipeline to persist <paramref name="expected"/> clicks (or gives up after ~8 s).</summary>
     public async Task<List<ClickState>> WaitForClicksAsync(long shortUrlId, int expected = 1)
     {
@@ -495,7 +518,7 @@ public sealed class Seeder(IServiceProvider services)
         }
         return clicks;
     }
-
+ 
     /// <summary>Raises the link's basic click counter (the counter, not click events).</summary>
     public Task SetTotalClicksAsync(long shortUrlId, int clicks) => WithDb(async db =>
     {
@@ -503,7 +526,7 @@ public sealed class Seeder(IServiceProvider services)
         for (var i = 0; i < clicks; i++) link.RecordClick(UtcNow);
         await db.SaveChangesAsync();
     });
-
+ 
     public async Task<int> GetPlanRetentionAsync(enSubscriptionPlan plan)
     {
         var days = 0;
@@ -515,32 +538,68 @@ public sealed class Seeder(IServiceProvider services)
         });
         return days;
     }
-
+ 
     /// <summary>Changes a plan row's retention. Callers must restore it; plan limits are cached per host for 6 hours.</summary>
     public Task SetPlanRetentionAsync(enSubscriptionPlan plan, int days) => WithDb(async db =>
         await db.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE subscription_plans SET click_data_retention_days = {days} WHERE id = {(short)plan}"));
-
+ 
     // ---- organization status ------------------------------------------------------------------
-
+ 
     public Task DeactivateOrganizationAsync(Guid organizationId) => WithDb(async db =>
     {
         db.Set<Organization>().Single(o => o.Id == organizationId).Deactivate(UtcNow);
         await db.SaveChangesAsync();
     });
-
+ 
     public Task SoftDeleteOrganizationAsync(Guid organizationId) => WithDb(async db =>
     {
         db.Set<Organization>().Single(o => o.Id == organizationId).SoftDelete(UtcNow);
         await db.SaveChangesAsync();
     });
-
+ 
+    // ---- account action tokens (email verification / password reset / email change) -----------
+ 
+    /// <summary>Issues an email-verification token for the user and returns the plain token (as emailed to them).</summary>
+    public Task<string> CreateEmailVerificationTokenAsync(Guid userId) =>
+        IssueActionTokenAsync(hash => UserActionToken.IssueEmailVerification(userId, hash, UtcNow));
+ 
+    /// <summary>Issues a password-reset token for the user and returns the plain token (as emailed to them).</summary>
+    public Task<string> CreatePasswordResetTokenAsync(Guid userId) =>
+        IssueActionTokenAsync(hash => UserActionToken.IssuePasswordReset(userId, hash, UtcNow));
+ 
+    /// <summary>Issues an email-change token for the user and returns the plain token (as emailed to their new address).</summary>
+    public Task<string> CreateEmailChangeTokenAsync(Guid userId, string newEmail) =>
+        IssueActionTokenAsync(hash => UserActionToken.IssueEmailChange(userId, hash, newEmail, UtcNow));
+ 
+    /// <summary>Backdates a token's expiry so it reads as already expired.</summary>
+    public Task ExpireActionTokenAsync(string plainToken) => WithDb(async db =>
+    {
+        var hash = services.GetRequiredService<ITokenHasher>().Hash(plainToken);
+        await db.Set<UserActionToken>().Where(t => t.TokenHash == hash)
+            .ExecuteUpdateAsync(set => set.SetProperty(t => t.ExpiresAt, UtcNow.AddDays(-1)));
+    });
+ 
+    private async Task<string> IssueActionTokenAsync(Func<string, Result<UserActionToken>> issue)
+    {
+        var hasher = services.GetRequiredService<ITokenHasher>();
+        var token = hasher.GenerateToken();
+        var actionToken = issue(hasher.Hash(token)).Value;
+ 
+        await WithDb(async db =>
+        {
+            db.Add(actionToken);
+            await db.SaveChangesAsync();
+        });
+        return token;
+    }
+ 
     private static OriginalUrl Url() => OriginalUrl.Create("https://example.com/functional-test").Value;
-
+ 
     // Starts with a letter: an all-digit code would be routed to GET /api/short-urls/{id:long} instead of {shortCode}.
     private static ShortCode Code() =>
         ShortCode.Create("t" + Guid.NewGuid().ToString("N")[..7]).Value;
-
+ 
     private async Task WithDb(Func<ApplicationDbContext, Task> action)
     {
         using var scope = services.CreateScope();

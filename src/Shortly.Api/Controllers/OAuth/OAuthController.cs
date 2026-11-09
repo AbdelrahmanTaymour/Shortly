@@ -20,11 +20,14 @@ public class OAuthController(
     [AllowAnonymous]
     public IActionResult GoogleLogin([FromQuery] string? returnUrl = null)
     {
-        var redirectUrl = Url.Action(nameof(GoogleCallback), "OAuth", new { returnUrl });
         var properties = new AuthenticationProperties
         {
-            RedirectUri = redirectUrl,
-            Items = { { "scheme", GoogleDefaults.AuthenticationScheme } }
+            RedirectUri = Url.Action(nameof(GoogleCallback), "OAuth"),
+            Items =
+            {
+                ["returnUrl"] = IsLocalPath(returnUrl) ? returnUrl! : "/",
+                ["scheme"] = GoogleDefaults.AuthenticationScheme
+            }
         };
 
         return Challenge(properties, GoogleDefaults.AuthenticationScheme);
@@ -32,17 +35,21 @@ public class OAuthController(
 
     [HttpGet("google/callback", Name = "GoogleCallback")]
     [AllowAnonymous]
-    public async Task<IActionResult> GoogleCallback(
-        [FromQuery] string? returnUrl = null,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GoogleCallback(CancellationToken cancellationToken = default)
     {
-        var authResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+        var authResult = await HttpContext.AuthenticateAsync(
+            GoogleDefaults.AuthenticationScheme);
 
         if (!authResult.Succeeded)
         {
             logger.LogWarning("Google OAuth failed: {Reason}", authResult.Failure?.Message);
             return RedirectToFrontendWithError("Google authentication failed. Please try again.");
         }
+
+        var returnUrl = authResult.Properties?.Items.TryGetValue(
+            "returnUrl", out var value) == true
+            ? value
+            : "/";
 
         var claims = authResult.Principal!.Claims.ToList();
         var googleId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;

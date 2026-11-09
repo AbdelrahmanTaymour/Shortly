@@ -39,7 +39,7 @@ public class RejectInvitationCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_Should_CancelTheInvitation_AndSave()
+    public async Task Handle_Should_RejectTheInvitation_AndSave()
     {
         // Arrange
         var invitation = InvitationInTheRepository();
@@ -49,7 +49,7 @@ public class RejectInvitationCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        invitation.Status.Should().Be(enInvitationStatus.Cancelled);
+        invitation.Status.Should().Be(enInvitationStatus.Rejected);
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

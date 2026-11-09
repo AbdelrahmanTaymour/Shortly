@@ -7,7 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Shortly.Api.FunctionalTests.Infrastructure;
 
-/// <summary>Boots the real Shortly API (real pipeline, real EF/Dapper) against the test PostgreSQL container.</summary>
+/// <summary>
+/// Boots the real Shortly API pipeline (including EF Core, Dapper, and background services) 
+/// against the test PostgreSQL container with custom configuration and remote IP injection.
+/// </summary>
 public sealed class ShortlyApiFactory : WebApplicationFactory<Program>
 {
     public const string JwtKey = "functional-tests-signing-key-that-is-long-enough-for-hs256!";
@@ -18,11 +21,13 @@ public sealed class ShortlyApiFactory : WebApplicationFactory<Program>
     private static readonly IPAddress DefaultPeer = IPAddress.Parse("192.0.2.10");
     private readonly IPAddress _remoteIpAddress;
 
-    /// <param name="remoteIpAddress">
-    /// The address the test server reports for the TCP peer. TestServer reports none by default, which Kestrel never does
-    /// (and the redirect endpoints reject). Defaults to a public, untrusted address (TEST-NET-1), i.e. a direct client.
-    /// Pass a different address to simulate a reverse proxy that is, or is not, configured as trusted.
-    /// </param>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ShortlyApiFactory"/> class with connection strings, 
+    /// configuration overrides, and an optional remote IP address for network simulation.
+    /// </summary>
+    /// <param name="connectionString">The PostgreSQL test container connection string.</param>
+    /// <param name="overrides">Optional configuration key-value pairs to override defaults.</param>
+    /// <param name="remoteIpAddress">The simulated TCP peer address for the TestServer client.</param>
     public ShortlyApiFactory(
         string connectionString, IDictionary<string, string?>? overrides = null, IPAddress? remoteIpAddress = null)
     {
@@ -54,14 +59,16 @@ public sealed class ShortlyApiFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
 
         // UseSetting is visible to code that reads configuration eagerly while services are being registered.
-
         foreach (var (key, value) in _settings) builder.UseSetting(key, value);
 
         builder.ConfigureTestServices(services =>
             services.AddSingleton<IStartupFilter>(new FixedRemoteIpStartupFilter(_remoteIpAddress)));
     }
 
-    /// <summary>Runs before the application pipeline so forwarded-header processing sees this peer address.</summary>
+    /// <summary>
+    /// Runs before the application pipeline so forwarded-header and rate-limiting middleware 
+    /// process the specified test peer address correctly.
+    /// </summary>
     private sealed class FixedRemoteIpStartupFilter(IPAddress address) : IStartupFilter
     {
         public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
@@ -75,7 +82,10 @@ public sealed class ShortlyApiFactory : WebApplicationFactory<Program>
         };
     }
 
-
+    /// <summary>
+    /// Creates a pre-configured HTTP client for functional API testing with required user-agents 
+    /// and optional JWT bearer authentication.
+    /// </summary>
     public HttpClient CreateApiClient(string? bearerToken = null)
     {
         var client = CreateClient(new WebApplicationFactoryClientOptions

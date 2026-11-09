@@ -82,7 +82,7 @@ public sealed class OrganizationInvitation : Entity<Guid>
     {
         if (!IsActionable(utcNow)) return Result.Failure(OrganizationInvitationErrors.InvalidOrExpired);
 
-        Status = enInvitationStatus.Cancelled;
+        Status = enInvitationStatus.Rejected;
         return Result.Success();
     }
 
