@@ -7,7 +7,7 @@ using Shortly.Domain.Users;
 
 namespace Shortly.Core.Admin.BulkDeleteUsers;
 
-public class BulkDeleteUsersCommandHandler(
+internal sealed class BulkDeleteUsersCommandHandler(
     IUserRepository userRepository,
     IOrganizationRepository organizationRepository,
     IUserContext userContext,

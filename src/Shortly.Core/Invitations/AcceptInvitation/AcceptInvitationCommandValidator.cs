@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Shortly.Core.Invitations.AcceptInvitation;
 
-public sealed class AcceptInvitationCommandValidator : AbstractValidator<AcceptInvitationCommand>
+internal sealed class AcceptInvitationCommandValidator : AbstractValidator<AcceptInvitationCommand>
 {
     public AcceptInvitationCommandValidator()
     {

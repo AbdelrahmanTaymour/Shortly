@@ -6,7 +6,7 @@ using Shortly.Domain.ShortUrls;
 
 namespace Shortly.Core.ShortUrls.BulkActivateShortUrls;
 
-public sealed class BulkActivateShortUrlsCommandHandler(
+internal sealed class BulkActivateShortUrlsCommandHandler(
     IShortUrlRepository shortUrlRepository,
     IUserContext userContext,
     IOrganizationAuthorizationService organizationAuthorization,

@@ -34,10 +34,17 @@ internal sealed class EmailBackgroundWorker(
                     }
                 }
             }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                // Expected when the host is shutting down — exit quietly instead of logging it as an error.
+                break;
+            }
             catch (Exception ex)
             {
                 logger.LogError(ex, "An error occurred in the email background worker.");
             }
         }
+
+        logger.LogInformation("Email background worker is stopping.");
     }
 }

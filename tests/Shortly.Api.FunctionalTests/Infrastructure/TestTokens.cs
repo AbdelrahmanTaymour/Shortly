@@ -7,7 +7,7 @@ using Shortly.Domain.Users;
 
 namespace Shortly.Api.FunctionalTests.Infrastructure;
 
-/// <summary>Mints access tokens with the same claims the real JwtService issues.</summary>
+/// <summary>Mint access tokens with the same claims as the real JwtService issues.</summary>
 public static class TestTokens
 {
     public static string Create(

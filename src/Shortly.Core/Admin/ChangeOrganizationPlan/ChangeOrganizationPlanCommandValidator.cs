@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Shortly.Core.Admin.ChangeOrganizationPlan;
 
-public class ChangeOrganizationPlanCommandValidator : AbstractValidator<ChangeOrganizationPlanCommand>
+internal class ChangeOrganizationPlanCommandValidator : AbstractValidator<ChangeOrganizationPlanCommand>
 {
     public ChangeOrganizationPlanCommandValidator()
     {
